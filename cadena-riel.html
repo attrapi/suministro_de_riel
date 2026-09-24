@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Cadena de suministro del riel</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --bg:#EDF0F4; --panel:#FFFFFF; --line:#C9D2DE;
+    --ink:#131A24; --ink-2:#4A5666; --ink-3:#7B8797;
+    --accent:#E8621A; --accent-soft:rgba(232,98,26,.14);
+    --stage:#0F1620; --stage-2:#151E2B;
+    --display:"Barlow Condensed","Arial Narrow",Impact,sans-serif;
+    --body:"IBM Plex Sans","Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:"IBM Plex Mono",Consolas,"Courier New",monospace;
+    --menu-h:56px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0B1017; --panel:#141C27; --line:#243040;
+      --ink:#EAEFF5; --ink-2:#A6B2C2; --ink-3:#6F7C8D;
+      --accent:#FF7A2A; --accent-soft:rgba(255,122,42,.16);
+      --stage:#0A0F16; --stage-2:#0F161F;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0B1017; --panel:#141C27; --line:#243040;
+    --ink:#EAEFF5; --ink-2:#A6B2C2; --ink-3:#6F7C8D;
+    --accent:#FF7A2A; --accent-soft:rgba(255,122,42,.16);
+    --stage:#0A0F16; --stage-2:#0F161F;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;overflow:hidden}
+  body{margin:0;background:var(--stage);color:#EAEFF5;font-family:var(--body);font-size:15px;line-height:1.5}
+  .menu{position:fixed;left:0;right:0;top:0;height:var(--menu-h);z-index:3;background:#0B1017;border-bottom:1px solid rgba(255,255,255,.12);padding-top:env(safe-area-inset-top,0px)}
+  .menu{display:flex;align-items:center;justify-content:flex-end;gap:6px;padding-inline:20px}
+  .menu .mtitle{font:11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-right:6px}
+  .menu button{font:12px var(--mono);color:rgba(255,255,255,.75);background:transparent;border:1px solid rgba(255,255,255,.18);border-radius:4px;padding:5px 10px;cursor:pointer}
+  .menu button.on{background:#FF9A4D;border-color:#FF9A4D;color:#0B1017}
+  .menu button:focus-visible{outline:2px solid #FF9A4D;outline-offset:2px}
+  .stage{position:fixed;left:0;right:0;top:var(--menu-h);bottom:0;background:#0F1A2A}
+  .stage svg{width:100%;height:100%;display:block}
+  header{position:fixed;left:24px;top:calc(var(--menu-h) + 14px);z-index:4;pointer-events:none}
+  .hrow{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+  .tramo{display:flex;align-items:center;gap:8px;pointer-events:auto}
+  .tlabel{font:11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.6);margin-right:4px}
+  .tmenu{list-style:none;margin:0;padding:0;display:flex;gap:6px}
+  .tmenu>li{position:relative}
+  .tmenu button{font:12px var(--mono);color:#EAEFF5;background:rgba(10,15,22,.72);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.2);border-radius:5px;padding:7px 11px;cursor:pointer;display:flex;gap:8px;align-items:center;white-space:nowrap}
+  .tmenu button:hover,.tmenu li.open>button{border-color:rgba(255,255,255,.45)}
+  .tmenu button.on{border-color:#FF9A4D;color:#FF9A4D}
+  .tmenu button:focus-visible{outline:2px solid #FF9A4D;outline-offset:2px}
+  .tmenu .arrow{opacity:.6;font-style:normal}
+  .tsub{list-style:none;margin:0;padding:6px;position:absolute;left:0;top:calc(100% + 6px);display:none;flex-direction:column;gap:2px;background:rgba(10,15,22,.94);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.16);border-radius:6px;min-width:190px;z-index:5}
+  .tmenu>li.open>.tsub{display:flex}
+  .tsub button{width:100%;background:transparent;border:0;border-radius:4px;padding:8px 10px;font:13px var(--body);text-align:left}
+  .tsub button:hover{background:rgba(255,255,255,.08)}
+  .tsub button.on{color:#FF9A4D}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.55);margin:0 0 4px}
+  h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,3.4vw,44px);line-height:.95;letter-spacing:-.01em;margin:0;text-wrap:balance;text-shadow:0 2px 12px rgba(0,0,0,.5)}
+  h1 span{color:#FF9A4D}
+  .chain{position:fixed;left:16px;right:16px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:2;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+  .st{background:rgba(10,15,22,.72);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:8px 12px;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:10px;align-items:center}
+  .st .ico{grid-row:1/3;width:50px;height:36px}
+  .st .ico svg{width:100%;height:100%;overflow:visible}
+  .st .num{font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.06em}
+  .st .cnt{font-family:var(--display);font-weight:600;font-size:24px;line-height:1;color:#FF9A4D;font-variant-numeric:tabular-nums;grid-column:2}
+  .st .cnt small{font:11px var(--mono);color:rgba(255,255,255,.6)}
+  .lbl .n{font:500 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;fill:rgba(255,255,255,.6)}
+  .lbl .v{font:600 24px var(--display);fill:#FF9A4D}
+  .lbl .u{font:11px var(--mono);fill:rgba(255,255,255,.65)}
+  .lbl .t{font:600 15px var(--display);text-transform:uppercase;letter-spacing:.02em;fill:#EAEFF5}
+  .lbl .g{font:700 34px var(--display);letter-spacing:.3em;fill:rgba(255,255,255,.28)}
+  .lbl text{paint-order:stroke;stroke:rgba(8,14,22,.85);stroke-width:3px;stroke-linejoin:round}
+  .note{position:fixed;left:24px;top:calc(var(--menu-h) + 76px);z-index:2;font:11px/1.5 var(--mono);color:rgba(255,255,255,.55);max-width:44ch}
+  @media (max-width:900px){ .chain{grid-template-columns:repeat(5,1fr);gap:4px} .st{padding:6px 8px} .st .ico{display:none} .st .cnt{grid-column:1;font-size:18px} .note{display:none} }
+
+  /* Animaciones CSS */
+  .smoke circle{animation:rise 5s linear infinite;transform-box:fill-box;transform-origin:center}
+  @keyframes rise{0%{transform:translate(0,0) scale(.5);opacity:0}12%{opacity:.55}100%{transform:translate(14px,-70px) scale(2.2);opacity:0}}
+  .beacon{animation:blink 1.2s infinite}
+  @keyframes blink{50%{opacity:.25}}
+  .furnace{animation:pulse 1.8s ease-in-out infinite}
+  @keyframes pulse{50%{opacity:.55}}
+  .wake line{animation:wake 2.4s linear infinite}
+  @keyframes wake{0%{opacity:.5}100%{opacity:0}}
+  @media (prefers-reduced-motion: reduce){.smoke circle,.beacon,.furnace,.wake line{animation:none}}
+</style>
+</head>
+<body>
+
+
+<div id="menu" class="menu"><!-- espacio reservado para el menú del sitio (100 % de ancho) -->
+  <span class="mtitle">Estilo</span>
+  <button type="button" data-theme="sobrio">Sobrio</button>
+  <button type="button" data-theme="marino">Marino</button>
+  <button type="button" data-theme="claro">Claro</button>
+</div>
+<div class="stage">
+  <svg id="scene" viewBox="0 0 1560 950" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Maqueta isométrica de la cadena de suministro del riel: producción, puerto de origen, travesía, descarga y centro de acopio"></svg>
+</div>
+<header>
+  <p class="eyebrow">ATTRAPI</p>
+  <div class="hrow">
+    <h1>Cadena de suministro <span>del riel</span></h1>
+    <div class="tramo" id="tramo">
+      <span class="tlabel">Proyectos</span>
+      <ul class="tmenu" id="tmenu"></ul>
+    </div>
+  </div>
+</header>
+<div class="chain">
+  <div class="st"><div class="ico" id="ico1"></div><div class="num">Producción del riel</div><div class="cnt"><span data-d="produccion">0</span> <small>rieles</small></div></div>
+  <div class="st"><div class="ico" id="ico2"></div><div class="num">Origen · puerto</div><div class="cnt"><span data-d="puerto">0</span> <small>rieles</small></div></div>
+  <div class="st"><div class="ico" id="ico3"></div><div class="num">Traslado marítimo</div><div class="cnt"><span data-d="traslado">0</span> <small>rieles</small></div></div>
+  <div class="st"><div class="ico" id="ico4"></div><div class="num">Descarga</div><div class="cnt"><span data-d="descarga">0</span> <small>rieles</small></div></div>
+  <div class="st"><div class="ico" id="ico5"></div><div class="num">Centro de acopio</div><div class="cnt"><span data-d="acopio">0</span> <small>rieles</small></div></div>
+</div>
+
+<script>
+/* ============================================================
+   DATOS — sustituir por los valores del Excel
+   ============================================================ */
+// Un renglón por segmento (los valores de ejemplo se sustituyen por los del Excel)
+const TRAMOS = [
+  { id:'qro-ira', nombre:'Querétaro – Irapuato', segmentos:[] },
+  { id:'sal-mty', nombre:'Saltillo – Monterrey', segmentos:[ {id:'18-20',nombre:'Segmento 18 y 20'}, {id:'16-17',nombre:'Segmento 16 y 17'}, {id:'15B2',nombre:'Segmento 15B2'} ] },
+  { id:'mty-nl',  nombre:'Monterrey – Nuevo Laredo', segmentos:[ {id:'15A2',nombre:'Segmento 15A2'}, {id:'15A1',nombre:'Segmento 15A1'}, {id:'13-14',nombre:'Segmento 13 y 14'} ] },
+];
+const DATOS_SEG = {
+  'qro-ira': { produccion: 20, puerto: 12, traslado: 30, descarga: 8, acopio: 44 },
+  '18-20':   { produccion: 26, puerto: 10, traslado: 24, descarga: 6, acopio: 38 },
+  '16-17':   { produccion: 18, puerto: 14, traslado: 22, descarga: 9, acopio: 41 },
+  '15B2':    { produccion: 22, puerto:  9, traslado: 28, descarga: 7, acopio: 36 },
+  '15A2':    { produccion: 24, puerto: 11, traslado: 26, descarga: 5, acopio: 40 },
+  '15A1':    { produccion: 19, puerto: 13, traslado: 31, descarga: 8, acopio: 45 },
+  '13-14':   { produccion: 21, puerto: 12, traslado: 27, descarga: 6, acopio: 42 },
+};
+let SEG = 'qro-ira';
+try { SEG = localStorage.getItem('segmento') || SEG; } catch(e){}
+if (!DATOS_SEG[SEG]) SEG='qro-ira';
+const DATOS = DATOS_SEG[SEG];
+const UNIDAD = 'rieles';
+
+/* ============================================================
+   Motor isométrico mínimo. Mundo (x,y,z): x → abajo-derecha, y → abajo-izquierda, z → arriba.
+   ============================================================ */
+const NS = 'http://www.w3.org/2000/svg';
+const CX = Math.cos(Math.PI/6);
+const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function shade(color, f){
+  let r,g,b;
+  if (color[0]==='#'){ const n=parseInt(color.slice(1),16); r=(n>>16)&255; g=(n>>8)&255; b=n&255; }
+  else { [r,g,b] = color.match(/\d+/g).map(Number); }
+  if (f>=0){ r+=(255-r)*f; g+=(255-g)*f; b+=(255-b)*f; } else { r*=1+f; g*=1+f; b*=1+f; }
+  return `rgb(${r|0},${g|0},${b|0})`;
+}
+function lerpColor(a,b,t){
+  const pa=parseInt(a.slice(1),16), pb=parseInt(b.slice(1),16);
+  const ch=s=>((pa>>s)&255)+(((pb>>s)&255)-((pa>>s)&255))*t;
+  return `rgb(${ch(16)|0},${ch(8)|0},${ch(0)|0})`;
+}
+const DEPTH_X = 0.55, DEPTH_Y = 0.55;   // inclinación y acortamiento del eje de profundidad
+let uid = 0;
+function makeScene(svg, S, OX, OY, map, mapDelta){
+  // map: reorienta los ejes locales (rotación y/o centrado de un modelo). Por defecto identidad.
+  const M = map || ((x,y)=>[x,y]);
+  const MD = mapDelta || M;                 // para desplazamientos (tr) se usa solo la parte lineal del mapeo
+  // Proyección oblicua: el eje x del mundo es la horizontal de la pantalla (cadena horizontal), y es la profundidad, z la altura
+  const P = (x,y,z)=>{ const [mx,my]=M(x,y); return [OX + (mx + my*DEPTH_X)*S, OY + (my*DEPTH_Y - z)*S]; };
+  const el = (tag, attrs, parent)=>{ const e=document.createElementNS(NS,tag); for (const k in attrs) e.setAttribute(k, attrs[k]); (parent||svg).appendChild(e); return e; };
+  const pts = arr => arr.map(p=>p.join(',')).join(' ');
+  const poly = (points, fill, parent, extra)=> el('polygon', Object.assign({points: pts(points), fill}, extra||{}), parent);
+  const line = (a,b,stroke,w,parent,extra)=> el('line', Object.assign({x1:a[0],y1:a[1],x2:b[0],y2:b[1],stroke,'stroke-width':w}, extra||{}), parent);
+  const g = (parent, attrs)=> el('g', attrs||{}, parent);
+  function box(x,y,z,w,d,h,color,parent,opt){
+    opt = opt||{};
+    const gg = el('g', {}, parent);
+    poly([P(x,y+d,z),P(x+w,y+d,z),P(x+w,y+d,z+h),P(x,y+d,z+h)], shade(color, opt.l ?? 0), gg);
+    poly([P(x+w,y,z),P(x+w,y+d,z),P(x+w,y+d,z+h),P(x+w,y,z+h)], shade(color, opt.r ?? -0.28), gg);
+    poly([P(x,y,z+h),P(x+w,y,z+h),P(x+w,y+d,z+h),P(x,y+d,z+h)], shade(color, opt.t ?? 0.22), gg);
+    return gg;
+  }
+  const tr = (gg,dx,dy,dz)=>{ const [mx,my]=MD(dx,dy); gg.setAttribute('transform', `translate(${(mx + my*DEPTH_X)*S},${(my*DEPTH_Y - dz)*S})`); };
+  const defs = el('defs', {});
+  // clip: una o varias regiones rectangulares del mundo [x0,y0,x1,y1] a altura z
+  // clip: regiones [x0,y0,x1,y1] a altura z; con h>0 el recorte incluye el volumen hasta z+h (para que no se corten chimeneas, cabinas, etc.)
+  const clip = (rects, z, h=0)=>{ const id='clip'+(uid++); const cp=el('clipPath',{id}, defs);
+    rects.forEach(([x0,y0,x1,y1])=>{
+      poly([P(x0,y0,z),P(x1,y0,z),P(x1,y1,z),P(x0,y1,z)],'#000',cp);
+      if (h>0){ poly([P(x0,y0,z+h),P(x1,y0,z+h),P(x1,y1,z+h),P(x0,y1,z+h)],'#000',cp);
+        poly([P(x0,y0,z),P(x1,y0,z),P(x1,y0,z+h),P(x0,y0,z+h)],'#000',cp);      // cara trasera
+        poly([P(x0,y0,z),P(x0,y1,z),P(x0,y1,z+h),P(x0,y0,z+h)],'#000',cp);      // cara izquierda
+        poly([P(x1,y0,z),P(x1,y1,z),P(x1,y1,z+h),P(x1,y0,z+h)],'#000',cp);      // cara derecha
+        poly([P(x0,y1,z),P(x1,y1,z),P(x1,y1,z+h),P(x0,y1,z+h)],'#000',cp); }    // cara frontal
+    }); return `url(#${id})`; };
+  const glowId = 'glow'+(uid++);
+  const f = el('filter', {id:glowId, x:'-50%', y:'-50%', width:'200%', height:'200%'}, defs);
+  el('feGaussianBlur', {stdDeviation:'6'}, f);
+  return {svg,S,P,el,pts,poly,line,g,box,tr,clip,defs,glow:`url(#${glowId})`,OX,OY};
+}
+
+/* ---------- Estilos: solo cambian colores; se elige en el menú superior ---------- */
+const THEMES = {
+  sobrio: { label:'Sobrio', water:'#4A657F', land:'#3B443E', land2:'#414A44', sand:'#5C6159', ground:'#2A3139', quay:'#3A4149', road:'#2F3944', crane:'#C9A24A', wave:.13, stage:'#0F1A2A' },
+  marino: { label:'Marino', water:'#2F6FA8', land:'#42603C', land2:'#4A6A43', sand:'#9A8B62', ground:'#2E3641', quay:'#464E58', road:'#33393F', crane:'#D9A93C', wave:.20, stage:'#1B3A5A' },
+  claro:  { label:'Claro',  water:'#6FAEDD', land:'#7E9C69', land2:'#8AA774', sand:'#C9B98A', ground:'#8C949E', quay:'#9AA2AC', road:'#5C636B', crane:'#E0B04A', wave:.28, stage:'#5C9BD0' },
+};
+let THEME = 'sobrio';
+try { THEME = new URLSearchParams(location.search).get('tema') || localStorage.getItem('tema') || 'sobrio'; } catch(e){}
+if (!THEMES[THEME]) THEME='sobrio';
+const T = THEMES[THEME];
+document.querySelector('.stage').style.background = T.stage;
+document.querySelectorAll('#menu button').forEach(b=>{ b.classList.toggle('on', b.dataset.theme===THEME); b.onclick=()=>{ try{ localStorage.setItem('tema', b.dataset.theme); }catch(e){} location.href = location.pathname + '?tema=' + b.dataset.theme; }; });
+
+const C = {
+  ground:T.ground, quay:T.quay, water:T.water, gridLine:'rgba(255,255,255,.06)', road:T.road, land:T.land, land2:T.land2, sand:T.sand,
+  hall:'#555E69', roof:'#66707B', glass:'#9FB4C4', chimney:'#6E7782',
+  steel:'#5A6673', steelLight:'#9AA6B4', rail:'#B9C3CF', wheel:'#1E252E',
+  track:'#4A4540', crane:T.crane, hot:'#F0762A', warm:'#E8AE5C',
+  hull:'#3A4552', hullRed:'#7E3A3A', house:'#CFD5DC', funnel:'#9A4646',
+  truck:'#4C6E8F', office:'#8A94A3', fence:'#7A8594'
+};
+const Z0 = 0.4;
+
+/* ---------- Piezas ---------- */
+function ground(sc, x0, W, D, color){
+  const gg = sc.g();
+  sc.box(x0,0,0,W,D,0.4,color,gg,{t:0.06,l:-0.25,r:-0.45});
+  for (let i=2;i<W;i+=2) sc.line(sc.P(x0+i,0,Z0),sc.P(x0+i,D,Z0),C.gridLine,1,gg);
+  for (let j=2;j<D;j+=2) sc.line(sc.P(x0,j,Z0),sc.P(x0+W,j,Z0),C.gridLine,1,gg);
+  return gg;
+}
+let wavePattern = null;
+function water(sc, x0, y0, w, d, stepY=0.5, flat=false){
+  // Superficie de agua. Las olas son un patrón SVG (se rasteriza una vez y se repite: muy barato de animar).
+  const gg = sc.g();
+  if (flat) sc.poly([sc.P(x0,y0,0.25),sc.P(x0+w,y0,0.25),sc.P(x0+w,y0+d,0.25),sc.P(x0,y0+d,0.25)], shade(C.water,0.12), gg);
+  else sc.box(x0,y0,0,w,d,0.25,C.water,gg,{t:0.12,l:-0.2,r:-0.4});
+  if (!wavePattern){
+    const pat = sc.el('pattern',{id:'waves',width:34,height:17,patternUnits:'userSpaceOnUse'},sc.defs);
+    // un trazo corto por celda, alineado con el eje x del mundo (dirección de las olas)
+    const [ax,ay]=sc.P(0,0,0), [bx,by]=sc.P(1.1,0,0); const dx=bx-ax, dy=by-ay;
+    sc.el('line',{x1:17-dx/2,y1:8.5-dy/2,x2:17+dx/2,y2:8.5+dy/2,stroke:`rgba(255,255,255,${T.wave})`,'stroke-width':1.2,'stroke-linecap':'round'},pat);
+    wavePattern = 'url(#waves)';
+  }
+  const waves = sc.g(gg,{'clip-path':sc.clip([[x0,y0,x0+w,y0+d]],0.25)});
+  const inner = sc.g(waves);
+  sc.poly([sc.P(x0-2,y0-2,0.26),sc.P(x0+w+2,y0-2,0.26),sc.P(x0+w+2,y0+d+2,0.26),sc.P(x0-2,y0+d+2,0.26)], wavePattern, inner);
+  return {g:gg, waves:inner};
+}
+function road(sc, parent, x0, x1, y, d){
+  sc.box(x0,y,Z0,x1-x0,d,0.03,C.road,parent);
+  for (let x=x0+0.5;x<x1-0.8;x+=1.6) sc.line(sc.P(x,y+d/2,Z0+0.04),sc.P(x+0.8,y+d/2,Z0+0.04),'#C9CFD6',1.2,parent);
+}
+function track(sc, parent, x0, x1, y){
+  for (let x=x0; x<x1; x+=0.9) sc.box(x,y-0.1,Z0,0.45,1.5,0.12,C.track,parent,{t:0.1});
+  sc.box(x0,y+0.15,Z0+0.12,x1-x0,0.14,0.16,C.rail,parent,{t:0.35});
+  sc.box(x0,y+1.0,Z0+0.12,x1-x0,0.14,0.16,C.rail,parent,{t:0.35});
+}
+function railStack(sc, parent, x, y, z, len, layers, perLayer){
+  for (let L=0; L<layers; L++){
+    const n = perLayer - L*2;
+    for (let i=0;i<n;i++) sc.box(x+(L%2)*0.15, y+L*0.4+i*0.5, z+L*0.34, len, 0.3, 0.32, C.rail, parent, {t:0.32,r:-0.35});
+  }
+}
+function bundle(sc, parent, len){
+  const gg = sc.g(parent);
+  sc.box(0,0,0,len,0.9,0.55,C.rail,gg,{t:0.3,r:-0.35});
+  for (const k of [0.15,0.5,0.85]) sc.line(sc.P(len*k,0,0.56),sc.P(len*k,0.9,0.56),'#2A3340',2,gg);
+  return gg;
+}
+const TL = 7.2;                           // largo del camión; la carga se centra en x+2.9
+function truck(sc, parent){
+  // Dibujado centrado en (0,0) para que las orientaciones giren sobre el centro del camión
+  const gg = sc.g(parent), L=TL, D=1.3, ox=-L/2, oy=-D/2;
+  for (const wx of [0.5,1.4,5.6]) sc.box(ox+wx,oy+0.15,Z0,0.7,1.0,0.5,C.wheel,gg);
+  sc.box(ox,oy,Z0+0.45,L-1.6,D,0.25,'#6B7684',gg,{t:0.15});
+  sc.box(ox+L-1.5,oy,Z0+0.45,1.5,D,1.3,C.truck,gg,{t:0.25});
+  sc.poly([sc.P(ox+L,oy+0.15,Z0+1.1),sc.P(ox+L,oy+D-0.15,Z0+1.1),sc.P(ox+L,oy+D-0.15,Z0+1.6),sc.P(ox+L,oy+0.15,Z0+1.6)],'#BFD8EE',gg);
+  const load = bundle(sc, gg, 5.2); sc.tr(load, ox+0.3, oy+0.2, Z0+0.7); load.setAttribute('opacity',0);
+  return {g:gg, load};
+}
+function gantry(sc, parent, y0, y1, h, spanFrom, spanTo){
+  const gg = sc.g(parent);
+  sc.box(-0.2,y0,Z0,0.4,0.4,h,C.crane,gg,{t:0.25});
+  sc.box(-0.2,y1,Z0,0.4,0.4,h,C.crane,gg,{t:0.25});
+  sc.box(-0.35,spanFrom,Z0+h,0.7,spanTo-spanFrom,0.45,C.crane,gg,{t:0.3});
+  const trolley = sc.g(gg);
+  sc.box(-0.25,-0.3,Z0+h+0.45,0.5,0.6,0.3,'#2A3340',trolley);
+  const cable = sc.line(sc.P(0,0,Z0+h+0.45), sc.P(0,0,Z0+2), '#C8D0DA', 1.2, trolley);
+  const hook = sc.g(trolley);
+  sc.box(-0.15,-0.15,0,0.3,0.3,0.25,'#2A3340',hook);
+  return {g:gg, trolley, cable, hook, h};
+}
+function ship(sc, parent){
+  const gg = sc.g(parent), L=12, D=3.2, H=1.5;
+  sc.box(0,0,0,L,D,0.35,C.hullRed,gg,{t:0,l:-0.05,r:-0.3});
+  sc.box(0,0,0.35,L,D,H-0.35,C.hull,gg,{t:0.35,l:0.05,r:-0.25});
+  const bx=L, bl=2.4;
+  sc.poly([sc.P(bx,D,0),sc.P(bx+bl,D/2,0),sc.P(bx+bl,D/2,H),sc.P(bx,D,H)], shade(C.hull,0.05), gg);
+  sc.poly([sc.P(bx,0,H),sc.P(bx+bl,D/2,H),sc.P(bx,D,H)], shade(C.hull,0.35), gg);
+  sc.poly([sc.P(bx,D,0),sc.P(bx+bl,D/2,0),sc.P(bx+bl,D/2,0.35),sc.P(bx,D,0.35)], shade(C.hullRed,-0.05), gg);
+  const hatches = [], loads = [];
+  for (let k=0;k<3;k++){
+    const hx = 2.6+k*3.0, hy = 0.6, hw = 2.5, hd = D-1.2;
+    hatches.push({x:hx+hw/2, y:hy+hd/2});
+    sc.poly([sc.P(hx,hy,H),sc.P(hx+hw,hy,H),sc.P(hx+hw,hy+hd,H),sc.P(hx,hy+hd,H)],'#3A4552',gg);            // brocal de la bodega
+    sc.box(hx,hy-0.35,H,hw,0.3,0.18,'#7C8998',gg,{t:0.2});
+    const b = bundle(sc, gg, 5.2); sc.tr(b, hx+hw/2-2.6, hy+hd/2-0.45, H); b.setAttribute('opacity',0); loads.push(b);   // atado estibado sobre cubierta, visible
+  }
+  sc.box(0.5,0.5,H,1.9,D-1.0,1.5,C.house,gg,{t:0.1,l:-0.08,r:-0.3});
+  sc.box(0.7,0.8,H+1.5,1.5,D-1.6,0.7,C.house,gg,{t:0.1,l:-0.08,r:-0.3});
+  sc.poly([sc.P(2.2,0.9,H+1.75),sc.P(2.2,D-0.9,H+1.75),sc.P(2.2,D-0.9,H+2.05),sc.P(2.2,0.9,H+2.05)],'#3E5A78',gg);
+  sc.box(1.0,D/2-0.3,H+2.2,0.6,0.6,0.8,C.funnel,gg,{t:0.2});
+  const sm = sc.g(gg,{class:'smoke'}); const tc = sc.P(1.3,D/2,H+3.0);
+  for (let p=0;p<3;p++) sc.el('circle',{cx:tc[0],cy:tc[1],r:5,fill:'rgba(200,210,225,.5)',style:`animation-delay:${-p*1.6}s`},sm);
+  sc.box(L-0.6,D/2-0.1,H,0.2,0.2,1.6,'#C8D0DA',gg);
+  return {g:gg, hatches, loads, deckZ:H};
+}
+
+/* ============================================================
+   Disposición: cinco placas de 24 u sobre el eje x, separadas 1.6 u
+   ============================================================ */
+const svgAll = document.getElementById('scene');
+const MENU_H = 56;                                    // alto de la barra de menú (coincide con --menu-h)
+const S=12, OX0=170, OY0=118, PLATE=24, GAP=1.6, PD=13.2;
+const SEA_W = 34;                                       // ancho del estrecho entre puertos
+const PX = [];                                          // origen x de cada placa
+PX[1] = 25.6;                                           // puerto de origen (referencia)
+PX[0] = PX[1] - PLATE - 16;                             // planta, más arriba a la derecha, donde empieza la carretera
+PX[2] = PX[1] + PLATE + GAP;                            // mar
+PX[3] = PX[2] + SEA_W + GAP;                            // puerto de destino
+PX[4] = PX[3] + PLATE + 12;                             // centro de acopio, cerca del inicio de la carretera izquierda
+const sc = makeScene(svgAll, S, OX0, OY0);   // una sola escena: todas las coordenadas son de mundo
+const QY = 6.2;                              // en los puertos: agua y∈[0,QY], muelle y∈[QY,PD]
+const ROAD_Y = 11.6, TRUCK_Y = 11.9;         // carretera al frente de las placas terrestres
+const SHIP_Y = 2.3;                          // eje del buque (agua al fondo)
+const updaters = [];                         // animaciones ambientales (olas, riel al rojo)
+
+/* ---------- Placa 0 · Producción ---------- */
+function plateFactory(x0){
+  ground(sc, x0, PLATE, PD, C.ground);
+  const gR = sc.g(); road(sc,gR,x0,x0+PLATE,ROAD_Y,PD-ROAD_Y);
+  const HX=x0+1,HY=1,HW=10,HD=6,HH=4, gHall=sc.g(), P=sc.P;
+  const doorL=[P(HX+1.2,HY+HD,Z0),P(HX+3.4,HY+HD,Z0),P(HX+3.4,HY+HD,Z0+2.6),P(HX+1.2,HY+HD,Z0+2.6)];
+  const doorR=[P(HX+HW,2.4,Z0),P(HX+HW,5.2,Z0),P(HX+HW,5.2,Z0+2.4),P(HX+HW,2.4,Z0+2.4)];
+  const left=[P(HX,HY+HD,Z0),P(HX+HW,HY+HD,Z0),P(HX+HW,HY+HD,Z0+HH),P(HX,HY+HD,Z0+HH)];
+  const right=[P(HX+HW,HY,Z0),P(HX+HW,HY+HD,Z0),P(HX+HW,HY+HD,Z0+HH),P(HX+HW,HY,Z0+HH)];
+  const gFur=sc.g(gHall,{class:'furnace'});
+  sc.poly(doorR,C.hot,gFur,{opacity:.85}); sc.poly(doorL,'#FF8A2A',gFur,{opacity:.55});
+  sc.el('path',{d:'M'+sc.pts(left)+'Z M'+sc.pts(doorL)+'Z',fill:shade(C.hall,0),'fill-rule':'evenodd'},gHall);
+  sc.el('path',{d:'M'+sc.pts(right)+'Z M'+sc.pts(doorR)+'Z',fill:shade(C.hall,-0.28),'fill-rule':'evenodd'},gHall);
+  sc.poly([P(HX+HW,HY,Z0+3.2),P(HX+HW,HY+HD,Z0+3.2),P(HX+HW,HY+HD,Z0+3.45),P(HX+HW,HY,Z0+3.45)],'#D45A18',gHall);
+  for (let i=0;i<5;i++){ const xx=HX+4.2+i*1.1; sc.poly([P(xx,HY+HD,Z0+2.9),P(xx+0.7,HY+HD,Z0+2.9),P(xx+0.7,HY+HD,Z0+3.5),P(xx,HY+HD,Z0+3.5)],'#B9D3E6',gHall,{opacity:.75}); }
+  sc.poly([P(HX,HY,Z0+HH),P(HX+HW,HY,Z0+HH),P(HX+HW,HY+HD,Z0+HH),P(HX,HY+HD,Z0+HH)],shade(C.roof,0.1),gHall);
+  for (let k=0;k<5;k++){
+    const xx=HX+0.4+k*1.9, zt=Z0+HH, r=0.9, w=1.5;
+    sc.poly([P(xx,HY+0.2,zt),P(xx+w,HY+0.2,zt+r),P(xx+w,HY+HD-0.2,zt+r),P(xx,HY+HD-0.2,zt)],shade(C.roof,0.3),gHall);
+    sc.poly([P(xx+w,HY+0.2,zt),P(xx+w,HY+HD-0.2,zt),P(xx+w,HY+HD-0.2,zt+r),P(xx+w,HY+0.2,zt+r)],C.glass,gHall,{opacity:.9});
+    sc.poly([P(xx,HY+HD-0.2,zt),P(xx+w,HY+HD-0.2,zt),P(xx+w,HY+HD-0.2,zt+r)],shade(C.roof,-0.05),gHall);
+  }
+  [[HX+0.6,HY+0.5],[HX+2.2,HY+0.5]].forEach(([cx,cy],i)=>{
+    sc.box(cx,cy,Z0+HH,0.7,0.7,3+i*0.4,C.chimney,gHall,{t:0.3});
+    const tc=P(cx+0.35,cy+0.35,Z0+HH+3+i*0.4);
+    sc.el('circle',{cx:tc[0],cy:tc[1]-2,r:2.2,fill:'#FF3B3B',class:'beacon'},gHall);
+    const sm=sc.g(gHall,{class:'smoke'});
+    for (let p=0;p<4;p++) sc.el('circle',{cx:tc[0],cy:tc[1]-6,r:7,fill:'rgba(200,210,225,.6)',style:`animation-delay:${-p*1.25-i*0.6}s`},sm);
+  });
+  // mesa de rodillos
+  const TBX0=x0+11,TBX1=x0+22.5,TBY=3.2,TBD=1.6,TBH=0.7, gT=sc.g();
+  for (let x=TBX0+0.3;x<TBX1;x+=1.5){ sc.box(x,TBY+0.2,Z0,0.25,0.25,TBH-0.15,C.steel,gT); sc.box(x,TBY+TBD-0.45,Z0,0.25,0.25,TBH-0.15,C.steel,gT); }
+  sc.box(TBX0,TBY,Z0+TBH-0.15,TBX1-TBX0,TBD,0.15,C.steel,gT,{t:-0.05});
+  for (let x=TBX0+0.25;x<TBX1;x+=0.5) sc.line(sc.P(x,TBY+0.15,Z0+TBH+0.02),sc.P(x,TBY+TBD-0.15,Z0+TBH+0.02),C.steelLight,1.6,gT,{'stroke-linecap':'round'});
+  for (let k=0;k<3;k++) sc.box(x0+11.4+k*1.05,TBY-0.25,Z0,0.5,TBD+0.5,2.0,C.crane,gT,{t:0.25});
+  sc.box(x0+19.6,TBY-0.3,Z0,0.9,TBD+0.6,1.7,'#7A8594',gT,{t:0.2});
+  sc.box(x0+19.9,TBY+0.3,Z0+1.7,0.3,1.0,0.7,C.crane,gT);
+  // riel al rojo saliendo del galpón
+  const cutX = sc.P(x0+11,3.8,0)[0];
+  const cid='clip'+(uid++); const cp=sc.el('clipPath',{id:cid},sc.defs); sc.el('rect',{x:cutX,y:-2000,width:6000,height:6000},cp);
+  const gRC = sc.g(null,{'clip-path':`url(#${cid})`});
+  const RL=5.2, RY=TBY+0.62, RZ=Z0+TBH+0.02;
+  const glowP = sc.el('polygon',{fill:C.hot,filter:sc.glow,opacity:.7,points:sc.pts([sc.P(0,RY-0.3,RZ),sc.P(RL,RY-0.3,RZ),sc.P(RL,RY+0.7,RZ),sc.P(0,RY+0.7,RZ)])},gRC);
+  const railG = sc.box(0,RY,RZ,RL,0.34,0.34,C.hot,gRC);
+  const faces = railG.querySelectorAll('polygon');
+  const railColor = x => x<14?C.hot : x<17?lerpColor(C.hot,C.warm,(x-14)/3) : x<21?lerpColor(C.warm,C.rail,(x-17)/4) : C.rail;
+  updaters.push(now=>{
+    const t=(now/14000)%1; let rx,a=1;
+    if (t<0.72) rx = 5 + (22.5-RL-5)*(t/0.72); else { rx=22.5-RL; a=Math.max(0,1-(t-0.72)/0.12); }
+    const head=rx+RL, col=railColor(head);
+    sc.tr(railG, x0+rx,0,0); railG.setAttribute('opacity',a);
+    faces[0].setAttribute('fill',shade(col,0)); faces[1].setAttribute('fill',shade(col,-0.28)); faces[2].setAttribute('fill',shade(col,0.22));
+    sc.tr(glowP, x0+rx,0,0); glowP.setAttribute('opacity', a*0.8*Math.max(0,1-(head-13)/6));
+  });
+  // estiba de rieles terminados
+  const gY=sc.g(); sc.box(x0+14.6,6.6,Z0,7.8,4.0,0.12,'#303B48',gY,{t:0.05});
+  railStack(sc, gY, x0+15, 7.25, Z0+0.12, 7, 3, 7);
+}
+/* ---------- Placas 1 y 3 · Puertos (agua al fondo, muelle al frente) ---------- */
+function platePortBase(x0){                  // muelle (se pinta antes del buque); el agua es el mar de fondo
+  const gQ = sc.g(); sc.box(x0,QY,0,PLATE,PD-QY,0.4,C.quay,gQ,{t:0.06,l:-0.25,r:-0.45});
+  for (let i=2;i<PLATE;i+=2) sc.line(sc.P(x0+i,QY,Z0),sc.P(x0+i,PD,Z0),C.gridLine,1,gQ);
+}
+function platePortTop(x0){                   // bolardos, bodega, patio y carretera (se pintan después del buque para que lo tapen)
+  const gQ = sc.g();
+  for (let x=x0+1;x<x0+PLATE;x+=2.5) sc.box(x,QY+0.15,Z0,0.3,0.3,0.3,'#1E252E',gQ);
+  const gB=sc.g(); sc.box(x0+0.8,7.2,Z0,6.4,2.6,2.2,C.hall,gB,{t:0.2});
+  for (let k=0;k<3;k++) sc.poly([sc.P(x0+1.2+k*2.0,9.8,Z0),sc.P(x0+2.6+k*2.0,9.8,Z0),sc.P(x0+2.6+k*2.0,9.8,Z0+1.6),sc.P(x0+1.2+k*2.0,9.8,Z0+1.6)],'#2A3340',gB);
+  railStack(sc, gB, x0+16.5, 7.4, Z0, 5.2, 2, 4);
+  // patio de contenedores
+  const cols=['#8C4A45','#4E6F8C','#5E7F62','#9C7A4A','#7F8C8D'];
+  for (let r=0;r<3;r++) for (let c=0;c<3;c++){ const x=x0+19.2+c*1.55, y=7.0+r*0.95; sc.box(x,y,Z0,1.4,0.8,0.6,cols[(r*3+c)%5],gB,{t:0.25}); if ((r+c)%2) sc.box(x,y,Z0+0.6,1.4,0.8,0.6,cols[(r*3+c+2)%5],gB,{t:0.25}); }
+  // tanques de combustible y torre de control
+  sc.box(x0+9.0,7.6,Z0,1.6,1.6,1.4,'#B9C0C8',gB,{t:0.3}); sc.box(x0+11.0,7.6,Z0,1.6,1.6,1.4,'#B9C0C8',gB,{t:0.3});
+  sc.box(x0+14.2,7.4,Z0,1.0,1.0,3.4,'#8A94A3',gB,{t:0.2}); sc.box(x0+13.9,7.1,Z0+3.4,1.6,1.6,0.6,'#3E5A78',gB,{t:0.3});
+  // espigón secundario con bolardos, y rompeolas en el mar (con bocana para el buque)
+  sc.box(x0-6,-9.5,0.25,10,1.2,0.6,'#5B6470',gB,{t:0.15}); sc.box(x0+12,-9.5,0.25,PLATE-4,1.2,0.6,'#5B6470',gB,{t:0.15});
+  [[x0+3.6,-9.2],[x0+12.4,-9.2]].forEach(([bx,by])=>{ sc.box(bx-0.2,by-0.2,0.85,0.4,0.4,1.2,'#D9DEE5',gB); const tc=sc.P(bx,by,2.2); sc.el('circle',{cx:tc[0],cy:tc[1],r:2.2,fill:'#3CD070',class:'beacon'},gB); });
+  road(sc, sc.g(), x0, x0+PLATE, ROAD_Y, PD-ROAD_Y);
+}
+/* ---------- Placa 2 · Mar ---------- */
+function plateSea(x0){
+  sc.line(sc.P(x0,SHIP_Y+1.6,0.27),sc.P(x0+SEA_W,SHIP_Y+1.6,0.27),'rgba(255,255,255,.25)',1.2,null,{'stroke-dasharray':'2 8'});
+  [[6,8.5],[SEA_W-6,10.5],[SEA_W/2,12.0],[SEA_W/2-8,-6],[SEA_W/2+10,-9]].forEach(([bx,by],i)=>{ const g=sc.g(); sc.box(-0.2,-0.2,0,0.4,0.4,0.5,'#B0554A',g,{t:0.3}); sc.box(-0.05,-0.05,0.5,0.1,0.1,0.5,'#F1D7C5',g); updaters.push(now=>sc.tr(g,x0+bx,by,0.2+0.08*Math.sin(now/1000*2+i))); });
+}
+/* ---------- Placa 4 · Centro de acopio ---------- */
+function plateYard(x0, sc){
+  ground(sc, x0, PLATE, PD, C.ground);
+  const gF = sc.g();
+  for (let x=0.3;x<PLATE;x+=1.5) sc.box(x0+x,0.3,Z0,0.12,0.12,1.0,C.fence,gF);
+  for (let y=0.3;y<ROAD_Y-0.5;y+=1.5) sc.box(x0+0.3,y,Z0,0.12,0.12,1.0,C.fence,gF);
+  sc.line(sc.P(x0+0.36,0.36,Z0+0.9),sc.P(x0+PLATE,0.36,Z0+0.9),C.fence,1,gF); sc.line(sc.P(x0+0.36,0.36,Z0+0.9),sc.P(x0+0.36,ROAD_Y-0.5,Z0+0.9),C.fence,1,gF);
+  track(sc, sc.g(), x0, x0+PLATE, 2.6);
+  sc.box(x0+1.0,7.6,Z0,3.2,2.2,1.6,C.office,null,{t:0.2});
+  sc.poly([sc.P(x0+1.0,9.8,Z0+0.5),sc.P(x0+4.2,9.8,Z0+0.5),sc.P(x0+4.2,9.8,Z0+1.2),sc.P(x0+1.0,9.8,Z0+1.2)],'#3E5A78');
+  sc.box(x0+1.4,7.8,Z0+1.6,0.1,0.1,2.2,'#C8D0DA'); sc.poly([sc.P(x0+1.45,7.85,Z0+3.8),sc.P(x0+1.45,7.85,Z0+3.4),sc.P(x0+1.45,8.6,Z0+3.55)],'#2F7A4E');
+  const gR = sc.g(); sc.box(x0+6.6,5.4,Z0,14.8,5.8,0.1,'#303B48',gR,{t:0.05});
+  [5.9,8.7].forEach(y=>{ for (let x=7;x<21;x+=7.2) railStack(sc, gR, x0+x, y, Z0+0.1, 6.6, 3, 5); });
+  road(sc, sc.g(), x0, x0+PLATE, ROAD_Y, PD-ROAD_Y);
+}
+/* ---------- Rellenos entre placas: carretera o agua continua ---------- */
+function gapRoad(x0,w=GAP){ const g=sc.g(); sc.box(x0,ROAD_Y,0,w,PD-ROAD_Y,0.4,C.ground,g,{t:0.06,l:-0.25,r:-0.45}); road(sc,g,x0,x0+w,ROAD_Y,PD-ROAD_Y); }
+function gapWater(x0, d){}
+
+/* ---------- Paisaje de fondo: China a la izquierda, México a la derecha, el océano al fondo y en el estrecho ----------
+   Los bordes del estrecho son verticales en pantalla: en el mundo son rectas x + DEPTH_X·y = const. */
+const WX0=-420, WX1=560, WY0=-200, WY1=160;
+const LAND=C.land, LAND2=C.land2, SAND=C.sand;
+const COAST_Y = -2;
+const XC = PX[1]+PLATE+4.5, XM = PX[3]-3;                                   // costas del estrecho a la altura del muelle
+const chinaEdge  = y => XC - DEPTH_X*(y-QY);                              // x del borde chino para cada y
+const mexicoEdge = y => XM - DEPTH_X*(y-QY);
+const inChina  = (x,y)=> x <= chinaEdge(y) && y >= COAST_Y;
+const inMexico = (x,y)=> x >= mexicoEdge(y) && y >= QY;
+const inChannel = (x,y)=> (x>=PX[1]-1 && x<=XC+6 && y<QY) || (x>=PX[3]-1 && y<QY);
+{
+  sc.box(WX0,WY0,0,WX1-WX0,WY1-WY0,0.25,C.water,null,{t:0.12,l:-0.2,r:-0.4});                       // océano (color plano)
+  const sea = water(sc, -160, -90, 420, 180, 1.0, true); updaters.push(now=>sc.tr(sea.waves,0,((now/1000)*0.4)%1,0)); // olas en la zona visible
+  const landPoly=(pts,z,fill)=>sc.poly(pts.map(p=>sc.P(p[0],p[1],z)),fill);
+  // China: costa trasera horizontal (y = COAST_Y) y borde vertical en pantalla hacia el estrecho
+  const chinaPts = o => [[WX0,COAST_Y-o],[chinaEdge(COAST_Y)+o,COAST_Y-o],[chinaEdge(WY1)+o,WY1],[WX0,WY1]];
+  landPoly(chinaPts(0.6),0.2,SAND); landPoly(chinaPts(0),0.32,LAND);
+  // México: empieza en y = QY (la costa queda navegable) y su borde hacia el estrecho también es vertical
+  const mexPts = o => [[mexicoEdge(QY)-o,QY-o],[WX1,QY-o],[WX1,WY1],[mexicoEdge(WY1)-o,WY1]];
+  landPoly(mexPts(0.6),0.2,SAND); landPoly(mexPts(0),0.32,LAND);
+  // bocana del puerto chino (agua dentro del muelle) e islotes
+  const chan=(x0,y0,x1,y1)=>{ const w=water(sc,x0,y0,x1-x0,y1-y0,1.0,true); updaters.push(now=>sc.tr(w.waves,0,((now/1000)*0.4)%1,0)); };
+  chan(PX[1]-1, -90, XC+6, QY);                        // bocana del puerto chino, abierta hasta el estrecho para que el buque no cruce tierra
+  const patch=(x,y,w,d,c)=>{ if (inChina(x,y)&&inChina(x+w,y+d)||inMexico(x,y)&&inMexico(x+w,y+d)) sc.box(x,y,0.32,w,d,0.02,c,null,{t:0}); };
+  patch(-60,20,30,20,LAND2); patch(-110,14,40,26,shade(C.land,-0.08)); patch(-40,44,26,14,LAND2); patch(0,40,30,16,LAND2);
+  patch(110,44,30,20,LAND2); patch(150,30,40,30,shade(C.land,-0.08)); patch(120,70,60,40,LAND2); patch(200,40,60,50,LAND2);
+}
+plateFactory(PX[0]);  gapRoad(PX[0]+PLATE, PX[1]-PX[0]-PLATE);
+platePortBase(PX[1]); gapWater(PX[1]+PLATE, PD);
+plateSea(PX[2]);      gapWater(PX[2]+PLATE, PD);
+platePortBase(PX[3]); gapRoad(PX[3]+PLATE, PX[4]-6-(PX[3]+PLATE));
+const YARD_DY = 22;                                       // el acopio queda tierra adentro, lejos de la costa
+const scYard = makeScene(svgAll, S, OX0, OY0, (x,y)=>[x, y+YARD_DY]);
+plateYard(PX[4], scYard);
+
+/* ---------- Complementos del paisaje ---------- */
+const A_WEST_X = PX[0]-90, A_TURN_X = PX[1]+17.0, B_ROAD_X = PX[3]+1.2, B_EAST_X = PX[4]+PLATE+60, YARD_TURN_X = PX[4]-7.9;
+const RET_Y = 14.8;                                    // carril de regreso (delante de las placas)
+{
+  const roadY=(x,y0,y1)=>{ sc.box(x-1.2,y0,Z0,4.3,2.6,0.03,C.road); sc.box(x-1.2,y1-2.6,Z0,4.3,2.6,0.03,C.road); sc.box(x,y0,Z0,1.9,y1-y0,0.03,C.road); for (let y=y0+0.5;y<y1-0.8;y+=1.6) sc.line(sc.P(x+0.95,y,Z0+0.04),sc.P(x+0.95,y+0.8,Z0+0.04),'#C9CFD6',1.2); };
+  // China: ida por la carretera principal, regreso por el carril delantero hacia el oeste
+  road(sc, sc.g(), A_WEST_X-40, PX[0], ROAD_Y, PD-ROAD_Y);
+  roadY(A_TURN_X, ROAD_Y, RET_Y+1.9);
+  road(sc, sc.g(), A_WEST_X-40, A_TURN_X+1.9, RET_Y-0.3, 1.9);
+  [PX[0]-28,PX[0]-20].forEach(x=>{ sc.box(x,4.5,0.32,6.5,5.5,2.4,C.hall,null,{t:0.2}); sc.poly([sc.P(x+1,10,0.32),sc.P(x+3,10,0.32),sc.P(x+3,10,2.2),sc.P(x+1,10,2.2)],'#2A3340'); sc.poly([sc.P(x+3.6,10,0.32),sc.P(x+5.6,10,0.32),sc.P(x+5.6,10,2.2),sc.P(x+3.6,10,2.2)],'#2A3340'); });
+  // México: llegada por el carril delantero desde el este, salida por la carretera principal hacia el este
+  roadY(B_ROAD_X, ROAD_Y, RET_Y+1.9);
+  road(sc, sc.g(), B_ROAD_X, B_EAST_X+40, RET_Y-0.3, 1.9);
+  roadY(YARD_TURN_X, ROAD_Y, ROAD_Y+YARD_DY+1.6);                       // subida al centro de acopio
+  road(sc, sc.g(), YARD_TURN_X, PX[4], ROAD_Y+YARD_DY, PD-ROAD_Y);
+  road(sc, sc.g(), PX[4]+PLATE, B_EAST_X+40, ROAD_Y+YARD_DY, PD-ROAD_Y);
+  // horno de recalentamiento junto al galpón, con resplandor y chimenea
+  const fx=PX[0]-7.5, fy=1.2; const gH=sc.g();
+  sc.box(fx,fy,0.32,6,5.2,3.0,'#5C5048',gH,{t:0.2});
+  const glowF=sc.g(gH,{class:'furnace'});
+  sc.poly([sc.P(fx+0.6,fy+5.2,0.32),sc.P(fx+5.4,fy+5.2,0.32),sc.P(fx+5.4,fy+5.2,1.3),sc.P(fx+0.6,fy+5.2,1.3)],C.hot,glowF,{opacity:.9});
+  sc.poly([sc.P(fx+6,fy+0.6,1.8),sc.P(fx+6,fy+4.6,1.8),sc.P(fx+6,fy+4.6,2.3),sc.P(fx+6,fy+0.6,2.3)],'#FFB13B',glowF,{opacity:.7});
+  sc.box(fx+0.8,fy+0.8,3.32,1.0,1.0,4.5,C.chimney,gH,{t:0.3});
+  { const tc=sc.P(fx+1.3,fy+1.3,7.82); const sm=sc.g(gH,{class:'smoke'}); for (let p=0;p<4;p++) sc.el('circle',{cx:tc[0],cy:tc[1]-6,r:8,fill:'rgba(200,210,225,.6)',style:`animation-delay:${-p*1.25}s`},sm); }
+  sc.box(fx+6,fy+2.0,0.32,1.5,1.2,0.6,C.steel,gH);
+  // faro y espigón en cada puerto
+  [PX[1]+0.3, PX[3]+PLATE-1.5].forEach(x=>{ sc.box(x+0.3,QY+0.5,Z0,0.6,0.6,3.2,'#E4E8EC',null,{t:0.2}); sc.box(x+0.2,QY+0.4,Z0+3.2,0.8,0.8,0.5,'#9A4646',null,{t:0.2}); const tc=sc.P(x+0.6,QY+0.8,Z0+3.85); sc.el('circle',{cx:tc[0],cy:tc[1],r:3,fill:'#FFE27A',class:'beacon'}); });
+}
+/* ============================================================
+   Capa dinámica: buques, grúas y camiones (orden de pintado: buques, estructuras del muelle, grúas, camiones)
+   ============================================================ */
+const gShips  = sc.g();
+platePortTop(PX[1]); platePortTop(PX[3]);    // las estructuras del muelle quedan delante del buque
+/* ---------- Banderas: China en el puerto de origen, México en el de destino ---------- */
+function flag(x,y,draw){
+  const H=6.5, g=sc.g(null,{class:'flag'});
+  sc.box(x-0.1,y-0.1,Z0,0.2,0.2,H,'#D9DEE5',g,{t:0.3});
+  const top=sc.P(x,y,Z0+H), w=34, h=22;                 // la tela se dibuja en pantalla, ondeando en x
+  const f=sc.el('g',{transform:`translate(${top[0]},${top[1]})`},g);
+  draw(f, w, h);
+  return g;
+}
+function star(cx,cy,r,rot=0){ const p=[]; for (let i=0;i<10;i++){ const a=rot+Math.PI/5*i-Math.PI/2, rr=i%2?r*0.45:r; p.push([cx+rr*Math.cos(a),cy+rr*Math.sin(a)]); } return p; }
+function drawFlags(){
+flag(PX[1]+3.2, 11.2, (f,w,h)=>{                         // Bandera de la República Popular China
+  sc.el('rect',{x:0,y:0,width:w,height:h,fill:'#DE2910'},f);
+  sc.poly(star(6,6,4),'#FFDE00',f);
+  [[13,2.5],[15.5,5],[15.5,8.5],[13,11]].forEach(([x,y])=>sc.poly(star(x,y,1.4),'#FFDE00',f));
+});
+flag(PX[3]+PLATE-3.2, 11.2, (f,w,h)=>{                  // Bandera de México
+  sc.el('rect',{x:0,y:0,width:w/3,height:h,fill:'#006847'},f);
+  sc.el('rect',{x:w/3,y:0,width:w/3,height:h,fill:'#FFFFFF'},f);
+  sc.el('rect',{x:2*w/3,y:0,width:w/3,height:h,fill:'#CE1126'},f);
+  sc.el('circle',{cx:w/2,cy:h/2,r:3.2,fill:'#8C6A2E'},f);
+});
+}
+drawFlags();                                  // banderas encima de las estructuras del muelle
+const gCranes = sc.g();
+const gTrucks = sc.g();
+
+
+const SPEED = { truck:4.0, ship:2.6, craneXY:3.0, craneZ:2.2 };
+const SHIP_CAP = 3;                       // atados por travesía
+const step = (v,target,rate,dt)=> Math.abs(target-v)<=rate*dt ? target : v + Math.sign(target-v)*rate*dt;
+
+/* Grúa pórtico con trabajos de "tomar en A y dejar en B" */
+class Crane {
+  constructor(y0,y1,h,spanFrom,spanTo,x,homeY){
+    const gg = gantry(sc,gCranes,y0,y1,h,spanFrom,spanTo);
+    Object.assign(this,{gg, x, y:homeY, homeY, top:Z0+h-0.5, job:null, phase:0, wait:0});
+    this.z = this.top;
+    this.bundle = bundle(sc, gg.hook, 5.2); sc.tr(this.bundle,-2.6,-0.45,-0.55); this.bundle.setAttribute('opacity',0);
+    this.render();
+  }
+  get busy(){ return !!this.job; }
+  start(job){ this.job=job; this.phase=0; }
+  update(dt){
+    const j=this.job;
+    if (!j){ this.render(); return; }
+    const arrive=(tx,ty)=>{ this.x=step(this.x,tx,SPEED.craneXY,dt); this.y=step(this.y,ty,SPEED.craneXY,dt); return this.x===tx&&this.y===ty; };
+    const lift=(tz)=>{ this.z=step(this.z,tz,SPEED.craneZ,dt); return this.z===tz; };
+    switch(this.phase){
+      case 0: if (arrive(j.px,j.py)) this.phase=1; break;
+      case 1: if (lift(j.pz)) { this.phase=2; this.wait=0.4; } break;
+      case 2: this.wait-=dt; if (this.wait<=0){ j.onPick&&j.onPick(); this.bundle.setAttribute('opacity',1); this.phase=3; } break;
+      case 3: if (lift(this.top)) this.phase=4; break;
+      case 4: if (arrive(j.dx,j.dy)) this.phase=5; break;
+      case 5: if (lift(j.dz)) { this.phase=6; this.wait=0.4; } break;
+      case 6: this.wait-=dt; if (this.wait<=0){ j.onDrop&&j.onDrop(); this.bundle.setAttribute('opacity',0); this.phase=7; } break;
+      case 7: if (lift(this.top)) this.job=null; break;
+    }
+    this.render();
+  }
+  render(){ sc.tr(this.gg.g,this.x,0,0); sc.tr(this.gg.trolley,0,this.y,0); sc.tr(this.gg.hook,0,0,this.z); this.gg.cable.setAttribute('y2', sc.P(0,0,this.z+0.25)[1]); }
+}
+const LOADZ = Z0+0.7+0.55;                // gancho cuando el atado va sobre el camión
+const cranes = {
+  fab:  new Crane(6.3, 10.8, 5.2, 6.3, 13.0, PX[0]+18.5, 8.6),
+  pOri: new Crane(6.8, 10.8, 6.2, 3.0, 13.0, PX[1]+12.35, 8.0),
+  pDes: new Crane(6.8, 10.8, 6.2, 3.0, 13.0, PX[3]+12.35, 8.0),
+  yard: new Crane(5.2+YARD_DY, 11.6+YARD_DY, 5.6, 5.2+YARD_DY, 13.0+YARD_DY, PX[4]+12.9, 7.5+YARD_DY),
+};
+const FAB_STACK = {x:PX[0]+18.5, y:8.6, z:Z0+0.12+3*0.34+0.55};
+const FAB_STOP = PX[0]+9.0, ORI_STOP = PX[1]+9.45, DES_STOP = PX[3]+9.45, YARD_STOP = PX[4]+10.0;
+const YARD_DROP = {x:PX[4]+12.9, y:7.6+YARD_DY, z:Z0+0.1+3*0.34+0.55};
+const bundleCenter = X => X+2.9;          // centro del atado sobre un camión con origen X
+const hatchWorld = (sh,k) => ({x:sh.cx-SHIP_LEN/2+sh.o.hatches[k].x, y:sh.cy-1.6+sh.o.hatches[k].y, z:0.25+sh.o.deckZ+0.55});
+
+const HEADINGS = [0,30,60,90,120,150,180,210,240,270,300,330];
+const scHead = {}; HEADINGS.forEach(h=>{ const r=h*Math.PI/180, c=Math.cos(r), sn=Math.sin(r); scHead[h]=makeScene(svgAll,S,OX0,OY0,(x,y)=>[x*c - y*sn, x*sn + y*c]); });
+const DIR = th => [Math.cos(th*Math.PI/180), Math.sin(th*Math.PI/180)];
+const TURN_R = 2.4, TURN_T = 0.9;                       // radio (u) y duración (s) de los giros
+// avanza en línea recta según el rumbo actual hasta la coordenada objetivo (en x o en y)
+function drive(t, target, dt){ const [dx,dy]=DIR(t.heading); if (Math.abs(dx)>0.5){ t.cx=step(t.cx,target,SPEED.truck,dt); return t.cx===target; } t.cy=step(t.cy,target,SPEED.truck,dt); return t.cy===target; }
+// giro en arco desde el rumbo actual al nuevo, alrededor de la esquina (cxo,cyo)
+function startTurn(t, cxo, cyo, h1, R=TURN_R, T=TURN_T){ const d0=DIR(t.heading), d1=DIR(h1); let dh=((h1-t.heading)%360+540)%360-180; t.turn={o:[cxo-R*d0[0]+R*d1[0], cyo-R*d0[1]+R*d1[1]], d0, d1, h0:t.heading, dh, u:0, cxo, cyo, h1, R, T}; }
+function updateTurn(t, dt){ const T=t.turn, R=T.R; T.u=Math.min(1,T.u+dt/T.T); const a=T.u*Math.PI/2;
+  t.cx=T.o[0]-R*T.d1[0]*Math.cos(a)+R*T.d0[0]*Math.sin(a); t.cy=T.o[1]-R*T.d1[1]*Math.cos(a)+R*T.d0[1]*Math.sin(a);
+  t.heading=T.h0+T.dh*T.u; if (T.u>=1){ t.heading=T.h1; t.cx=T.cxo+R*T.d1[0]; t.cy=T.cyo+R*T.d1[1]; t.turn=null; return true; } return false; }
+/* Flota de dos buques: llegan por mar desde el fondo, cargan en origen, cruzan, descargan y se van mar adentro */
+const SHIP_LEN = 14.4, SEA_FAR = -70, SHIP_R = 7;                    // largo, punto de aparición y radio de giro
+function shipDockX(i){ return PX[i]+5.5; }
+const shipDockCx = i => shipDockX(i)+SHIP_LEN/2, SHIP_CY = SHIP_Y+1.6;
+const scShip = {}; HEADINGS.forEach(h=>{ const r=h*Math.PI/180, c=Math.cos(r), sn=Math.sin(r); scShip[h]=makeScene(svgAll,S,OX0,OY0,(x,y)=>{ const lx=x-SHIP_LEN/2, ly=y-1.6; return [lx*c - ly*sn, lx*sn + ly*c]; },(x,y)=>[x*c - y*sn, x*sn + y*c]); });
+function makeShip(){
+  const models={}; HEADINGS.forEach(h=>{ models[h]=ship(scShip[h],gShips); models[h].g.setAttribute('display','none'); });
+  return { models, shown:null, cx:shipDockCx(1)-SHIP_R, cy:SEA_FAR, heading:90, state:'arriving', load:0, turn:null,
+    get o(){ return this.models[this.shown ?? 0]; } };
+}
+function shipRender(s, z){
+  const h = ((Math.round(s.heading/30)*30)%360+360)%360;
+  if (s.shown!==h){ if (s.shown!==null) s.models[s.shown].g.setAttribute('display','none'); s.models[h].g.setAttribute('display',''); s.shown=h; }
+  sc.tr(s.models[h].g, s.cx, s.cy, z);
+}
+const ships = [0,1].map(k=>{ const e=makeShip(); e.cy=SEA_FAR-k*30; return e; });
+const originShip = ()=> ships.find(s=>s.state==='docked_o');
+const destShip   = ()=> ships.find(s=>s.state==='docked_d');
+function updateShip(s, dt, now){
+  const bob = 0.03*Math.sin(now/1000*2), sail = 0.08*Math.sin(now/1000*5);
+  if (s.turn){ if (updateTurn(s,dt)) s.state='docked_o'; shipRender(s, 0.25+sail); return; }
+  if (s.state==='arriving'){                    // entra por mar (rumbo +y) y vira en arco hasta quedar de costado en el muelle
+    const free = !ships.some(o=>o!==s && (o.state==='docked_o' || o.turn || (o.state==='arriving' && o.cy>s.cy)));
+    const target = free ? SHIP_CY-SHIP_R : SHIP_CY-SHIP_R-SHIP_LEN-6;
+    s.cy=step(s.cy,target,SPEED.ship,dt);
+    if (free && s.cy===target) startTurn(s, shipDockCx(1)-SHIP_R, SHIP_CY, 0, SHIP_R, (Math.PI/2*SHIP_R)/SPEED.ship);
+    shipRender(s, 0.25+sail);
+  }
+  else if (s.state==='docked_o'){ if (s.load>=SHIP_CAP && !cranes.pOri.busy) s.state='sailing'; shipRender(s, 0.25+bob); }
+  else if (s.state==='sailing'){
+    const free = !ships.some(o=>o!==s && (o.state==='docked_d' || (o.state==='sailing' && o.cx>s.cx)));
+    const target = free ? shipDockCx(3) : shipDockCx(3)-SHIP_LEN-8;
+    s.cx=step(s.cx,target,SPEED.ship,dt); if (s.cx===shipDockCx(3)) s.state='docked_d';
+    shipRender(s, 0.25+sail);
+  }
+  else if (s.state==='docked_d'){
+    if (s.load===0 && !cranes.pDes.busy && !trucksB.some(t=>t.state==='loading' && t.ship===s)) s.state='leaving';
+    shipRender(s, 0.25+bob);
+  }
+  else if (s.state==='leaving'){                // sigue bordeando la costa mexicana hasta salir de pantalla
+    s.cx=step(s.cx,PX[4]+PLATE+80,SPEED.ship,dt);
+    if (s.cx>=PX[4]+PLATE+80){ s.state='arriving'; s.heading=90; s.cx=shipDockCx(1)-SHIP_R; s.cy=SEA_FAR; }
+    shipRender(s, 0.25+sail);
+  }
+  for (const k in s.models) s.models[k].loads.forEach((b,i)=>b.setAttribute('opacity', i<s.load?1:0));
+}
+
+/* Camiones: 12 orientaciones prefabricadas (cada 30°) y giros en arco, sin saltos */
+const trucksA = [], trucksB = [];
+function spawnTruck(list, cx, cy, heading, state){
+  const models={}; HEADINGS.forEach(h=>{ models[h]=truck(scHead[h],gTrucks); models[h].g.setAttribute('display','none'); });
+  const e={models, shown:null, cx, cy, heading, state, turn:null, born:performance.now()}; list.push(e); truckRender(e); return e;
+}
+function setLoad(e,on){ for (const k in e.models) e.models[k].load.setAttribute('opacity', on?1:0); }
+function truckRender(e){
+  const h = ((Math.round(e.heading/30)*30)%360+360)%360;
+  if (e.shown!==h){ if (e.shown!==null) e.models[e.shown].g.setAttribute('display','none'); e.models[h].g.setAttribute('display',''); e.shown=h; }
+  sc.tr(e.models[h].g, e.cx, e.cy, 0);
+}
+const LANE_C = TRUCK_Y+0.65, RET_C = RET_Y+0.65, YARD_LANE_C = LANE_C+YARD_DY;     // centros de carril
+const A_TURN_C = A_TURN_X+0.95, B_ROAD_C = B_ROAD_X+0.95, YARD_TURN_C = YARD_TURN_X+0.95;
+const FAB_C = FAB_STOP+TL/2, ORI_C = ORI_STOP+TL/2, DES_C = DES_STOP+TL/2, YARD_C = YARD_STOP+TL/2;
+const loadX = t => t.cx-0.7;                              // centro del atado sobre el camión
+function updateTrucksA(dt){
+  // A: bodegas → planta (carga) → muelle de origen (descarga) → giro → carril de regreso al oeste
+  const bayFree = !trucksA.some(t=>['in','wait_load','loading'].includes(t.state));
+  if (bayFree && trucksA.length<5) spawnTruck(trucksA, A_WEST_X, LANE_C, 0, 'in');
+  const queue = trucksA.filter(t=>['to_port','wait_unload','unloading'].includes(t.state)).sort((a,b)=>a.born-b.born);
+  for (const t of trucksA){
+    if (t.turn){ if (updateTurn(t,dt)) t.state = t.state==='turn1' ? 'out_y' : 'back_x'; truckRender(t); continue; }
+    switch(t.state){
+      case 'in': if (drive(t,FAB_C,dt)) t.state='wait_load'; break;
+      case 'wait_load': if (!cranes.fab.busy){ t.state='loading'; cranes.fab.start({px:FAB_STACK.x,py:FAB_STACK.y,pz:FAB_STACK.z, dx:loadX(t),dy:t.cy,dz:LOADZ, onDrop:()=>{ setLoad(t,true); t.state='to_port'; }}); } break;
+      case 'loading': break;
+      case 'to_port': { const target = ORI_C - 8.5*queue.indexOf(t); drive(t,target,dt); if (t.cx===ORI_C) t.state='wait_unload'; break; }
+      case 'wait_unload': { const s=originShip(); if (s && s.load<SHIP_CAP && !cranes.pOri.busy){ const k=s.load, h=hatchWorld(s,k); t.state='unloading'; cranes.pOri.start({px:loadX(t),py:t.cy,pz:LOADZ, dx:h.x,dy:h.y,dz:h.z, onPick:()=>{ setLoad(t,false); t.state='out'; }, onDrop:()=>{ s.load=Math.min(SHIP_CAP,s.load+1); }}); } break; }
+      case 'unloading': break;
+      case 'out': if (drive(t,A_TURN_C-TURN_R,dt)){ t.state='turn1'; startTurn(t,A_TURN_C,LANE_C,90); } break;
+      case 'out_y': if (drive(t,RET_C-TURN_R,dt)){ t.state='turn2'; startTurn(t,A_TURN_C,RET_C,180); } break;
+      case 'back_x': if (drive(t,A_WEST_X-20,dt)) t.dead=true; break;
+    }
+    truckRender(t);
+  }
+  for (let i=trucksA.length-1;i>=0;i--) if (trucksA[i].dead){ for (const k in trucksA[i].models) trucksA[i].models[k].g.remove(); trucksA.splice(i,1); }
+}
+function updateTrucksB(dt){
+  // B: llegan por el carril delantero desde el este → giro → muelle de destino (carga) → ramal al acopio (descarga) → salida al este.
+  const s=destShip();
+  const incoming = ships.find(o=>o.state==='sailing' && o.load>0);
+  const expected = (s ? s.load : 0) + (incoming ? incoming.load : 0);
+  const waiting = trucksB.filter(t=>['in_x','turn_in1','in_y','turn_in2','in','wait_load','loading'].includes(t.state));
+  if (waiting.length < Math.min(2, expected) && trucksB.length<6) spawnTruck(trucksB, B_EAST_X, RET_C, 180, 'in_x');
+  const inQueue = trucksB.filter(t=>['in','wait_load','loading'].includes(t.state)).sort((a,b)=>a.born-b.born);
+  const queue = trucksB.filter(t=>['to_yard2','wait_unload','unloading'].includes(t.state)).sort((a,b)=>a.born-b.born);
+  for (const t of trucksB){
+    if (t.turn){ if (updateTurn(t,dt)) t.state = {turn_in1:'in_y', turn_in2:'in', turn_y1:'to_yard_y', turn_y2:'to_yard2'}[t.state]; truckRender(t); continue; }
+    switch(t.state){
+      case 'in_x': if (drive(t,B_ROAD_C+TURN_R,dt)){ t.state='turn_in1'; startTurn(t,B_ROAD_C,RET_C,270); } break;
+      case 'in_y': if (drive(t,LANE_C+TURN_R,dt)){ t.state='turn_in2'; startTurn(t,B_ROAD_C,LANE_C,0); } break;
+      case 'in': { const target = DES_C - 8.5*inQueue.indexOf(t); drive(t,target,dt); if (t.cx===DES_C) t.state='wait_load'; break; }
+      case 'wait_load': if (s && s.load>0 && !cranes.pDes.busy){ const k=s.load-1, h=hatchWorld(s,k); t.state='loading'; t.ship=s; cranes.pDes.start({px:h.x,py:h.y,pz:h.z, dx:loadX(t),dy:t.cy,dz:LOADZ, onPick:()=>{ s.load=k; }, onDrop:()=>{ setLoad(t,true); t.state='to_yard'; }}); } break;
+      case 'loading': break;
+      case 'to_yard': if (drive(t,YARD_TURN_C-TURN_R,dt)){ t.state='turn_y1'; startTurn(t,YARD_TURN_C,LANE_C,90); } break;
+      case 'to_yard_y': if (drive(t,YARD_LANE_C-TURN_R,dt)){ t.state='turn_y2'; startTurn(t,YARD_TURN_C,YARD_LANE_C,0); } break;
+      case 'to_yard2': { const target = YARD_C - 8.5*queue.indexOf(t); drive(t,target,dt); if (t.cx===YARD_C) t.state='wait_unload'; break; }
+      case 'wait_unload': if (!cranes.yard.busy){ t.state='unloading'; cranes.yard.start({px:loadX(t),py:t.cy,pz:LOADZ, dx:YARD_DROP.x,dy:YARD_DROP.y,dz:YARD_DROP.z, onPick:()=>{ setLoad(t,false); t.state='out'; }}); } break;
+      case 'unloading': break;
+      case 'out': if (drive(t,B_EAST_X,dt)) t.dead=true; break;
+    }
+    truckRender(t);
+  }
+  for (let i=trucksB.length-1;i>=0;i--) if (trucksB[i].dead){ for (const k in trucksB[i].models) trucksB[i].models[k].g.remove(); trucksB.splice(i,1); }
+}
+
+/* ---------- Rótulos con los datos del Excel ---------- */
+const names = ['Producción del riel','Origen · puerto','Traslado marítimo','Descarga','Centro de acopio'];
+const keys  = ['produccion','puerto','traslado','descarga','acopio'];
+PX.forEach((x0,i)=>{
+  const [tx,ty] = sc.P(x0+[7,8,SEA_W/2,16,12][i], i===4?YARD_DY:0, i===4?0:2.2);
+  const g=sc.el('g',{class:'lbl',transform:`translate(${tx},${ty})`}); g.dataset.tx=tx; g.dataset.ty=ty;
+  // todos los rótulos a la misma altura de pantalla; solo cambia el largo de la línea que señala
+  g.innerHTML = `<line class="lead" x1="0" y1="0" x2="0" y2="-34" stroke="rgba(255,255,255,.5)" stroke-width="1"/>
+    <text class="t" x="0" y="-62" text-anchor="middle">${names[i]}</text>
+    <text class="v" x="0" y="-38" text-anchor="middle"><tspan data-d="${keys[i]}">0</tspan><tspan class="u" dx="6">${UNIDAD}</tspan></text>`;
+});
+document.querySelectorAll('[data-d]').forEach(e=>{ e.textContent = DATOS[e.dataset.d].toLocaleString('es-MX'); });
+/* ---------- Proyectos (siempre visibles) y submenús de segmentos ---------- */
+{
+  const menu=document.getElementById('tmenu');
+  const pick=(id)=>{ try{ localStorage.setItem('segmento', id); }catch(e){} location.href = location.pathname + location.search; };
+  const closeAll=()=>menu.querySelectorAll('li.open').forEach(x=>x.classList.remove('open'));
+  TRAMOS.forEach(t=>{
+    const li=document.createElement('li'); const b=document.createElement('button'); b.type='button';
+    const segSel = t.segmentos.find(x=>x.id===SEG);
+    b.innerHTML = `<span>${t.nombre}${segSel ? ' · '+segSel.nombre.replace('Segmento ','Seg. ') : ''}</span>` + (t.segmentos.length ? `<i class="arrow">▾</i>` : '');
+    li.appendChild(b);
+    if (t.segmentos.length){
+      const ul=document.createElement('ul'); ul.className='tsub';
+      t.segmentos.forEach(sg=>{ const l2=document.createElement('li'); const b2=document.createElement('button'); b2.type='button'; b2.textContent=sg.nombre; if (sg.id===SEG) b2.classList.add('on'); b2.onclick=()=>pick(sg.id); l2.appendChild(b2); ul.appendChild(l2); });
+      li.appendChild(ul);
+      b.setAttribute('aria-haspopup','true');
+      b.onclick=(e)=>{ e.stopPropagation(); const was=li.classList.contains('open'); closeAll(); if (!was) li.classList.add('open'); };
+    } else b.onclick=()=>pick(t.id);
+    menu.appendChild(li);
+  });
+  document.addEventListener('click',e=>{ if (!menu.contains(e.target)) closeAll(); });
+  document.addEventListener('keydown',e=>{ if (e.key==='Escape') closeAll(); });
+}
+
+/* ---------- Iconos de las tarjetas ---------- */
+function icon(id, build){
+  const s = document.createElementNS(NS,'svg'); s.setAttribute('viewBox','0 0 120 80');
+  document.getElementById(id).appendChild(s);
+  const m = makeScene(s, 8, 60, 26);
+  m.poly([m.P(0,0,0),m.P(6,0,0),m.P(6,5,0),m.P(0,5,0)],'rgba(127,140,160,.22)');
+  build(m);
+}
+icon('ico1', m=>{ m.box(0.4,0.6,0,2.6,3.4,1.6,C.hall); m.box(0.7,0.9,1.6,0.5,0.5,1.4,C.chimney); m.box(3.3,1.6,0,2.2,0.9,0.4,C.steel); m.box(3.4,1.9,0.4,1.9,0.25,0.25,C.hot); });
+icon('ico2', m=>{ m.box(0,0,-0.1,6,2,0.1,C.water,null,{t:0.15}); m.box(0.6,2.6,0,2.4,0.9,0.5,C.rail); m.box(3.6,1.6,0,0.3,0.3,2.4,C.crane); m.box(3.6,4.2,0,0.3,0.3,2.4,C.crane); m.box(3.5,0.4,2.4,0.5,4.1,0.3,C.crane); });
+icon('ico3', m=>{ m.box(0,0,-0.1,6,5,0.1,C.water,null,{t:0.15}); m.box(0.8,1.6,0.1,4.2,1.6,0.7,C.hull,null,{t:0.35}); m.box(1.0,1.9,0.8,0.9,1.0,0.8,C.house); m.box(1.2,2.2,1.6,0.3,0.3,0.4,C.funnel); });
+icon('ico4', m=>{ m.box(0,0,-0.1,6,2,0.1,C.water,null,{t:0.15}); m.box(0.5,3.4,0,2.6,0.8,0.3,'#6B7684'); m.box(2.6,3.4,0,0.7,0.8,0.8,C.truck); m.box(4.2,1.6,0,0.3,0.3,2.4,C.crane); m.box(4.2,4.2,0,0.3,0.3,2.4,C.crane); m.box(4.1,0.4,2.4,0.5,4.1,0.3,C.crane); });
+icon('ico5', m=>{ for (let i=0;i<3;i++) m.box(0.6,0.6+i*1.3,0,4.2,0.7,0.6,C.rail); m.box(2.9,0.2,0,0.3,0.3,2.4,C.crane); m.box(2.9,4.2,0,0.3,0.3,2.4,C.crane); m.box(2.8,0.2,2.4,0.5,4.3,0.3,C.crane); });
+
+/* ---------- Bucle ---------- */
+let last = performance.now();
+function loop(now){
+  const dt = Math.min(0.05, (now-last)/1000); last = now;
+  updaters.forEach(u=>u(now));
+  ships.forEach(s=>updateShip(s, dt, now));
+  updateTrucksA(dt); updateTrucksB(dt);
+  Object.values(cranes).forEach(c=>c.update(dt));
+  if (!REDUCE) requestAnimationFrame(loop);
+}
+// Fotograma inicial con actividad ya en marcha:
+// buque 1 cargado y pasada la mitad de la travesía; buque 2 entrando por mar al puerto de origen
+ships[0].heading=0; ships[0].cx = PX[2]+11+SHIP_LEN/2; ships[0].cy=SHIP_CY; ships[0].state='sailing'; ships[0].load=SHIP_CAP;
+ships[1].heading=90; ships[1].cx = shipDockCx(1)-SHIP_R; ships[1].cy = SHIP_CY-SHIP_R-10; ships[1].state='arriving';
+spawnTruck(trucksA, FAB_C, LANE_C, 0, 'wait_load');
+const t2 = spawnTruck(trucksA, PX[0]+22, LANE_C, 0, 'to_port'); setLoad(t2,true); t2.born-=1000;
+const b1 = spawnTruck(trucksB, DES_C, LANE_C, 0, 'wait_load'); b1.born-=2000;
+spawnTruck(trucksB, B_ROAD_C+30, RET_C, 180, 'in_x');
+requestAnimationFrame(loop);
+
+/* ---------- Encuadre: la cadena completa cabe en pantalla y el paisaje rellena el resto ---------- */
+function fit(){
+  const W=innerWidth, H=innerHeight-MENU_H;
+  const pts=[sc.P(PX[0]-12,-8,9), sc.P(PX[0]-12,24,0), sc.P(PX[4]+PLATE+4,-8,9), sc.P(PX[4]+PLATE+4,18+YARD_DY,0)];
+  let x0=Math.min(...pts.map(p=>p[0])), x1=Math.max(...pts.map(p=>p[0]));
+  let y0=Math.min(...pts.map(p=>p[1]))-10, y1=Math.max(...pts.map(p=>p[1]));
+  const padT = Math.min(90, H*0.12), padB = Math.min(100, H*0.14), padX = 24;   // título arriba, tarjetas abajo
+  let k=Math.max((x1-x0)/(W-2*padX),(y1-y0)/(H-padT-padB));
+  y0 -= 130*k;                                                                     // sitio para los rótulos encima de las placas
+  k=Math.max((x1-x0)/(W-2*padX),(y1-y0)/(H-padT-padB));                            // unidades svg por px
+  const vw=W*k, vh=H*k;
+  const cx=(x0+x1)/2, cy=(y0+y1)/2 + (padT-padB)/2*k;
+  svgAll.setAttribute('viewBox', `${cx-vw/2} ${cy-vh/2} ${vw} ${vh}`);
+  document.documentElement.style.setProperty('--menu-h', MENU_H+'px');
+  // los rótulos se escalan para conservar su tamaño en píxeles
+  const lbls=[...document.querySelectorAll('.lbl')];
+  const topY = Math.min(...lbls.map(g=>+g.dataset.ty)) - 92*k;                   // altura común (en unidades svg)
+  lbls.forEach(g=>{
+    g.setAttribute('transform',`translate(${g.dataset.tx},${g.dataset.ty}) scale(${k})`);
+    const h = (+g.dataset.ty - topY)/k;                                         // largo de la línea en px
+    g.querySelector('.lead').setAttribute('y2', -h);
+    g.querySelector('.t').setAttribute('y', -h-28);
+    g.querySelector('.v').setAttribute('y', -h-4);
+  });
+}
+fit(); addEventListener('resize', fit);
+</script>
+
+</body>
+</html>
