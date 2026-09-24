@@ -454,7 +454,8 @@ const XC = PX[1]+PLATE+4.5, XM = PX[3]-3;                                   // c
 const chinaEdge  = y => XC - DEPTH_X*(y-QY);                              // x del borde chino para cada y
 const mexicoEdge = y => XM - DEPTH_X*(y-QY);
 const inChina  = (x,y)=> x <= chinaEdge(y) && y >= COAST_Y;
-const inMexico = (x,y)=> x >= mexicoEdge(y) && y >= QY;
+const MX_STEP = PX[3]+PLATE+6;                                            // pasado el puerto la costa retrocede: el acopio queda en tierra
+const inMexico = (x,y)=> x >= mexicoEdge(y) && y >= (x>=MX_STEP ? COAST_Y : QY);
 const inChannel = (x,y)=> (x>=PX[1]-1 && x<=XC+6 && y<QY) || (x>=PX[3]-1 && y<QY);
 {
   sc.box(WX0,WY0,0,WX1-WX0,WY1-WY0,0.25,C.water,null,{t:0.12,l:-0.2,r:-0.4});                       // océano (color plano)
@@ -464,7 +465,7 @@ const inChannel = (x,y)=> (x>=PX[1]-1 && x<=XC+6 && y<QY) || (x>=PX[3]-1 && y<QY
   const chinaPts = o => [[WX0,COAST_Y-o],[chinaEdge(COAST_Y)+o,COAST_Y-o],[chinaEdge(WY1)+o,WY1],[WX0,WY1]];
   landPoly(chinaPts(0.6),0.2,SAND); landPoly(chinaPts(0),0.32,LAND);
   // México: empieza en y = QY (la costa queda navegable) y su borde hacia el estrecho también es vertical
-  const mexPts = o => [[mexicoEdge(QY)-o,QY-o],[WX1,QY-o],[WX1,WY1],[mexicoEdge(WY1)-o,WY1]];
+  const mexPts = o => [[mexicoEdge(QY)-o,QY-o],[MX_STEP-o,QY-o],[MX_STEP-o,COAST_Y-o],[WX1,COAST_Y-o],[WX1,WY1],[mexicoEdge(WY1)-o,WY1]];
   landPoly(mexPts(0.6),0.2,SAND); landPoly(mexPts(0),0.32,LAND);
   // bocana del puerto chino (agua dentro del muelle) e islotes
   const chan=(x0,y0,x1,y1)=>{ const w=water(sc,x0,y0,x1-x0,y1-y0,1.0,true); updaters.push(now=>sc.tr(w.waves,0,((now/1000)*0.4)%1,0)); };
@@ -476,13 +477,11 @@ const inChannel = (x,y)=> (x>=PX[1]-1 && x<=XC+6 && y<QY) || (x>=PX[3]-1 && y<QY
 plateFactory(PX[0]);  gapRoad(PX[0]+PLATE, PX[1]-PX[0]-PLATE);
 platePortBase(PX[1]); gapWater(PX[1]+PLATE, PD);
 plateSea(PX[2]);      gapWater(PX[2]+PLATE, PD);
-platePortBase(PX[3]); gapRoad(PX[3]+PLATE, PX[4]-6-(PX[3]+PLATE));
-const YARD_DY = 22;                                       // el acopio queda tierra adentro, lejos de la costa
-const scYard = makeScene(svgAll, S, OX0, OY0, (x,y)=>[x, y+YARD_DY]);
-plateYard(PX[4], scYard);
+platePortBase(PX[3]); gapRoad(PX[3]+PLATE, PX[4]-(PX[3]+PLATE));
+plateYard(PX[4], sc);                                     // el acopio va al nivel de la descarga: misma carretera, misma fila
 
 /* ---------- Complementos del paisaje ---------- */
-const A_WEST_X = PX[0]-90, A_TURN_X = PX[1]+17.0, B_ROAD_X = PX[3]+1.2, B_EAST_X = PX[4]+PLATE+60, YARD_TURN_X = PX[4]-7.9;
+const A_WEST_X = PX[0]-90, A_TURN_X = PX[1]+17.0, B_ROAD_X = PX[3]+1.2, B_EAST_X = PX[4]+PLATE+60;
 const RET_Y = 14.8;                                    // carril de regreso (delante de las placas)
 {
   const roadY=(x,y0,y1)=>{ sc.box(x-1.2,y0,Z0,4.3,2.6,0.03,C.road); sc.box(x-1.2,y1-2.6,Z0,4.3,2.6,0.03,C.road); sc.box(x,y0,Z0,1.9,y1-y0,0.03,C.road); for (let y=y0+0.5;y<y1-0.8;y+=1.6) sc.line(sc.P(x+0.95,y,Z0+0.04),sc.P(x+0.95,y+0.8,Z0+0.04),'#C9CFD6',1.2); };
@@ -494,9 +493,7 @@ const RET_Y = 14.8;                                    // carril de regreso (del
   // México: llegada por el carril delantero desde el este, salida por la carretera principal hacia el este
   roadY(B_ROAD_X, ROAD_Y, RET_Y+1.9);
   road(sc, sc.g(), B_ROAD_X, B_EAST_X+40, RET_Y-0.3, 1.9);
-  roadY(YARD_TURN_X, ROAD_Y, ROAD_Y+YARD_DY+1.6);                       // subida al centro de acopio
-  road(sc, sc.g(), YARD_TURN_X, PX[4], ROAD_Y+YARD_DY, PD-ROAD_Y);
-  road(sc, sc.g(), PX[4]+PLATE, B_EAST_X+40, ROAD_Y+YARD_DY, PD-ROAD_Y);
+  road(sc, sc.g(), PX[4]+PLATE, B_EAST_X+40, ROAD_Y, PD-ROAD_Y);        // salida al este, pasado el acopio
   // horno de recalentamiento junto al galpón, con resplandor y chimenea
   const fx=PX[0]-7.5, fy=1.2; const gH=sc.g();
   sc.box(fx,fy,0.32,6,5.2,3.0,'#5C5048',gH,{t:0.2});
@@ -581,11 +578,11 @@ const cranes = {
   fab:  new Crane(6.3, 10.8, 5.2, 6.3, 13.0, PX[0]+18.5, 8.6),
   pOri: new Crane(6.8, 10.8, 6.2, 3.0, 13.0, PX[1]+12.35, 8.0),
   pDes: new Crane(6.8, 10.8, 6.2, 3.0, 13.0, PX[3]+12.35, 8.0),
-  yard: new Crane(5.2+YARD_DY, 11.6+YARD_DY, 5.6, 5.2+YARD_DY, 13.0+YARD_DY, PX[4]+12.9, 7.5+YARD_DY),
+  yard: new Crane(5.2, 11.6, 5.6, 5.2, 13.0, PX[4]+12.9, 7.5),
 };
 const FAB_STACK = {x:PX[0]+18.5, y:8.6, z:Z0+0.12+3*0.34+0.55};
 const FAB_STOP = PX[0]+9.0, ORI_STOP = PX[1]+9.45, DES_STOP = PX[3]+9.45, YARD_STOP = PX[4]+10.0;
-const YARD_DROP = {x:PX[4]+12.9, y:7.6+YARD_DY, z:Z0+0.1+3*0.34+0.55};
+const YARD_DROP = {x:PX[4]+12.9, y:7.6, z:Z0+0.1+3*0.34+0.55};
 const bundleCenter = X => X+2.9;          // centro del atado sobre un camión con origen X
 const hatchWorld = (sh,k) => ({x:sh.cx-SHIP_LEN/2+sh.o.hatches[k].x, y:sh.cy-1.6+sh.o.hatches[k].y, z:0.25+sh.o.deckZ+0.55});
 
@@ -620,28 +617,28 @@ const originShip = ()=> ships.find(s=>s.state==='docked_o');
 const destShip   = ()=> ships.find(s=>s.state==='docked_d');
 function updateShip(s, dt, now){
   const bob = 0.03*Math.sin(now/1000*2), sail = 0.08*Math.sin(now/1000*5);
-  if (s.turn){ if (updateTurn(s,dt)) s.state='docked_o'; shipRender(s, 0.25+sail); return; }
+  if (s.turn){ if (updateTurn(s,dt)) s.state=s.turnNext||'docked_o'; shipRender(s, 0.25+sail); return; }
   if (s.state==='arriving'){                    // entra por mar (rumbo +y) y vira en arco hasta quedar de costado en el muelle
-    const free = !ships.some(o=>o!==s && (o.state==='docked_o' || o.turn || (o.state==='arriving' && o.cy>s.cy)));
+    const free = !ships.some(o=>o!==s && (o.state==='docked_o' || (o.turn && o.turnNext==='docked_o') || (o.state==='arriving' && o.cy>s.cy)));
     const target = free ? SHIP_CY-SHIP_R : SHIP_CY-SHIP_R-SHIP_LEN-6;
     s.cy=step(s.cy,target,SPEED.ship,dt);
-    if (free && s.cy===target) startTurn(s, shipDockCx(1)-SHIP_R, SHIP_CY, 0, SHIP_R, (Math.PI/2*SHIP_R)/SPEED.ship);
+    if (free && s.cy===target){ s.turnNext='docked_o'; startTurn(s, shipDockCx(1)-SHIP_R, SHIP_CY, 0, SHIP_R, (Math.PI/2*SHIP_R)/SPEED.ship); }
     shipRender(s, 0.25+sail);
   }
   else if (s.state==='docked_o'){ if (s.load>=SHIP_CAP && !cranes.pOri.busy) s.state='sailing'; shipRender(s, 0.25+bob); }
   else if (s.state==='sailing'){
-    const free = !ships.some(o=>o!==s && (o.state==='docked_d' || (o.state==='sailing' && o.cx>s.cx)));
+    const free = !ships.some(o=>o!==s && (o.state==='docked_d' || o.state==='leaving' || (o.state==='sailing' && o.cx>s.cx)));
     const target = free ? shipDockCx(3) : shipDockCx(3)-SHIP_LEN-8;
     s.cx=step(s.cx,target,SPEED.ship,dt); if (s.cx===shipDockCx(3)) s.state='docked_d';
     shipRender(s, 0.25+sail);
   }
   else if (s.state==='docked_d'){
-    if (s.load===0 && !cranes.pDes.busy && !trucksB.some(t=>t.state==='loading' && t.ship===s)) s.state='leaving';
+    if (s.load===0 && !cranes.pDes.busy && !trucksB.some(t=>t.state==='loading' && t.ship===s)){ s.state='leaving'; s.turnNext='leaving_y'; startTurn(s, s.cx+SHIP_R, s.cy, 270, SHIP_R, (Math.PI/2*SHIP_R)/SPEED.ship); }
     shipRender(s, 0.25+bob);
   }
-  else if (s.state==='leaving'){                // sigue bordeando la costa mexicana hasta salir de pantalla
-    s.cx=step(s.cx,PX[4]+PLATE+80,SPEED.ship,dt);
-    if (s.cx>=PX[4]+PLATE+80){ s.state='arriving'; s.heading=90; s.cx=shipDockCx(1)-SHIP_R; s.cy=SEA_FAR; }
+  else if (s.state==='leaving' || s.state==='leaving_y'){   // saca la proa al mar y se aleja mar adentro
+    s.cy=step(s.cy,SEA_FAR,SPEED.ship,dt);
+    if (s.cy===SEA_FAR){ s.state='arriving'; s.heading=90; s.cx=shipDockCx(1)-SHIP_R; s.turnNext='docked_o'; }
     shipRender(s, 0.25+sail);
   }
   for (const k in s.models) s.models[k].loads.forEach((b,i)=>b.setAttribute('opacity', i<s.load?1:0));
@@ -659,8 +656,8 @@ function truckRender(e){
   if (e.shown!==h){ if (e.shown!==null) e.models[e.shown].g.setAttribute('display','none'); e.models[h].g.setAttribute('display',''); e.shown=h; }
   sc.tr(e.models[h].g, e.cx, e.cy, 0);
 }
-const LANE_C = TRUCK_Y+0.65, RET_C = RET_Y+0.65, YARD_LANE_C = LANE_C+YARD_DY;     // centros de carril
-const A_TURN_C = A_TURN_X+0.95, B_ROAD_C = B_ROAD_X+0.95, YARD_TURN_C = YARD_TURN_X+0.95;
+const LANE_C = TRUCK_Y+0.65, RET_C = RET_Y+0.65;                                   // centros de carril
+const A_TURN_C = A_TURN_X+0.95, B_ROAD_C = B_ROAD_X+0.95;
 const FAB_C = FAB_STOP+TL/2, ORI_C = ORI_STOP+TL/2, DES_C = DES_STOP+TL/2, YARD_C = YARD_STOP+TL/2;
 const loadX = t => t.cx-0.7;                              // centro del atado sobre el camión
 function updateTrucksA(dt){
@@ -686,24 +683,22 @@ function updateTrucksA(dt){
   for (let i=trucksA.length-1;i>=0;i--) if (trucksA[i].dead){ for (const k in trucksA[i].models) trucksA[i].models[k].g.remove(); trucksA.splice(i,1); }
 }
 function updateTrucksB(dt){
-  // B: llegan por el carril delantero desde el este → giro → muelle de destino (carga) → ramal al acopio (descarga) → salida al este.
+  // B: llegan por el carril delantero desde el este → giro → muelle de destino (carga) → acopio, en la misma carretera (descarga) → salida al este.
   const s=destShip();
   const incoming = ships.find(o=>o.state==='sailing' && o.load>0);
   const expected = (s ? s.load : 0) + (incoming ? incoming.load : 0);
   const waiting = trucksB.filter(t=>['in_x','turn_in1','in_y','turn_in2','in','wait_load','loading'].includes(t.state));
-  if (waiting.length < Math.min(2, expected) && trucksB.length<6) spawnTruck(trucksB, B_EAST_X, RET_C, 180, 'in_x');
+  if (waiting.length < Math.min(2, expected) && trucksB.length<2) spawnTruck(trucksB, B_EAST_X, RET_C, 180, 'in_x');
   const inQueue = trucksB.filter(t=>['in','wait_load','loading'].includes(t.state)).sort((a,b)=>a.born-b.born);
   const queue = trucksB.filter(t=>['to_yard2','wait_unload','unloading'].includes(t.state)).sort((a,b)=>a.born-b.born);
   for (const t of trucksB){
-    if (t.turn){ if (updateTurn(t,dt)) t.state = {turn_in1:'in_y', turn_in2:'in', turn_y1:'to_yard_y', turn_y2:'to_yard2'}[t.state]; truckRender(t); continue; }
+    if (t.turn){ if (updateTurn(t,dt)) t.state = {turn_in1:'in_y', turn_in2:'in'}[t.state]; truckRender(t); continue; }
     switch(t.state){
       case 'in_x': if (drive(t,B_ROAD_C+TURN_R,dt)){ t.state='turn_in1'; startTurn(t,B_ROAD_C,RET_C,270); } break;
       case 'in_y': if (drive(t,LANE_C+TURN_R,dt)){ t.state='turn_in2'; startTurn(t,B_ROAD_C,LANE_C,0); } break;
       case 'in': { const target = DES_C - 8.5*inQueue.indexOf(t); drive(t,target,dt); if (t.cx===DES_C) t.state='wait_load'; break; }
-      case 'wait_load': if (s && s.load>0 && !cranes.pDes.busy){ const k=s.load-1, h=hatchWorld(s,k); t.state='loading'; t.ship=s; cranes.pDes.start({px:h.x,py:h.y,pz:h.z, dx:loadX(t),dy:t.cy,dz:LOADZ, onPick:()=>{ s.load=k; }, onDrop:()=>{ setLoad(t,true); t.state='to_yard'; }}); } break;
+      case 'wait_load': if (s && s.load>0 && !cranes.pDes.busy){ const k=s.load-1, h=hatchWorld(s,k); t.state='loading'; t.ship=s; cranes.pDes.start({px:h.x,py:h.y,pz:h.z, dx:loadX(t),dy:t.cy,dz:LOADZ, onPick:()=>{ s.load=k; }, onDrop:()=>{ setLoad(t,true); t.state='to_yard2'; }}); } break;
       case 'loading': break;
-      case 'to_yard': if (drive(t,YARD_TURN_C-TURN_R,dt)){ t.state='turn_y1'; startTurn(t,YARD_TURN_C,LANE_C,90); } break;
-      case 'to_yard_y': if (drive(t,YARD_LANE_C-TURN_R,dt)){ t.state='turn_y2'; startTurn(t,YARD_TURN_C,YARD_LANE_C,0); } break;
       case 'to_yard2': { const target = YARD_C - 8.5*queue.indexOf(t); drive(t,target,dt); if (t.cx===YARD_C) t.state='wait_unload'; break; }
       case 'wait_unload': if (!cranes.yard.busy){ t.state='unloading'; cranes.yard.start({px:loadX(t),py:t.cy,pz:LOADZ, dx:YARD_DROP.x,dy:YARD_DROP.y,dz:YARD_DROP.z, onPick:()=>{ setLoad(t,false); t.state='out'; }}); } break;
       case 'unloading': break;
@@ -718,7 +713,7 @@ function updateTrucksB(dt){
 const names = ['Producción del riel','Origen · puerto','Traslado marítimo','Descarga','Centro de acopio'];
 const keys  = ['produccion','puerto','traslado','descarga','acopio'];
 PX.forEach((x0,i)=>{
-  const [tx,ty] = sc.P(x0+[7,8,SEA_W/2,16,12][i], i===4?YARD_DY:0, i===4?0:2.2);
+  const [tx,ty] = sc.P(x0+[7,8,SEA_W/2,16,12][i], 0, 2.2);
   const g=sc.el('g',{class:'lbl',transform:`translate(${tx},${ty})`}); g.dataset.tx=tx; g.dataset.ty=ty;
   // todos los rótulos a la misma altura de pantalla; solo cambia el largo de la línea que señala
   g.innerHTML = `<line class="lead" x1="0" y1="0" x2="0" y2="-34" stroke="rgba(255,255,255,.5)" stroke-width="1"/>
@@ -780,13 +775,13 @@ ships[1].heading=90; ships[1].cx = shipDockCx(1)-SHIP_R; ships[1].cy = SHIP_CY-S
 spawnTruck(trucksA, FAB_C, LANE_C, 0, 'wait_load');
 const t2 = spawnTruck(trucksA, PX[0]+22, LANE_C, 0, 'to_port'); setLoad(t2,true); t2.born-=1000;
 const b1 = spawnTruck(trucksB, DES_C, LANE_C, 0, 'wait_load'); b1.born-=2000;
-spawnTruck(trucksB, B_ROAD_C+30, RET_C, 180, 'in_x');
+spawnTruck(trucksB, B_ROAD_C+40, RET_C, 180, 'in_x');
 requestAnimationFrame(loop);
 
 /* ---------- Encuadre: la cadena completa cabe en pantalla y el paisaje rellena el resto ---------- */
 function fit(){
   const W=innerWidth, H=innerHeight-MENU_H;
-  const pts=[sc.P(PX[0]-12,-8,9), sc.P(PX[0]-12,24,0), sc.P(PX[4]+PLATE+4,-8,9), sc.P(PX[4]+PLATE+4,18+YARD_DY,0)];
+  const pts=[sc.P(PX[0]-12,-8,9), sc.P(PX[0]-12,24,0), sc.P(PX[4]+PLATE+4,-8,9), sc.P(PX[4]+PLATE+4,18,0)];
   let x0=Math.min(...pts.map(p=>p[0])), x1=Math.max(...pts.map(p=>p[0]));
   let y0=Math.min(...pts.map(p=>p[1]))-10, y1=Math.max(...pts.map(p=>p[1]));
   const padT = Math.min(90, H*0.12), padB = Math.min(100, H*0.14), padX = 24;   // título arriba, tarjetas abajo
