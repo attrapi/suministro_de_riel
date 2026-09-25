@@ -43,9 +43,10 @@
   .menu button:focus-visible{outline:2px solid #FF9A4D;outline-offset:2px}
   .stage{position:fixed;left:0;right:0;top:var(--menu-h);bottom:0;background:#0F1A2A}
   .stage svg{width:100%;height:100%;display:block}
-  header{position:fixed;left:24px;top:calc(var(--menu-h) + 14px);z-index:4;pointer-events:none}
-  .hrow{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
-  .tramo{display:flex;align-items:center;gap:8px;pointer-events:auto}
+  header{position:fixed;left:16px;right:16px;top:calc(var(--menu-h) + 14px);z-index:4;pointer-events:none;display:flex;align-items:flex-start;gap:24px}
+  .brand{flex:0 0 auto}
+  .hstack{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:8px;pointer-events:auto}
+  .tramo{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .tramo[hidden]{display:none}   /* display:flex le gana al [hidden] del navegador */
   .tlabel{font:11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.6);margin-right:4px}
   .tmenu{list-style:none;margin:0;padding:0;display:flex;gap:6px}
@@ -63,7 +64,7 @@
   .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.55);margin:0 0 4px}
   h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,3.4vw,44px);line-height:.95;letter-spacing:-.01em;margin:0;text-wrap:balance;text-shadow:0 2px 12px rgba(0,0,0,.5)}
   h1 span{color:#FF9A4D}
-  .chain{position:fixed;left:16px;right:16px;top:calc(var(--menu-h) + 96px);z-index:2;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+  .chain{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
   .st{background:rgba(10,15,22,.72);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:8px 12px;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:10px;align-items:center}
   .st .ico{grid-row:1/3;width:50px;height:36px}
   .st .ico svg{width:100%;height:100%;overflow:visible}
@@ -83,7 +84,9 @@
   .lbl .g{font:700 34px var(--display);letter-spacing:.3em;fill:rgba(255,255,255,.28)}
   .lbl text{paint-order:stroke;stroke:rgba(8,14,22,.85);stroke-width:3px;stroke-linejoin:round}
   .note{position:fixed;left:24px;top:calc(var(--menu-h) + 76px);z-index:2;font:11px/1.5 var(--mono);color:rgba(255,255,255,.55);max-width:44ch}
-  @media (max-width:900px){ .chain{grid-template-columns:repeat(5,1fr);gap:4px} .st{padding:6px 8px} .st .ico{display:none} .st .cnt{grid-column:1;font-size:18px} .note{display:none} }
+  @media (max-width:1280px){ .st{padding:8px 10px} .st .ico{width:38px;height:28px} }
+  @media (max-width:1040px){ header{flex-wrap:wrap;gap:12px} .brand{flex:1 1 100%} .st .ico{display:none} }
+  @media (max-width:900px){ .chain{gap:4px} .st{padding:6px 8px} .st .cnt{grid-column:1;font-size:18px} .note{display:none} }
 
   /* Estilo Claro: tinta oscura sobre fondo claro, sin perder la barra de menú del sitio */
   :root[data-tema="claro"]{ --ink-light:#16202B; --accent-light:#B4521A; }
@@ -138,22 +141,24 @@
   <svg id="scene" viewBox="0 0 1560 950" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Maqueta isométrica de la cadena de suministro del riel: producción, puerto de origen, travesía, descarga y centro de acopio"></svg>
 </div>
 <header>
-  <p class="eyebrow">ATTRAPI</p>
-  <div class="hrow">
+  <div class="brand">
+    <p class="eyebrow">ATTRAPI</p>
     <h1 id="h1">Adquisición <span>de riel</span></h1>
+  </div>
+  <div class="hstack">
+    <div class="chain">
+      <div class="st"><div class="ico" id="ico1"></div><div class="num">Contratado</div><div class="cnt"><span data-d="contratado">0</span> <small>rieles</small></div></div>
+      <div class="st"><div class="ico" id="ico2"></div><div class="num">En proceso</div><div class="cnt"><span data-d="proceso">0</span> <small>rieles</small></div></div>
+      <div class="st"><div class="ico" id="ico3"></div><div class="num">Entregado</div><div class="cnt"><span data-d="entregado">0</span> <small>rieles</small></div></div>
+      <div class="st"><div class="ico" id="ico4"></div><div class="num">Anticipo</div><div class="cnt"><span data-d="anticipo">0</span> <small>rieles</small></div></div>
+      <button type="button" class="st act" id="btnProyectos" aria-expanded="false" aria-controls="tramo"><span class="ico" id="ico5"></span><span class="num">Proyectos</span><span class="cnt"><span id="nTramos">0</span> <small>proyectos</small><i class="arrow">&#9662;</i></span></button>
+    </div>
     <div class="tramo" id="tramo" hidden>
       <span class="tlabel">Proyectos</span>
       <ul class="tmenu" id="tmenu"></ul>
     </div>
   </div>
 </header>
-<div class="chain">
-  <div class="st"><div class="ico" id="ico1"></div><div class="num">Contratado</div><div class="cnt"><span data-d="contratado">0</span> <small>rieles</small></div></div>
-  <div class="st"><div class="ico" id="ico2"></div><div class="num">En proceso</div><div class="cnt"><span data-d="proceso">0</span> <small>rieles</small></div></div>
-  <div class="st"><div class="ico" id="ico3"></div><div class="num">Entregado</div><div class="cnt"><span data-d="entregado">0</span> <small>rieles</small></div></div>
-  <div class="st"><div class="ico" id="ico4"></div><div class="num">Anticipo</div><div class="cnt"><span data-d="anticipo">0</span> <small>rieles</small></div></div>
-  <button type="button" class="st act" id="btnProyectos" aria-expanded="false" aria-controls="tramo"><span class="ico" id="ico5"></span><span class="num">Proyectos</span><span class="cnt"><span id="nTramos">0</span> <small>proyectos</small><i class="arrow">&#9662;</i></span></button>
-</div>
 
 <script>
 /* ============================================================
@@ -861,13 +866,12 @@ requestAnimationFrame(loop);
 const GRASS_Y = 20;                            // hasta dónde llega el pasto visible por delante de las placas
 function fit(){
   const W=innerWidth, H=innerHeight-MENU_H;
-  const hdr=document.querySelector('header'), chain=document.querySelector('.chain');
-  chain.style.top = (hdr.offsetTop + hdr.offsetHeight + 14) + 'px';               // la tira de KPIs va justo debajo del título
+  const hdr=document.querySelector('header');
   const pts=[sc.P(PX[0]-12,-8,9), sc.P(PX[0]-12,24,0), sc.P(PX[4]+PLATE+4,-8,9), sc.P(PX[4]+PLATE+4,18,0)];
   let x0=Math.min(...pts.map(p=>p[0])), x1=Math.max(...pts.map(p=>p[0]));
   let y0=Math.min(...pts.map(p=>p[1]))-10, y1=Math.max(...pts.map(p=>p[1]));
   const padB = 14, padX = 24;                                                     // abajo, apenas una franja de pasto
-  const padT = Math.max(120, Math.min(H-padB-120, chain.offsetTop + chain.offsetHeight + 16 - MENU_H));
+  const padT = Math.max(120, Math.min(H-padB-120, hdr.offsetTop + hdr.offsetHeight + 16 - MENU_H));
   let k=Math.max((x1-x0)/(W-2*padX),(y1-y0)/(H-padT-padB));
   y0 -= 130*k;                                                                     // sitio para los rótulos encima de las placas
   k=Math.max((x1-x0)/(W-2*padX),(y1-y0)/(H-padT-padB));                            // unidades svg por px
