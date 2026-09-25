@@ -65,7 +65,10 @@
   .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.55);margin:0 0 4px}
   h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,3.4vw,44px);line-height:.95;letter-spacing:-.01em;margin:0;text-wrap:balance;text-shadow:0 2px 12px rgba(0,0,0,.5)}
   h1 span{color:#FF9A4D}
-  .fase{display:inline-block;font:500 11px var(--mono);letter-spacing:.18em;text-transform:uppercase;color:#0B1017;background:#FF9A4D;border-radius:4px;padding:4px 11px;margin:8px 0 0}
+  .fase{display:inline-flex;align-items:center;gap:9px;font:500 11px var(--mono);letter-spacing:.18em;text-transform:uppercase;color:#0B1017;background:#FF9A4D;border-radius:4px;padding:3px 4px 3px 11px;margin:8px 0 0;pointer-events:auto}
+  .fase button{font:600 13px var(--body);line-height:1;color:inherit;background:rgba(11,16,23,.16);border:0;border-radius:3px;padding:3px 8px 4px;cursor:pointer}
+  .fase button:hover{background:rgba(11,16,23,.32)}
+  .fase button:focus-visible{outline:2px solid currentColor;outline-offset:1px}
   .st{background:rgba(10,15,22,.72);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:8px 12px;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:10px;align-items:center}
   .st .ico{grid-row:1/3;width:50px;height:36px}
   .st .ico svg{width:100%;height:100%;overflow:visible}
@@ -89,6 +92,8 @@
   :root[data-tema="claro"] h1{color:var(--ink-light);text-shadow:0 1px 8px rgba(255,255,255,.65)}
   :root[data-tema="claro"] h1 span{color:var(--accent-light)}
   :root[data-tema="claro"] .fase{color:#FFF;background:var(--accent-light)}
+  :root[data-tema="claro"] .fase button{background:rgba(255,255,255,.24)}
+  :root[data-tema="claro"] .fase button:hover{background:rgba(255,255,255,.42)}
   :root[data-tema="claro"] .tmenu button{color:var(--ink-light);background:rgba(255,255,255,.86);border-color:rgba(22,32,43,.22)}
   :root[data-tema="claro"] .tmenu button:hover,
   :root[data-tema="claro"] .tmenu li.open>button{border-color:rgba(22,32,43,.5)}
@@ -135,7 +140,7 @@
   <div class="brand">
     <p class="eyebrow">ATTRAPI</p>
     <h1 id="h1">Adquisición <span>de riel</span></h1>
-    <div class="fase">Fase I</div>
+    <div class="fase"><span id="faseTxt">Fase I</span><button type="button" id="faseNext">&rarr;</button></div>
   </div>
   <div class="hstack">
     <div class="chain">
@@ -165,14 +170,29 @@ const TRAMOS = [
 // contratado/proceso/entregado/pendiente (tm)
 // y monto pendiente (millones de pesos)             → tarjetas de arriba; son cifras aparte
 // un valor de texto ('88K') se imprime tal cual; uno numérico lleva separador de miles
-const DATOS_SEG = {
-  'qro-ira': { produccion: 0, puerto: 0, traslado: 0, descarga: 0, acopio: 13023, contratado: '88K', proceso: 13023, entregado: 13023, pendiente: 74977, monto: 245 },
-  'sal-nl':  { produccion: 0, puerto: 0, traslado: 0, descarga: 0, acopio:  9480, contratado: '62K', proceso:  9480, entregado:  9480, pendiente: 52520, monto: 318 },
+const FASES = [
+  { id:'f1', nombre:'Fase I'  },
+  { id:'f2', nombre:'Fase II' },
+];
+// Fase II sigue sin cifras: el guión se imprime tal cual hasta que lleguen
+const SIN_DATOS = { produccion:'—', puerto:'—', traslado:'—', descarga:'—', acopio:'—', contratado:'—', proceso:'—', entregado:'—', pendiente:'—', monto:'—' };
+const DATOS_FASE = {
+  f1: {
+    'qro-ira': { produccion: 0, puerto: 0, traslado: 0, descarga: 0, acopio: 13023, contratado: '88K', proceso: 13023, entregado: 13023, pendiente: 74977, monto: 245 },
+    'sal-nl':  { produccion: 0, puerto: 0, traslado: 0, descarga: 0, acopio:  9480, contratado: '62K', proceso:  9480, entregado:  9480, pendiente: 52520, monto: 318 },
+  },
+  f2: {
+    'qro-ira': { ...SIN_DATOS },
+    'sal-nl':  { ...SIN_DATOS },
+  },
 };
 let SEG = 'qro-ira';
 try { SEG = localStorage.getItem('segmento') || SEG; } catch(e){}
-if (!DATOS_SEG[SEG]) SEG='qro-ira';
-const DATOS = DATOS_SEG[SEG];
+if (!DATOS_FASE.f1[SEG]) SEG='qro-ira';
+let FASE = 'f1';
+try { FASE = localStorage.getItem('fase') || FASE; } catch(e){}
+if (!DATOS_FASE[FASE]) FASE = 'f1';
+let DATOS = DATOS_FASE[FASE][SEG];
 const UNIDAD = 'tm';
 
 /* ============================================================
@@ -766,7 +786,23 @@ PX.forEach((x0,i)=>{
     <text class="t" x="0" y="-62" text-anchor="middle">${names[i]}</text>
     <text class="v" x="0" y="-38" text-anchor="middle"><tspan data-d="${keys[i]}">0</tspan><tspan class="u" dx="6">${UNIDAD}</tspan></text>`;
 });
-document.querySelectorAll('[data-d]').forEach(e=>{ e.textContent = DATOS[e.dataset.d].toLocaleString('es-MX'); });
+/* ---------- Fase: la flecha avanza a la siguiente y regresa a la primera ---------- */
+function pintarDatos(){
+  DATOS = DATOS_FASE[FASE][SEG];
+  document.querySelectorAll('[data-d]').forEach(e=>{ e.textContent = DATOS[e.dataset.d].toLocaleString('es-MX'); });
+}
+const btnFase = document.getElementById('faseNext');
+function setFase(id){
+  FASE = DATOS_FASE[id] ? id : 'f1';
+  const i = FASES.findIndex(f=>f.id===FASE), sig = FASES[(i+1)%FASES.length];
+  document.getElementById('faseTxt').textContent = FASES[i].nombre;
+  btnFase.title = 'Cambiar a ' + sig.nombre;
+  btnFase.setAttribute('aria-label', btnFase.title);
+  try { localStorage.setItem('fase', FASE); } catch(e){}
+  pintarDatos();
+}
+btnFase.onclick = ()=>{ const i = FASES.findIndex(f=>f.id===FASE); setFase(FASES[(i+1)%FASES.length].id); };
+setFase(FASE);
 document.getElementById('nTramos').textContent = TRAMOS.length.toLocaleString('es-MX');
 /* ---------- Proyectos (fijos: se ven desde que abre la página) ---------- */
 {
