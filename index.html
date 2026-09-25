@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<title>Cadena de suministro del riel</title>
+<title>Adquisición de riel</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230B1017'/><path d='M10 4h12v5h-4l-.5 4v6l.5 4h9v5H5v-5h9l.5-4v-6L14 9h-4z' fill='%23FF9A4D'/></svg>">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -46,6 +46,7 @@
   header{position:fixed;left:24px;top:calc(var(--menu-h) + 14px);z-index:4;pointer-events:none}
   .hrow{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
   .tramo{display:flex;align-items:center;gap:8px;pointer-events:auto}
+  .tramo[hidden]{display:none}   /* display:flex le gana al [hidden] del navegador */
   .tlabel{font:11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.6);margin-right:4px}
   .tmenu{list-style:none;margin:0;padding:0;display:flex;gap:6px}
   .tmenu>li{position:relative}
@@ -69,6 +70,12 @@
   .st .num{font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.06em}
   .st .cnt{font-family:var(--display);font-weight:600;font-size:24px;line-height:1;color:#FF9A4D;font-variant-numeric:tabular-nums;grid-column:2}
   .st .cnt small{font:11px var(--mono);color:rgba(255,255,255,.6)}
+  .st.act{font:inherit;color:inherit;text-align:left;cursor:pointer;border-color:rgba(255,154,77,.45)}
+  .st.act:hover{border-color:#FF9A4D}
+  .st.act:focus-visible{outline:2px solid #FF9A4D;outline-offset:2px}
+  .st.act.on{background:rgba(255,154,77,.14);border-color:#FF9A4D}
+  .st.act .arrow{font-style:normal;font-size:13px;color:#FF9A4D;margin-left:8px;display:inline-block;transition:transform .18s}
+  .st.act.on .arrow{transform:rotate(180deg)}
   .lbl .n{font:500 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;fill:rgba(255,255,255,.6)}
   .lbl .v{font:600 24px var(--display);fill:#FF9A4D}
   .lbl .u{font:11px var(--mono);fill:rgba(255,255,255,.65)}
@@ -96,6 +103,10 @@
   :root[data-tema="claro"] .st .num{color:rgba(22,32,43,.62)}
   :root[data-tema="claro"] .st .cnt{color:var(--accent-light)}
   :root[data-tema="claro"] .st .cnt small{color:rgba(22,32,43,.6)}
+  :root[data-tema="claro"] .st.act{border-color:rgba(180,82,26,.45)}
+  :root[data-tema="claro"] .st.act:hover,:root[data-tema="claro"] .st.act.on{border-color:var(--accent-light)}
+  :root[data-tema="claro"] .st.act.on{background:rgba(180,82,26,.12)}
+  :root[data-tema="claro"] .st.act .arrow{color:var(--accent-light)}
   :root[data-tema="claro"] .lbl .t{fill:var(--ink-light)}
   :root[data-tema="claro"] .lbl .n,:root[data-tema="claro"] .lbl .u{fill:rgba(22,32,43,.65)}
   :root[data-tema="claro"] .lbl .v{fill:var(--accent-light)}
@@ -129,19 +140,19 @@
 <header>
   <p class="eyebrow">ATTRAPI</p>
   <div class="hrow">
-    <h1>Cadena de suministro <span>del riel</span></h1>
-    <div class="tramo" id="tramo">
+    <h1 id="h1">Adquisición <span>de riel</span></h1>
+    <div class="tramo" id="tramo" hidden>
       <span class="tlabel">Proyectos</span>
       <ul class="tmenu" id="tmenu"></ul>
     </div>
   </div>
 </header>
 <div class="chain">
-  <div class="st"><div class="ico" id="ico1"></div><div class="num">Producción del riel</div><div class="cnt"><span data-d="produccion">0</span> <small>rieles</small></div></div>
-  <div class="st"><div class="ico" id="ico2"></div><div class="num">Origen · puerto</div><div class="cnt"><span data-d="puerto">0</span> <small>rieles</small></div></div>
-  <div class="st"><div class="ico" id="ico3"></div><div class="num">Traslado marítimo</div><div class="cnt"><span data-d="traslado">0</span> <small>rieles</small></div></div>
-  <div class="st"><div class="ico" id="ico4"></div><div class="num">Descarga</div><div class="cnt"><span data-d="descarga">0</span> <small>rieles</small></div></div>
-  <div class="st"><div class="ico" id="ico5"></div><div class="num">Centro de acopio</div><div class="cnt"><span data-d="acopio">0</span> <small>rieles</small></div></div>
+  <div class="st"><div class="ico" id="ico1"></div><div class="num">Contratado</div><div class="cnt"><span data-d="contratado">0</span> <small>rieles</small></div></div>
+  <div class="st"><div class="ico" id="ico2"></div><div class="num">En proceso</div><div class="cnt"><span data-d="proceso">0</span> <small>rieles</small></div></div>
+  <div class="st"><div class="ico" id="ico3"></div><div class="num">Entregado</div><div class="cnt"><span data-d="entregado">0</span> <small>rieles</small></div></div>
+  <div class="st"><div class="ico" id="ico4"></div><div class="num">Anticipo</div><div class="cnt"><span data-d="anticipo">0</span> <small>rieles</small></div></div>
+  <button type="button" class="st act" id="btnProyectos" aria-expanded="false" aria-controls="tramo"><span class="ico" id="ico5"></span><span class="num">Proyectos</span><span class="cnt"><span id="nTramos">0</span> <small>proyectos</small><i class="arrow">&#9662;</i></span></button>
 </div>
 
 <script>
@@ -154,14 +165,16 @@ const TRAMOS = [
   { id:'sal-mty', nombre:'Saltillo – Monterrey', segmentos:[ {id:'18-20',nombre:'Segmento 18 y 20'}, {id:'16-17',nombre:'Segmento 16 y 17'}, {id:'15B2',nombre:'Segmento 15B2'} ] },
   { id:'mty-nl',  nombre:'Monterrey – Nuevo Laredo', segmentos:[ {id:'15A2',nombre:'Segmento 15A2'}, {id:'15A1',nombre:'Segmento 15A1'}, {id:'13-14',nombre:'Segmento 13 y 14'} ] },
 ];
+// produccion/puerto/traslado/descarga/acopio → rótulos de la maqueta (lo que se ve moverse)
+// contratado/proceso/entregado/anticipo       → tarjetas de arriba (el estado del contrato); son cifras aparte
 const DATOS_SEG = {
-  'qro-ira': { produccion: 20, puerto: 12, traslado: 30, descarga: 8, acopio: 44 },
-  '18-20':   { produccion: 26, puerto: 10, traslado: 24, descarga: 6, acopio: 38 },
-  '16-17':   { produccion: 18, puerto: 14, traslado: 22, descarga: 9, acopio: 41 },
-  '15B2':    { produccion: 22, puerto:  9, traslado: 28, descarga: 7, acopio: 36 },
-  '15A2':    { produccion: 24, puerto: 11, traslado: 26, descarga: 5, acopio: 40 },
-  '15A1':    { produccion: 19, puerto: 13, traslado: 31, descarga: 8, acopio: 45 },
-  '13-14':   { produccion: 21, puerto: 12, traslado: 27, descarga: 6, acopio: 42 },
+  'qro-ira': { produccion: 20, puerto: 12, traslado: 30, descarga: 8, acopio: 44, contratado: 1240, proceso: 430, entregado: 690, anticipo: 310 },
+  '18-20':   { produccion: 26, puerto: 10, traslado: 24, descarga: 6, acopio: 38, contratado:  980, proceso: 360, entregado: 540, anticipo: 245 },
+  '16-17':   { produccion: 18, puerto: 14, traslado: 22, descarga: 9, acopio: 41, contratado: 1150, proceso: 405, entregado: 620, anticipo: 288 },
+  '15B2':    { produccion: 22, puerto:  9, traslado: 28, descarga: 7, acopio: 36, contratado:  860, proceso: 295, entregado: 470, anticipo: 215 },
+  '15A2':    { produccion: 24, puerto: 11, traslado: 26, descarga: 5, acopio: 40, contratado: 1320, proceso: 480, entregado: 735, anticipo: 330 },
+  '15A1':    { produccion: 19, puerto: 13, traslado: 31, descarga: 8, acopio: 45, contratado: 1075, proceso: 385, entregado: 580, anticipo: 269 },
+  '13-14':   { produccion: 21, puerto: 12, traslado: 27, descarga: 6, acopio: 42, contratado:  940, proceso: 325, entregado: 510, anticipo: 235 },
 };
 let SEG = 'qro-ira';
 try { SEG = localStorage.getItem('segmento') || SEG; } catch(e){}
@@ -449,8 +462,9 @@ function platePortTop(x0){                   // bolardos, bodega, patio y carret
   sc.box(x0+9.0,7.6,Z0,1.6,1.6,1.4,'#B9C0C8',gB,{t:0.3}); sc.box(x0+11.0,7.6,Z0,1.6,1.6,1.4,'#B9C0C8',gB,{t:0.3});
   sc.box(x0+14.2,7.4,Z0,1.0,1.0,3.4,'#8A94A3',gB,{t:0.2}); sc.box(x0+13.9,7.1,Z0+3.4,1.6,1.6,0.6,'#3E5A78',gB,{t:0.3});
   // espigón secundario con bolardos, y rompeolas en el mar (con bocana para el buque)
-  sc.box(x0-6,-9.5,0.25,10,1.2,0.6,'#5B6470',gB,{t:0.15}); sc.box(x0+12,-9.5,0.25,PLATE-4,1.2,0.6,'#5B6470',gB,{t:0.15});
-  [[x0+3.6,-9.2],[x0+12.4,-9.2]].forEach(([bx,by])=>{ sc.box(bx-0.2,by-0.2,0.85,0.4,0.4,1.2,'#D9DEE5',gB); const tc=sc.P(bx,by,2.2); sc.el('circle',{cx:tc[0],cy:tc[1],r:2.2,fill:'#3CD070',class:'beacon'},gB); });
+  // la bocana va de x0+1 a x0+12: por ahí entra el buque (carril x0+5.7) y sale por el eje x0+8
+  sc.box(x0-6,-9.5,0.25,7,1.2,0.6,'#5B6470',gB,{t:0.15}); sc.box(x0+12,-9.5,0.25,PLATE-4,1.2,0.6,'#5B6470',gB,{t:0.15});
+  [[x0+0.4,-9.2],[x0+12.4,-9.2]].forEach(([bx,by])=>{ sc.box(bx-0.2,by-0.2,0.85,0.4,0.4,1.2,'#D9DEE5',gB); const tc=sc.P(bx,by,2.2); sc.el('circle',{cx:tc[0],cy:tc[1],r:2.2,fill:'#3CD070',class:'beacon'},gB); });
   road(sc, sc.g(), x0, x0+PLATE, ROAD_Y, PD-ROAD_Y);
 }
 /* ---------- Placa 2 · Mar ---------- */
@@ -633,6 +647,7 @@ function updateTurn(t, dt){ const T=t.turn, R=T.R; T.u=Math.min(1,T.u+dt/T.T); c
 const SHIP_LEN = 14.4, SEA_FAR = -70, SHIP_R = 7;                    // largo, punto de aparición y radio de giro
 function shipDockX(i){ return PX[i]+5.5; }
 const shipDockCx = i => shipDockX(i)+SHIP_LEN/2, SHIP_CY = SHIP_Y+1.6;
+const BOCANA_X = i => PX[i]+8;                                       // centro del hueco entre los dos rompeolas de cada puerto
 const scShip = {}; HEADINGS.forEach(h=>{ const r=h*Math.PI/180, c=Math.cos(r), sn=Math.sin(r); scShip[h]=makeScene(svgAll,S,OX0,OY0,(x,y)=>{ const lx=x-SHIP_LEN/2, ly=y-1.6; return [lx*c - ly*sn, lx*sn + ly*c]; },(x,y)=>[x*c - y*sn, x*sn + y*c]); });
 function makeShip(){
   const models={}; HEADINGS.forEach(h=>{ models[h]=ship(scShip[h],gShips); models[h].g.setAttribute('display','none'); });
@@ -659,16 +674,22 @@ function updateShip(s, dt, now){
   }
   else if (s.state==='docked_o'){ if (s.load>=SHIP_CAP && !cranes.pOri.busy) s.state='sailing'; shipRender(s, 0.25+bob); }
   else if (s.state==='sailing'){
-    const free = !ships.some(o=>o!==s && (o.state==='docked_d' || o.state==='leaving' || (o.state==='sailing' && o.cx>s.cx)));
+    const free = !ships.some(o=>o!==s && (o.state==='docked_d' || o.state==='ciando' || o.state==='leaving' || (o.state==='sailing' && o.cx>s.cx)));
     const target = free ? shipDockCx(3) : shipDockCx(3)-SHIP_LEN-8;
     s.cx=step(s.cx,target,SPEED.ship,dt); if (s.cx===shipDockCx(3)) s.state='docked_d';
     shipRender(s, 0.25+sail);
   }
   else if (s.state==='docked_d'){
-    if (s.load===0 && !cranes.pDes.busy && !trucksB.some(t=>t.state==='loading' && t.ship===s)){ s.state='leaving'; s.turnNext='leaving_y'; startTurn(s, s.cx+SHIP_R, s.cy, 270, SHIP_R, (Math.PI/2*SHIP_R)/SPEED.ship); }
+    if (s.load===0 && !cranes.pDes.busy && !trucksB.some(t=>t.state==='loading' && t.ship===s)) s.state='ciando';
     shipRender(s, 0.25+bob);
   }
-  else if (s.state==='leaving' || s.state==='leaving_y'){   // saca la proa al mar y se aleja mar adentro
+  else if (s.state==='ciando'){                // sale del atraque marcha atrás hasta quedar en el eje de la bocana
+    const target = BOCANA_X(3)-SHIP_R;
+    s.cx=step(s.cx,target,SPEED.ship*0.6,dt);
+    if (s.cx===target){ s.turnNext='leaving'; startTurn(s, BOCANA_X(3), SHIP_CY, 270, SHIP_R, (Math.PI/2*SHIP_R)/SPEED.ship); }
+    shipRender(s, 0.25+sail);
+  }
+  else if (s.state==='leaving'){               // enfila la bocana y se aleja mar adentro, sin pisar los rompeolas
     s.cy=step(s.cy,SEA_FAR,SPEED.ship,dt);
     if (s.cy===SEA_FAR){ s.state='arriving'; s.heading=90; s.cx=shipDockCx(1)-SHIP_R; s.turnNext='docked_o'; }
     shipRender(s, 0.25+sail);
@@ -753,7 +774,33 @@ PX.forEach((x0,i)=>{
     <text class="v" x="0" y="-38" text-anchor="middle"><tspan data-d="${keys[i]}">0</tspan><tspan class="u" dx="6">${UNIDAD}</tspan></text>`;
 });
 document.querySelectorAll('[data-d]').forEach(e=>{ e.textContent = DATOS[e.dataset.d].toLocaleString('es-MX'); });
-/* ---------- Proyectos (siempre visibles) y submenús de segmentos ---------- */
+/* ---------- Vista: la portada es la adquisición; los proyectos se abren desde la tarjeta ---------- */
+const VISTAS = {
+  inicio:    { h1:'Adquisición <span>de riel</span>',           doc:'Adquisición de riel' },
+  proyectos: { h1:'Cadena de suministro <span>del riel</span>', doc:'Cadena de suministro del riel' },
+};
+let VISTA = 'inicio';
+// sessionStorage, no localStorage: cada visita nueva abre en la portada, pero la vista sobrevive a las recargas de la pestaña
+try { VISTA = new URLSearchParams(location.search).get('vista') || sessionStorage.getItem('vista') || 'inicio'; } catch(e){}
+if (!VISTAS[VISTA]) VISTA = 'inicio';
+const btnProyectos = document.getElementById('btnProyectos');
+document.getElementById('nTramos').textContent = TRAMOS.length.toLocaleString('es-MX');
+function setVista(v){
+  VISTA = VISTAS[v] ? v : 'inicio';
+  const abierta = VISTA === 'proyectos';
+  document.getElementById('h1').innerHTML = VISTAS[VISTA].h1;
+  document.title = VISTAS[VISTA].doc;
+  document.getElementById('tramo').hidden = !abierta;
+  btnProyectos.classList.toggle('on', abierta);
+  btnProyectos.setAttribute('aria-expanded', abierta);
+  try { sessionStorage.setItem('vista', VISTA); } catch(e){}
+  // la URL sigue a la vista, para que al elegir un segmento (que recarga) no se pierda
+  try { const u=new URL(location.href); abierta ? u.searchParams.set('vista','proyectos') : u.searchParams.delete('vista'); history.replaceState(null,'',u); } catch(e){}
+  fit();                                     // el alto del encabezado cambia al mostrar u ocultar los proyectos
+}
+btnProyectos.onclick = ()=> setVista(VISTA === 'proyectos' ? 'inicio' : 'proyectos');
+
+/* ---------- Proyectos y submenús de segmentos ---------- */
 {
   const menu=document.getElementById('tmenu');
   const pick=(id)=>{ try{ localStorage.setItem('segmento', id); }catch(e){} location.href = location.pathname + location.search; };
@@ -839,7 +886,7 @@ function fit(){
     g.querySelector('.v').setAttribute('y', -h-4);
   });
 }
-fit(); addEventListener('resize', fit);
+setVista(VISTA); addEventListener('resize', fit);
 </script>
 
 </body>
