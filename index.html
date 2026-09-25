@@ -45,13 +45,14 @@
   .stage svg{width:100%;height:100%;display:block}
   header{position:fixed;left:16px;right:16px;top:calc(var(--menu-h) + 14px);z-index:4;pointer-events:none;display:flex;align-items:flex-start;gap:24px}
   .brand{flex:0 0 auto}
-  .hstack{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:8px;pointer-events:auto}
-  .tramo{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .tramo[hidden]{display:none}   /* display:flex le gana al [hidden] del navegador */
+  /* rejilla de seis columnas: las tarjetas en el primer renglón y los proyectos bajo la última */
+  .hstack{flex:1 1 auto;min-width:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;align-items:start;pointer-events:auto}
+  .chain{display:contents}
+  .tramo{grid-column:6;min-width:0}
   .tlabel{font:11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.6);margin-right:4px}
-  .tmenu{list-style:none;margin:0;padding:0;display:flex;gap:6px}
+  .tmenu{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
   .tmenu>li{position:relative}
-  .tmenu button{font:12px var(--mono);color:#EAEFF5;background:rgba(10,15,22,.72);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.2);border-radius:5px;padding:7px 11px;cursor:pointer;display:flex;gap:8px;align-items:center;white-space:nowrap}
+  .tmenu button{font:11px var(--mono);color:#EAEFF5;background:rgba(10,15,22,.72);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.2);border-radius:5px;padding:7px 9px;cursor:pointer;display:flex;gap:6px;align-items:center;justify-content:center;text-align:center;width:100%;line-height:1.3}
   .tmenu button:hover,.tmenu li.open>button{border-color:rgba(255,255,255,.45)}
   .tmenu button.on{border-color:#FF9A4D;color:#FF9A4D}
   .tmenu button:focus-visible{outline:2px solid #FF9A4D;outline-offset:2px}
@@ -64,19 +65,13 @@
   .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.55);margin:0 0 4px}
   h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,3.4vw,44px);line-height:.95;letter-spacing:-.01em;margin:0;text-wrap:balance;text-shadow:0 2px 12px rgba(0,0,0,.5)}
   h1 span{color:#FF9A4D}
-  .chain{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+  .fase{font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#FF9A4D;margin:6px 0 0}
   .st{background:rgba(10,15,22,.72);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:8px 12px;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:10px;align-items:center}
   .st .ico{grid-row:1/3;width:50px;height:36px}
   .st .ico svg{width:100%;height:100%;overflow:visible}
   .st .num{font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.06em}
   .st .cnt{font-family:var(--display);font-weight:600;font-size:24px;line-height:1;color:#FF9A4D;font-variant-numeric:tabular-nums;grid-column:2}
   .st .cnt small{font:11px var(--mono);color:rgba(255,255,255,.6)}
-  .st.act{font:inherit;color:inherit;text-align:left;cursor:pointer;border-color:rgba(255,154,77,.45)}
-  .st.act:hover{border-color:#FF9A4D}
-  .st.act:focus-visible{outline:2px solid #FF9A4D;outline-offset:2px}
-  .st.act.on{background:rgba(255,154,77,.14);border-color:#FF9A4D}
-  .st.act .arrow{font-style:normal;font-size:13px;color:#FF9A4D;margin-left:8px;display:inline-block;transition:transform .18s}
-  .st.act.on .arrow{transform:rotate(180deg)}
   .lbl .n{font:500 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;fill:rgba(255,255,255,.6)}
   .lbl .v{font:600 24px var(--display);fill:#FF9A4D}
   .lbl .u{font:11px var(--mono);fill:rgba(255,255,255,.65)}
@@ -84,16 +79,16 @@
   .lbl .g{font:700 34px var(--display);letter-spacing:.3em;fill:rgba(255,255,255,.28)}
   .lbl text{paint-order:stroke;stroke:rgba(8,14,22,.85);stroke-width:3px;stroke-linejoin:round}
   .note{position:fixed;left:24px;top:calc(var(--menu-h) + 76px);z-index:2;font:11px/1.5 var(--mono);color:rgba(255,255,255,.55);max-width:44ch}
-  @media (max-width:1280px){ .st{padding:8px 10px} .st .ico{width:38px;height:28px} }
-  @media (max-width:1040px){ header{flex-wrap:wrap;gap:12px} .brand{flex:1 1 100%} .st .ico{display:none} }
-  @media (max-width:900px){ .chain{gap:4px} .st{padding:6px 8px} .st .cnt{grid-column:1;font-size:18px} .note{display:none} }
+  @media (max-width:1400px){ .st{padding:8px 10px} .st .ico{width:36px;height:26px} }
+  @media (max-width:1180px){ header{flex-wrap:wrap;gap:12px} .brand{flex:1 1 100%} .st .ico{display:none} }
+  @media (max-width:900px){ .hstack{gap:4px} .st{padding:6px 8px} .st .cnt{grid-column:1;font-size:18px} .note{display:none} }
 
   /* Estilo Claro: tinta oscura sobre fondo claro, sin perder la barra de menú del sitio */
   :root[data-tema="claro"]{ --ink-light:#16202B; --accent-light:#B4521A; }
   :root[data-tema="claro"] .eyebrow{color:rgba(22,32,43,.6)}
   :root[data-tema="claro"] h1{color:var(--ink-light);text-shadow:0 1px 8px rgba(255,255,255,.65)}
   :root[data-tema="claro"] h1 span{color:var(--accent-light)}
-  :root[data-tema="claro"] .tlabel{color:rgba(22,32,43,.6)}
+  :root[data-tema="claro"] .fase{color:var(--accent-light)}
   :root[data-tema="claro"] .tmenu button{color:var(--ink-light);background:rgba(255,255,255,.86);border-color:rgba(22,32,43,.22)}
   :root[data-tema="claro"] .tmenu button:hover,
   :root[data-tema="claro"] .tmenu li.open>button{border-color:rgba(22,32,43,.5)}
@@ -106,10 +101,6 @@
   :root[data-tema="claro"] .st .num{color:rgba(22,32,43,.62)}
   :root[data-tema="claro"] .st .cnt{color:var(--accent-light)}
   :root[data-tema="claro"] .st .cnt small{color:rgba(22,32,43,.6)}
-  :root[data-tema="claro"] .st.act{border-color:rgba(180,82,26,.45)}
-  :root[data-tema="claro"] .st.act:hover,:root[data-tema="claro"] .st.act.on{border-color:var(--accent-light)}
-  :root[data-tema="claro"] .st.act.on{background:rgba(180,82,26,.12)}
-  :root[data-tema="claro"] .st.act .arrow{color:var(--accent-light)}
   :root[data-tema="claro"] .lbl .t{fill:var(--ink-light)}
   :root[data-tema="claro"] .lbl .n,:root[data-tema="claro"] .lbl .u{fill:rgba(22,32,43,.65)}
   :root[data-tema="claro"] .lbl .v{fill:var(--accent-light)}
@@ -144,17 +135,18 @@
   <div class="brand">
     <p class="eyebrow">ATTRAPI</p>
     <h1 id="h1">Adquisición <span>de riel</span></h1>
+    <p class="fase">Fase I</p>
   </div>
   <div class="hstack">
     <div class="chain">
       <div class="st"><div class="ico" id="ico1"></div><div class="num">Contratado</div><div class="cnt"><span data-d="contratado">0</span> <small>rieles</small></div></div>
       <div class="st"><div class="ico" id="ico2"></div><div class="num">En proceso</div><div class="cnt"><span data-d="proceso">0</span> <small>rieles</small></div></div>
       <div class="st"><div class="ico" id="ico3"></div><div class="num">Entregado</div><div class="cnt"><span data-d="entregado">0</span> <small>rieles</small></div></div>
-      <div class="st"><div class="ico" id="ico4"></div><div class="num">Anticipo</div><div class="cnt"><span data-d="anticipo">0</span> <small>rieles</small></div></div>
-      <button type="button" class="st act" id="btnProyectos" aria-expanded="false" aria-controls="tramo"><span class="ico" id="ico5"></span><span class="num">Proyectos</span><span class="cnt"><span id="nTramos">0</span> <small>proyectos</small><i class="arrow">&#9662;</i></span></button>
+      <div class="st"><div class="ico" id="ico6"></div><div class="num">Pendiente</div><div class="cnt"><span data-d="pendiente">0</span> <small>rieles</small></div></div>
+      <div class="st"><div class="ico" id="ico4"></div><div class="num">Pagado</div><div class="cnt"><span data-d="pagado">0</span> <small>M</small></div></div>
+      <div class="st"><div class="ico" id="ico5"></div><div class="num">Proyectos</div><div class="cnt"><span id="nTramos">0</span> <small>proyectos</small></div></div>
     </div>
-    <div class="tramo" id="tramo" hidden>
-      <span class="tlabel">Proyectos</span>
+    <div class="tramo" id="tramo">
       <ul class="tmenu" id="tmenu"></ul>
     </div>
   </div>
@@ -167,19 +159,14 @@
 // Un renglón por segmento (los valores de ejemplo se sustituyen por los del Excel)
 const TRAMOS = [
   { id:'qro-ira', nombre:'Querétaro – Irapuato', segmentos:[] },
-  { id:'sal-mty', nombre:'Saltillo – Monterrey', segmentos:[ {id:'18-20',nombre:'Segmento 18 y 20'}, {id:'16-17',nombre:'Segmento 16 y 17'}, {id:'15B2',nombre:'Segmento 15B2'} ] },
-  { id:'mty-nl',  nombre:'Monterrey – Nuevo Laredo', segmentos:[ {id:'15A2',nombre:'Segmento 15A2'}, {id:'15A1',nombre:'Segmento 15A1'}, {id:'13-14',nombre:'Segmento 13 y 14'} ] },
+  { id:'sal-nl',  nombre:'Saltillo – Nuevo Laredo', segmentos:[] },
 ];
-// produccion/puerto/traslado/descarga/acopio → rótulos de la maqueta (lo que se ve moverse)
-// contratado/proceso/entregado/anticipo       → tarjetas de arriba (el estado del contrato); son cifras aparte
+// produccion/puerto/traslado/descarga/acopio       → rótulos de la maqueta (lo que se ve moverse)
+// contratado/proceso/entregado/pendiente (rieles)
+// y pagado (millones de pesos)                      → tarjetas de arriba; son cifras aparte
 const DATOS_SEG = {
-  'qro-ira': { produccion: 20, puerto: 12, traslado: 30, descarga: 8, acopio: 44, contratado: 1240, proceso: 430, entregado: 690, anticipo: 310 },
-  '18-20':   { produccion: 26, puerto: 10, traslado: 24, descarga: 6, acopio: 38, contratado:  980, proceso: 360, entregado: 540, anticipo: 245 },
-  '16-17':   { produccion: 18, puerto: 14, traslado: 22, descarga: 9, acopio: 41, contratado: 1150, proceso: 405, entregado: 620, anticipo: 288 },
-  '15B2':    { produccion: 22, puerto:  9, traslado: 28, descarga: 7, acopio: 36, contratado:  860, proceso: 295, entregado: 470, anticipo: 215 },
-  '15A2':    { produccion: 24, puerto: 11, traslado: 26, descarga: 5, acopio: 40, contratado: 1320, proceso: 480, entregado: 735, anticipo: 330 },
-  '15A1':    { produccion: 19, puerto: 13, traslado: 31, descarga: 8, acopio: 45, contratado: 1075, proceso: 385, entregado: 580, anticipo: 269 },
-  '13-14':   { produccion: 21, puerto: 12, traslado: 27, descarga: 6, acopio: 42, contratado:  940, proceso: 325, entregado: 510, anticipo: 235 },
+  'qro-ira': { produccion: 20, puerto: 12, traslado: 30, descarga: 8, acopio: 44, contratado: 1240, proceso: 430, entregado: 690, pendiente: 550, pagado: 245 },
+  'sal-nl':  { produccion: 24, puerto: 11, traslado: 26, descarga: 7, acopio: 40, contratado: 1680, proceso: 520, entregado: 910, pendiente: 770, pagado: 318 },
 };
 let SEG = 'qro-ira';
 try { SEG = localStorage.getItem('segmento') || SEG; } catch(e){}
@@ -779,33 +766,8 @@ PX.forEach((x0,i)=>{
     <text class="v" x="0" y="-38" text-anchor="middle"><tspan data-d="${keys[i]}">0</tspan><tspan class="u" dx="6">${UNIDAD}</tspan></text>`;
 });
 document.querySelectorAll('[data-d]').forEach(e=>{ e.textContent = DATOS[e.dataset.d].toLocaleString('es-MX'); });
-/* ---------- Vista: la portada es la adquisición; los proyectos se abren desde la tarjeta ---------- */
-const VISTAS = {
-  inicio:    { h1:'Adquisición <span>de riel</span>',           doc:'Adquisición de riel' },
-  proyectos: { h1:'Cadena de suministro <span>del riel</span>', doc:'Cadena de suministro del riel' },
-};
-let VISTA = 'inicio';
-// sessionStorage, no localStorage: cada visita nueva abre en la portada, pero la vista sobrevive a las recargas de la pestaña
-try { VISTA = new URLSearchParams(location.search).get('vista') || sessionStorage.getItem('vista') || 'inicio'; } catch(e){}
-if (!VISTAS[VISTA]) VISTA = 'inicio';
-const btnProyectos = document.getElementById('btnProyectos');
 document.getElementById('nTramos').textContent = TRAMOS.length.toLocaleString('es-MX');
-function setVista(v){
-  VISTA = VISTAS[v] ? v : 'inicio';
-  const abierta = VISTA === 'proyectos';
-  document.getElementById('h1').innerHTML = VISTAS[VISTA].h1;
-  document.title = VISTAS[VISTA].doc;
-  document.getElementById('tramo').hidden = !abierta;
-  btnProyectos.classList.toggle('on', abierta);
-  btnProyectos.setAttribute('aria-expanded', abierta);
-  try { sessionStorage.setItem('vista', VISTA); } catch(e){}
-  // la URL sigue a la vista, para que al elegir un segmento (que recarga) no se pierda
-  try { const u=new URL(location.href); abierta ? u.searchParams.set('vista','proyectos') : u.searchParams.delete('vista'); history.replaceState(null,'',u); } catch(e){}
-  fit();                                     // el alto del encabezado cambia al mostrar u ocultar los proyectos
-}
-btnProyectos.onclick = ()=> setVista(VISTA === 'proyectos' ? 'inicio' : 'proyectos');
-
-/* ---------- Proyectos y submenús de segmentos ---------- */
+/* ---------- Proyectos (fijos: se ven desde que abre la página) ---------- */
 {
   const menu=document.getElementById('tmenu');
   const pick=(id)=>{ try{ localStorage.setItem('segmento', id); }catch(e){} location.href = location.pathname + location.search; };
@@ -821,7 +783,7 @@ btnProyectos.onclick = ()=> setVista(VISTA === 'proyectos' ? 'inicio' : 'proyect
       li.appendChild(ul);
       b.setAttribute('aria-haspopup','true');
       b.onclick=(e)=>{ e.stopPropagation(); const was=li.classList.contains('open'); closeAll(); if (!was) li.classList.add('open'); };
-    } else b.onclick=()=>pick(t.id);
+    } else { if (t.id===SEG) b.classList.add('on'); b.onclick=()=>pick(t.id); }   // sin segmentos, el proyecto mismo es la selección
     menu.appendChild(li);
   });
   document.addEventListener('click',e=>{ if (!menu.contains(e.target)) closeAll(); });
@@ -840,6 +802,7 @@ icon('ico1', m=>{ m.box(0.4,0.6,0,2.6,3.4,1.6,C.hall); m.box(0.7,0.9,1.6,0.5,0.5
 icon('ico2', m=>{ m.box(0,0,-0.1,6,2,0.1,C.water,null,{t:0.15}); m.box(0.6,2.6,0,2.4,0.9,0.5,C.rail); m.box(3.6,1.6,0,0.3,0.3,2.4,C.crane); m.box(3.6,4.2,0,0.3,0.3,2.4,C.crane); m.box(3.5,0.4,2.4,0.5,4.1,0.3,C.crane); });
 icon('ico3', m=>{ m.box(0,0,-0.1,6,5,0.1,C.water,null,{t:0.15}); m.box(0.8,1.6,0.1,4.2,1.6,0.7,C.hull,null,{t:0.35}); m.box(1.0,1.9,0.8,0.9,1.0,0.8,C.house); m.box(1.2,2.2,1.6,0.3,0.3,0.4,C.funnel); });
 icon('ico4', m=>{ m.box(0,0,-0.1,6,2,0.1,C.water,null,{t:0.15}); m.box(0.5,3.4,0,2.6,0.8,0.3,'#6B7684'); m.box(2.6,3.4,0,0.7,0.8,0.8,C.truck); m.box(4.2,1.6,0,0.3,0.3,2.4,C.crane); m.box(4.2,4.2,0,0.3,0.3,2.4,C.crane); m.box(4.1,0.4,2.4,0.5,4.1,0.3,C.crane); });
+icon('ico6', m=>{ m.box(0.6,0.8,0,4.2,0.7,0.6,C.rail); m.box(0.6,2.4,0,4.2,0.7,0.6,C.rail); m.box(0.6,4.0,0,4.2,0.7,0.15,'rgba(127,140,160,.45)'); });
 icon('ico5', m=>{ for (let i=0;i<3;i++) m.box(0.6,0.6+i*1.3,0,4.2,0.7,0.6,C.rail); m.box(2.9,0.2,0,0.3,0.3,2.4,C.crane); m.box(2.9,4.2,0,0.3,0.3,2.4,C.crane); m.box(2.8,0.2,2.4,0.5,4.3,0.3,C.crane); });
 
 /* ---------- Bucle ---------- */
@@ -890,7 +853,7 @@ function fit(){
     g.querySelector('.v').setAttribute('y', -h-4);
   });
 }
-setVista(VISTA); addEventListener('resize', fit);
+fit(); addEventListener('resize', fit);
 </script>
 
 </body>
