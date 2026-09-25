@@ -65,7 +65,7 @@
   .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.55);margin:0 0 4px}
   h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,3.4vw,44px);line-height:.95;letter-spacing:-.01em;margin:0;text-wrap:balance;text-shadow:0 2px 12px rgba(0,0,0,.5)}
   h1 span{color:#FF9A4D}
-  .fase{font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#FF9A4D;margin:6px 0 0}
+  .fase{display:inline-block;font:500 11px var(--mono);letter-spacing:.18em;text-transform:uppercase;color:#0B1017;background:#FF9A4D;border-radius:4px;padding:4px 11px;margin:8px 0 0}
   .st{background:rgba(10,15,22,.72);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:8px 12px;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:10px;align-items:center}
   .st .ico{grid-row:1/3;width:50px;height:36px}
   .st .ico svg{width:100%;height:100%;overflow:visible}
@@ -88,7 +88,7 @@
   :root[data-tema="claro"] .eyebrow{color:rgba(22,32,43,.6)}
   :root[data-tema="claro"] h1{color:var(--ink-light);text-shadow:0 1px 8px rgba(255,255,255,.65)}
   :root[data-tema="claro"] h1 span{color:var(--accent-light)}
-  :root[data-tema="claro"] .fase{color:var(--accent-light)}
+  :root[data-tema="claro"] .fase{color:#FFF;background:var(--accent-light)}
   :root[data-tema="claro"] .tmenu button{color:var(--ink-light);background:rgba(255,255,255,.86);border-color:rgba(22,32,43,.22)}
   :root[data-tema="claro"] .tmenu button:hover,
   :root[data-tema="claro"] .tmenu li.open>button{border-color:rgba(22,32,43,.5)}
@@ -135,15 +135,15 @@
   <div class="brand">
     <p class="eyebrow">ATTRAPI</p>
     <h1 id="h1">Adquisición <span>de riel</span></h1>
-    <p class="fase">Fase I</p>
+    <div class="fase">Fase I</div>
   </div>
   <div class="hstack">
     <div class="chain">
-      <div class="st"><div class="ico" id="ico1"></div><div class="num">Contratado</div><div class="cnt"><span data-d="contratado">0</span> <small>rieles</small></div></div>
-      <div class="st"><div class="ico" id="ico2"></div><div class="num">En proceso</div><div class="cnt"><span data-d="proceso">0</span> <small>rieles</small></div></div>
-      <div class="st"><div class="ico" id="ico3"></div><div class="num">Entregado</div><div class="cnt"><span data-d="entregado">0</span> <small>rieles</small></div></div>
-      <div class="st"><div class="ico" id="ico6"></div><div class="num">Pendiente</div><div class="cnt"><span data-d="pendiente">0</span> <small>rieles</small></div></div>
-      <div class="st"><div class="ico" id="ico4"></div><div class="num">Pagado</div><div class="cnt"><span data-d="pagado">0</span> <small>M</small></div></div>
+      <div class="st"><div class="ico" id="ico1"></div><div class="num">Contratado</div><div class="cnt"><span data-d="contratado">0</span> <small>tm</small></div></div>
+      <div class="st"><div class="ico" id="ico2"></div><div class="num">En proceso</div><div class="cnt"><span data-d="proceso">0</span> <small>tm</small></div></div>
+      <div class="st"><div class="ico" id="ico3"></div><div class="num">Entregado</div><div class="cnt"><span data-d="entregado">0</span> <small>tm</small></div></div>
+      <div class="st"><div class="ico" id="ico6"></div><div class="num">Pendiente</div><div class="cnt"><span data-d="pendiente">0</span> <small>tm</small></div></div>
+      <div class="st"><div class="ico" id="ico4"></div><div class="num">Monto pendiente</div><div class="cnt"><span data-d="monto">0</span> <small>M</small></div></div>
       <div class="st"><div class="ico" id="ico5"></div><div class="num">Proyectos</div><div class="cnt"><span id="nTramos">0</span> <small>proyectos</small></div></div>
     </div>
     <div class="tramo" id="tramo">
@@ -161,18 +161,19 @@ const TRAMOS = [
   { id:'qro-ira', nombre:'Querétaro – Irapuato', segmentos:[] },
   { id:'sal-nl',  nombre:'Saltillo – Nuevo Laredo', segmentos:[] },
 ];
-// produccion/puerto/traslado/descarga/acopio       → rótulos de la maqueta (lo que se ve moverse)
-// contratado/proceso/entregado/pendiente (rieles)
-// y pagado (millones de pesos)                      → tarjetas de arriba; son cifras aparte
+// produccion/puerto/traslado/descarga/acopio       → rótulos de la maqueta, en tm
+// contratado/proceso/entregado/pendiente (tm)
+// y monto pendiente (millones de pesos)             → tarjetas de arriba; son cifras aparte
+// un valor de texto ('88K') se imprime tal cual; uno numérico lleva separador de miles
 const DATOS_SEG = {
-  'qro-ira': { produccion: 20, puerto: 12, traslado: 30, descarga: 8, acopio: 44, contratado: 1240, proceso: 430, entregado: 690, pendiente: 550, pagado: 245 },
-  'sal-nl':  { produccion: 24, puerto: 11, traslado: 26, descarga: 7, acopio: 40, contratado: 1680, proceso: 520, entregado: 910, pendiente: 770, pagado: 318 },
+  'qro-ira': { produccion: 0, puerto: 0, traslado: 0, descarga: 0, acopio: 13023, contratado: '88K', proceso: 13023, entregado: 13023, pendiente: 74977, monto: 245 },
+  'sal-nl':  { produccion: 0, puerto: 0, traslado: 0, descarga: 0, acopio:  9480, contratado: '62K', proceso:  9480, entregado:  9480, pendiente: 52520, monto: 318 },
 };
 let SEG = 'qro-ira';
 try { SEG = localStorage.getItem('segmento') || SEG; } catch(e){}
 if (!DATOS_SEG[SEG]) SEG='qro-ira';
 const DATOS = DATOS_SEG[SEG];
-const UNIDAD = 'rieles';
+const UNIDAD = 'tm';
 
 /* ============================================================
    Motor isométrico mínimo. Mundo (x,y,z): x → abajo-derecha, y → abajo-izquierda, z → arriba.
@@ -755,7 +756,7 @@ function updateTrucksB(dt){
 }
 
 /* ---------- Rótulos con los datos del Excel ---------- */
-const names = ['Producción del riel','Origen · puerto','Traslado marítimo','Descarga','Centro de acopio'];
+const names = ['Por fabricar','Origen · puerto','Traslado marítimo','Descarga','Centro de acopio'];
 const keys  = ['produccion','puerto','traslado','descarga','acopio'];
 PX.forEach((x0,i)=>{
   const [tx,ty] = sc.P(x0+[7,8,SEA_W/2,16,12][i], 0, 2.2);
