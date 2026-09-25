@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <title>Cadena de suministro del riel</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230B1017'/><path d='M10 4h12v5h-4l-.5 4v6l.5 4h9v5H5v-5h9l.5-4v-6L14 9h-4z' fill='%23FF9A4D'/></svg>">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -61,7 +62,7 @@
   .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.55);margin:0 0 4px}
   h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,3.4vw,44px);line-height:.95;letter-spacing:-.01em;margin:0;text-wrap:balance;text-shadow:0 2px 12px rgba(0,0,0,.5)}
   h1 span{color:#FF9A4D}
-  .chain{position:fixed;left:16px;right:16px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:2;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+  .chain{position:fixed;left:16px;right:16px;top:calc(var(--menu-h) + 96px);z-index:2;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
   .st{background:rgba(10,15,22,.72);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:8px 12px;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:10px;align-items:center}
   .st .ico{grid-row:1/3;width:50px;height:36px}
   .st .ico svg{width:100%;height:100%;overflow:visible}
@@ -76,6 +77,30 @@
   .lbl text{paint-order:stroke;stroke:rgba(8,14,22,.85);stroke-width:3px;stroke-linejoin:round}
   .note{position:fixed;left:24px;top:calc(var(--menu-h) + 76px);z-index:2;font:11px/1.5 var(--mono);color:rgba(255,255,255,.55);max-width:44ch}
   @media (max-width:900px){ .chain{grid-template-columns:repeat(5,1fr);gap:4px} .st{padding:6px 8px} .st .ico{display:none} .st .cnt{grid-column:1;font-size:18px} .note{display:none} }
+
+  /* Estilo Claro: tinta oscura sobre fondo claro, sin perder la barra de menú del sitio */
+  :root[data-tema="claro"]{ --ink-light:#16202B; --accent-light:#B4521A; }
+  :root[data-tema="claro"] .eyebrow{color:rgba(22,32,43,.6)}
+  :root[data-tema="claro"] h1{color:var(--ink-light);text-shadow:0 1px 8px rgba(255,255,255,.65)}
+  :root[data-tema="claro"] h1 span{color:var(--accent-light)}
+  :root[data-tema="claro"] .tlabel{color:rgba(22,32,43,.6)}
+  :root[data-tema="claro"] .tmenu button{color:var(--ink-light);background:rgba(255,255,255,.86);border-color:rgba(22,32,43,.22)}
+  :root[data-tema="claro"] .tmenu button:hover,
+  :root[data-tema="claro"] .tmenu li.open>button{border-color:rgba(22,32,43,.5)}
+  :root[data-tema="claro"] .tmenu button.on{border-color:var(--accent-light);color:var(--accent-light)}
+  :root[data-tema="claro"] .tsub{background:rgba(255,255,255,.97);border-color:rgba(22,32,43,.18)}
+  :root[data-tema="claro"] .tsub button{color:var(--ink-light)}
+  :root[data-tema="claro"] .tsub button:hover{background:rgba(22,32,43,.07)}
+  :root[data-tema="claro"] .tsub button.on{color:var(--accent-light)}
+  :root[data-tema="claro"] .st{background:rgba(255,255,255,.88);border-color:rgba(22,32,43,.16)}
+  :root[data-tema="claro"] .st .num{color:rgba(22,32,43,.62)}
+  :root[data-tema="claro"] .st .cnt{color:var(--accent-light)}
+  :root[data-tema="claro"] .st .cnt small{color:rgba(22,32,43,.6)}
+  :root[data-tema="claro"] .lbl .t{fill:var(--ink-light)}
+  :root[data-tema="claro"] .lbl .n,:root[data-tema="claro"] .lbl .u{fill:rgba(22,32,43,.65)}
+  :root[data-tema="claro"] .lbl .v{fill:var(--accent-light)}
+  :root[data-tema="claro"] .lbl text{stroke:rgba(255,255,255,.88)}
+  :root[data-tema="claro"] .lbl .lead{stroke:rgba(22,32,43,.42)}
 
   /* Animaciones CSS */
   .smoke circle{animation:rise 5s linear infinite;transform-box:fill-box;transform-origin:center}
@@ -205,19 +230,26 @@ function makeScene(svg, S, OX, OY, map, mapDelta){
 
 /* ---------- Estilos: solo cambian colores; se elige en el menú superior ---------- */
 const THEMES = {
-  sobrio: { label:'Sobrio', water:'#4A657F', land:'#3B443E', land2:'#414A44', sand:'#5C6159', ground:'#2A3139', quay:'#3A4149', road:'#2F3944', crane:'#C9A24A', wave:.13, stage:'#0F1A2A' },
-  marino: { label:'Marino', water:'#2F6FA8', land:'#42603C', land2:'#4A6A43', sand:'#9A8B62', ground:'#2E3641', quay:'#464E58', road:'#33393F', crane:'#D9A93C', wave:.20, stage:'#1B3A5A' },
-  claro:  { label:'Claro',  water:'#6FAEDD', land:'#7E9C69', land2:'#8AA774', sand:'#C9B98A', ground:'#8C949E', quay:'#9AA2AC', road:'#5C636B', crane:'#E0B04A', wave:.28, stage:'#5C9BD0' },
+  // Sobrio: grafito neutro (sin cambios)
+  sobrio: { label:'Sobrio', water:'#4A657F', land:'#3B443E', land2:'#414A44', sand:'#5C6159', ground:'#2A3139', quay:'#3A4149', road:'#2F3944', crane:'#C9A24A',
+            stage:'#0F1A2A', grid:'rgba(255,255,255,.06)', wave:'rgba(255,255,255,.13)', lane:'rgba(255,255,255,.25)' },
+  // Marino: azul institucional, desaturado, tipo carta náutica
+  marino: { label:'Marino', water:'#2E5578', land:'#3A4750', land2:'#414F59', sand:'#666C6B', ground:'#2D353D', quay:'#3B444E', road:'#2F373F', crane:'#A98B3C',
+            stage:'#16283A', grid:'rgba(255,255,255,.055)', wave:'rgba(255,255,255,.10)', lane:'rgba(255,255,255,.18)' },
+  // Claro: plano técnico sobre papel; la interfaz se invierte a tinta oscura
+  claro:  { label:'Claro',  water:'#8FA6BA', land:'#C2C5B5', land2:'#CACDBD', sand:'#DBD5C2', ground:'#C3C8CD', quay:'#CDD2D7', road:'#6E767E', crane:'#A88B3B',
+            stage:'#8FA6BA', grid:'rgba(22,32,43,.08)', wave:'rgba(22,32,43,.13)', lane:'rgba(22,32,43,.22)', light:true },
 };
 let THEME = 'sobrio';
 try { THEME = new URLSearchParams(location.search).get('tema') || localStorage.getItem('tema') || 'sobrio'; } catch(e){}
 if (!THEMES[THEME]) THEME='sobrio';
 const T = THEMES[THEME];
 document.querySelector('.stage').style.background = T.stage;
+document.documentElement.dataset.tema = THEME;          // la interfaz se adapta al estilo elegido
 document.querySelectorAll('#menu button').forEach(b=>{ b.classList.toggle('on', b.dataset.theme===THEME); b.onclick=()=>{ try{ localStorage.setItem('tema', b.dataset.theme); }catch(e){} location.href = location.pathname + '?tema=' + b.dataset.theme; }; });
 
 const C = {
-  ground:T.ground, quay:T.quay, water:T.water, gridLine:'rgba(255,255,255,.06)', road:T.road, land:T.land, land2:T.land2, sand:T.sand,
+  ground:T.ground, quay:T.quay, water:T.water, gridLine:T.grid, road:T.road, land:T.land, land2:T.land2, sand:T.sand,
   hall:'#555E69', roof:'#66707B', glass:'#9FB4C4', chimney:'#6E7782',
   steel:'#5A6673', steelLight:'#9AA6B4', rail:'#B9C3CF', wheel:'#1E252E',
   track:'#4A4540', crane:T.crane, hot:'#F0762A', warm:'#E8AE5C',
@@ -244,7 +276,7 @@ function water(sc, x0, y0, w, d, stepY=0.5, flat=false){
     const pat = sc.el('pattern',{id:'waves',width:34,height:17,patternUnits:'userSpaceOnUse'},sc.defs);
     // un trazo corto por celda, alineado con el eje x del mundo (dirección de las olas)
     const [ax,ay]=sc.P(0,0,0), [bx,by]=sc.P(1.1,0,0); const dx=bx-ax, dy=by-ay;
-    sc.el('line',{x1:17-dx/2,y1:8.5-dy/2,x2:17+dx/2,y2:8.5+dy/2,stroke:`rgba(255,255,255,${T.wave})`,'stroke-width':1.2,'stroke-linecap':'round'},pat);
+    sc.el('line',{x1:17-dx/2,y1:8.5-dy/2,x2:17+dx/2,y2:8.5+dy/2,stroke:T.wave,'stroke-width':1.2,'stroke-linecap':'round'},pat);
     wavePattern = 'url(#waves)';
   }
   const waves = sc.g(gg,{'clip-path':sc.clip([[x0,y0,x0+w,y0+d]],0.25)});
@@ -423,7 +455,7 @@ function platePortTop(x0){                   // bolardos, bodega, patio y carret
 }
 /* ---------- Placa 2 · Mar ---------- */
 function plateSea(x0){
-  sc.line(sc.P(x0,SHIP_Y+1.6,0.27),sc.P(x0+SEA_W,SHIP_Y+1.6,0.27),'rgba(255,255,255,.25)',1.2,null,{'stroke-dasharray':'2 8'});
+  sc.line(sc.P(x0,SHIP_Y+1.6,0.27),sc.P(x0+SEA_W,SHIP_Y+1.6,0.27),T.lane,1.2,null,{'stroke-dasharray':'2 8'});
   [[6,8.5],[SEA_W-6,10.5],[SEA_W/2,12.0],[SEA_W/2-8,-6],[SEA_W/2+10,-9]].forEach(([bx,by],i)=>{ const g=sc.g(); sc.box(-0.2,-0.2,0,0.4,0.4,0.5,'#B0554A',g,{t:0.3}); sc.box(-0.05,-0.05,0.5,0.1,0.1,0.5,'#F1D7C5',g); updaters.push(now=>sc.tr(g,x0+bx,by,0.2+0.08*Math.sin(now/1000*2+i))); });
 }
 /* ---------- Placa 4 · Centro de acopio ---------- */
@@ -779,17 +811,21 @@ spawnTruck(trucksB, B_ROAD_C+40, RET_C, 180, 'in_x');
 requestAnimationFrame(loop);
 
 /* ---------- Encuadre: la cadena completa cabe en pantalla y el paisaje rellena el resto ---------- */
+const GRASS_Y = 20;                            // hasta dónde llega el pasto visible por delante de las placas
 function fit(){
   const W=innerWidth, H=innerHeight-MENU_H;
+  const hdr=document.querySelector('header'), chain=document.querySelector('.chain');
+  chain.style.top = (hdr.offsetTop + hdr.offsetHeight + 14) + 'px';               // la tira de KPIs va justo debajo del título
   const pts=[sc.P(PX[0]-12,-8,9), sc.P(PX[0]-12,24,0), sc.P(PX[4]+PLATE+4,-8,9), sc.P(PX[4]+PLATE+4,18,0)];
   let x0=Math.min(...pts.map(p=>p[0])), x1=Math.max(...pts.map(p=>p[0]));
   let y0=Math.min(...pts.map(p=>p[1]))-10, y1=Math.max(...pts.map(p=>p[1]));
-  const padT = Math.min(90, H*0.12), padB = Math.min(100, H*0.14), padX = 24;   // título arriba, tarjetas abajo
+  const padB = 14, padX = 24;                                                     // abajo, apenas una franja de pasto
+  const padT = Math.max(120, Math.min(H-padB-120, chain.offsetTop + chain.offsetHeight + 16 - MENU_H));
   let k=Math.max((x1-x0)/(W-2*padX),(y1-y0)/(H-padT-padB));
   y0 -= 130*k;                                                                     // sitio para los rótulos encima de las placas
   k=Math.max((x1-x0)/(W-2*padX),(y1-y0)/(H-padT-padB));                            // unidades svg por px
   const vw=W*k, vh=H*k;
-  const cx=(x0+x1)/2, cy=(y0+y1)/2 + (padT-padB)/2*k;
+  const cx=(x0+x1)/2, cy=sc.P(0,GRASS_Y,0)[1] - vh/2 + padB*k;                     // el pasto queda pegado al borde inferior
   svgAll.setAttribute('viewBox', `${cx-vw/2} ${cy-vh/2} ${vw} ${vh}`);
   document.documentElement.style.setProperty('--menu-h', MENU_H+'px');
   // los rótulos se escalan para conservar su tamaño en píxeles
