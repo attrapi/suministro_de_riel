@@ -43,12 +43,18 @@
   .menu button:focus-visible{outline:2px solid #FF9A4D;outline-offset:2px}
   .stage{position:fixed;left:0;right:0;top:var(--menu-h);bottom:0;background:#0F1A2A}
   .stage svg{width:100%;height:100%;display:block}
+  .stage.oculta svg{display:none}
   header{position:fixed;left:16px;right:16px;top:calc(var(--menu-h) + 14px);z-index:4;pointer-events:none;display:flex;align-items:flex-start;gap:24px}
   .brand{flex:0 0 auto}
   /* rejilla de seis columnas: las tarjetas en el primer renglón y los proyectos bajo la última */
   .hstack{flex:1 1 auto;min-width:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;align-items:start;pointer-events:auto}
   .chain{display:contents}
-  .tramo{grid-column:6;min-width:0}
+  .chain[hidden]{display:none}   /* display:contents le gana al [hidden] del navegador */
+  .tramo{grid-column:6;min-width:0;display:flex;flex-direction:column;gap:6px}
+  .volver{font:11px var(--mono);letter-spacing:.06em;color:rgba(255,255,255,.72);background:transparent;border:1px solid rgba(255,255,255,.22);border-radius:5px;padding:6px 9px;cursor:pointer;width:100%}
+  .volver:hover{color:#EAEFF5;border-color:rgba(255,255,255,.5)}
+  .volver:focus-visible{outline:2px solid #FF9A4D;outline-offset:2px}
+  .volver[hidden]{display:none}
   .tlabel{font:11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.6);margin-right:4px}
   .tmenu{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
   .tmenu>li{position:relative}
@@ -75,6 +81,20 @@
   .st .num{font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.06em}
   .st .cnt{font-family:var(--display);font-weight:600;font-size:24px;line-height:1;color:#FF9A4D;font-variant-numeric:tabular-nums;grid-column:2}
   .st .cnt small{font:11px var(--mono);color:rgba(255,255,255,.6)}
+  /* Panel de la vista de proyecto: título del proyecto y tabla de tramos */
+  .panel{position:fixed;left:16px;right:16px;bottom:16px;z-index:2;overflow:auto;pointer-events:auto}
+  .panel[hidden]{display:none}
+  .panel-t{font:600 16px var(--display);text-transform:uppercase;letter-spacing:.06em;color:#EAEFF5;margin:0 0 10px}
+  .tabla-wrap{background:rgba(10,15,22,.72);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.12);border-radius:6px;overflow-x:auto}
+  .tabla{width:100%;border-collapse:collapse}
+  .tabla th{padding:13px 16px;text-align:right;vertical-align:bottom;border-bottom:1px solid rgba(255,255,255,.16)}
+  .tabla th.c-tramo{text-align:left}
+  .tabla .th-ico{display:block;width:24px;height:24px;margin-left:auto;color:#FF9A4D}
+  .tabla .th-ico svg{width:100%;height:100%;display:block}
+  .tabla td{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.07);text-align:right;font:13px var(--mono);color:#EAEFF5;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .tabla td.c-tramo{text-align:left;font:14px var(--body);color:rgba(255,255,255,.9)}
+  .tabla tbody tr:last-child td{border-bottom:0}
+  .tabla .vacio{color:rgba(255,255,255,.4)}
   .lbl .n{font:500 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;fill:rgba(255,255,255,.6)}
   .lbl .v{font:600 24px var(--display);fill:#FF9A4D}
   .lbl .u{font:11px var(--mono);fill:rgba(255,255,255,.65)}
@@ -98,6 +118,15 @@
   :root[data-tema="claro"] .tmenu button:hover,
   :root[data-tema="claro"] .tmenu li.open>button{border-color:rgba(22,32,43,.5)}
   :root[data-tema="claro"] .tmenu button.on{border-color:var(--accent-light);color:var(--accent-light)}
+  :root[data-tema="claro"] .panel-t{color:var(--ink-light)}
+  :root[data-tema="claro"] .tabla-wrap{background:rgba(255,255,255,.88);border-color:rgba(22,32,43,.16)}
+  :root[data-tema="claro"] .tabla th{border-bottom-color:rgba(22,32,43,.2)}
+  :root[data-tema="claro"] .tabla .th-ico{color:var(--accent-light)}
+  :root[data-tema="claro"] .tabla td{color:var(--ink-light);border-bottom-color:rgba(22,32,43,.1)}
+  :root[data-tema="claro"] .tabla td.c-tramo{color:var(--ink-light)}
+  :root[data-tema="claro"] .tabla .vacio{color:rgba(22,32,43,.45)}
+  :root[data-tema="claro"] .volver{color:rgba(22,32,43,.72);border-color:rgba(22,32,43,.24)}
+  :root[data-tema="claro"] .volver:hover{color:var(--ink-light);border-color:rgba(22,32,43,.5)}
   :root[data-tema="claro"] .tsub{background:rgba(255,255,255,.97);border-color:rgba(22,32,43,.18)}
   :root[data-tema="claro"] .tsub button{color:var(--ink-light)}
   :root[data-tema="claro"] .tsub button:hover{background:rgba(22,32,43,.07)}
@@ -143,7 +172,7 @@
     <div class="fase"><span id="faseTxt">Fase I</span><button type="button" id="faseNext">&rarr;</button></div>
   </div>
   <div class="hstack">
-    <div class="chain">
+    <div class="chain" id="chainInicio">
       <div class="st"><div class="ico" id="ico1"></div><div class="num">Contratado</div><div class="cnt"><span data-d="contratado">0</span> <small>tm</small></div></div>
       <div class="st"><div class="ico" id="ico2"></div><div class="num">En proceso</div><div class="cnt"><span data-d="proceso">0</span> <small>tm</small></div></div>
       <div class="st"><div class="ico" id="ico3"></div><div class="num">Entregado</div><div class="cnt"><span data-d="entregado">0</span> <small>tm</small></div></div>
@@ -151,11 +180,31 @@
       <div class="st"><div class="ico" id="ico4"></div><div class="num">Monto pendiente</div><div class="cnt"><span data-d="monto">0</span> <small>M</small></div></div>
       <div class="st"><div class="ico" id="ico5"></div><div class="num">Proyectos</div><div class="cnt"><span id="nTramos">0</span> <small>proyectos</small></div></div>
     </div>
+    <div class="chain" id="chainProyecto" hidden>
+      <div class="st"><div class="ico" id="ico7"></div><div class="num">Solicitado</div><div class="cnt"><span data-d="solicitado">0</span> <small>tm</small></div></div>
+      <div class="st"><div class="ico" id="ico8"></div><div class="num">Entregado</div><div class="cnt"><span data-d="entregado">0</span> <small>tm</small></div></div>
+      <div class="st"><div class="ico" id="ico9"></div><div class="num">Pendiente</div><div class="cnt"><span data-d="pendiente">0</span> <small>tm</small></div></div>
+    </div>
     <div class="tramo" id="tramo">
+      <button type="button" class="volver" id="btnVolver" hidden>&larr; Volver</button>
       <ul class="tmenu" id="tmenu"></ul>
     </div>
   </div>
 </header>
+<div class="panel" id="panelProyecto" hidden>
+  <h2 class="panel-t" id="panelTitulo"></h2>
+  <div class="tabla-wrap">
+    <table class="tabla">
+      <thead><tr>
+        <th class="c-tramo"></th>
+        <th><span class="th-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M7.6 6.2h4.6l1.6 2.2H20.5v7.4"/><path d="M3.5 19.8V9.1h4.6l1.6 2.2h6.4v8.5z"/></svg></span></th>
+        <th><span class="th-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7 3.5v17M17 3.5v17"/><path d="M3.5 7h17M3.5 12h17M3.5 17h17"/></svg></span></th>
+        <th><span class="th-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 16.8h19.5"/><path d="M15.3 16.8v-5.4h2.9l3 3.1v2.3"/><path d="M2.6 13.4h12.2"/><path d="M3.4 11.2h10.8M3.4 8.8h10.8"/><circle cx="7" cy="18.7" r="1.8"/><circle cx="17.8" cy="18.7" r="1.8"/></svg></span></th>
+      </tr></thead>
+      <tbody id="tablaBody"></tbody>
+    </table>
+  </div>
+</div>
 
 <script>
 /* ============================================================
@@ -168,23 +217,41 @@ const TRAMOS = [
 ];
 // produccion/puerto/traslado/descarga/acopio       → rótulos de la maqueta, en tm
 // contratado/proceso/entregado/pendiente (tm)
-// y monto pendiente (millones de pesos)             → tarjetas de arriba; son cifras aparte
+// y monto pendiente (millones de pesos)             → tarjetas de la portada
+// solicitado/entregado/pendiente (tm)                → tarjetas de la vista de proyecto
 // un valor de texto ('88K') se imprime tal cual; uno numérico lleva separador de miles
 const FASES = [
   { id:'f1', nombre:'Fase I'  },
   { id:'f2', nombre:'Fase II' },
 ];
 // Fase II sigue sin cifras: el guión se imprime tal cual hasta que lleguen
-const SIN_DATOS = { produccion:'—', puerto:'—', traslado:'—', descarga:'—', acopio:'—', contratado:'—', proceso:'—', entregado:'—', pendiente:'—', monto:'—' };
+const SIN_DATOS = { produccion:'—', puerto:'—', traslado:'—', descarga:'—', acopio:'—', contratado:'—', proceso:'—', entregado:'—', pendiente:'—', monto:'—', solicitado:'—' };
 const DATOS_FASE = {
   f1: {
-    'qro-ira': { produccion: 0, puerto: 0, traslado: 0, descarga: 0, acopio: 13023, contratado: '88K', proceso: 13023, entregado: 13023, pendiente: 74977, monto: 245 },
-    'sal-nl':  { produccion: 0, puerto: 0, traslado: 0, descarga: 0, acopio:  9480, contratado: '62K', proceso:  9480, entregado:  9480, pendiente: 52520, monto: 318 },
+    'qro-ira': { produccion: 0, puerto: 0, traslado: 0, descarga: 0, acopio: 13023, contratado: '88K', proceso: 13023, entregado: 13023, pendiente: 74977, monto: 245, solicitado: '88K' },
+    'sal-nl':  { produccion: 0, puerto: 0, traslado: 0, descarga: 0, acopio:  9480, contratado: '62K', proceso:  9480, entregado:  9480, pendiente: 52520, monto: 318, solicitado: '62K' },
   },
   f2: {
     'qro-ira': { ...SIN_DATOS },
     'sal-nl':  { ...SIN_DATOS },
   },
+};
+// Tabla de tramos de la vista de proyecto. 'Pendiente' y '—' se imprimen tal cual.
+const TABLA = {
+  f1: {
+    'qro-ira': [
+      { tramo:'Tramo I',                    solicitado:'Pendiente', entregado:'Pendiente', pendiente:'Pendiente' },
+      { tramo:'Tramo II',                   solicitado:'Pendiente', entregado:1555,        pendiente:5396 },
+    ],
+    'sal-nl': [
+      { tramo:'Tramo I · Seg. 13 y 14',     solicitado:'Pendiente', entregado:9419, pendiente:'—' },
+      { tramo:'Tramo V · Seg. 16 y 17',     solicitado:'Pendiente', entregado:2049, pendiente:5673 },
+      { tramo:'Tramo IV',                   solicitado:'—',         entregado:'—',  pendiente:4152 },
+      { tramo:'Tramo II · Seg. 13 y 14',    solicitado:'—',         entregado:0,    pendiente:723 },
+      { tramo:'Tramo VI · Seg. 18, 19 y 20',solicitado:'—',         entregado:'—',  pendiente:6122 },
+    ],
+  },
+  f2: { 'qro-ira': [], 'sal-nl': [] },      // Fase II todavía sin tramos
 };
 let SEG = 'qro-ira';
 try { SEG = localStorage.getItem('segmento') || SEG; } catch(e){}
@@ -790,6 +857,15 @@ PX.forEach((x0,i)=>{
 function pintarDatos(){
   DATOS = DATOS_FASE[FASE][SEG];
   document.querySelectorAll('[data-d]').forEach(e=>{ e.textContent = DATOS[e.dataset.d].toLocaleString('es-MX'); });
+  pintarTabla();
+}
+function pintarTabla(){
+  const filas = (TABLA[FASE] || {})[SEG] || [];
+  document.getElementById('panelTitulo').textContent = (TRAMOS.find(t=>t.id===SEG) || {}).nombre || '';
+  const cel = v => typeof v === 'number' ? `<td>${v.toLocaleString('es-MX')}</td>` : `<td class="vacio">${v}</td>`;
+  document.getElementById('tablaBody').innerHTML = filas.length
+    ? filas.map(f=>`<tr><td class="c-tramo">${f.tramo}</td>${cel(f.solicitado)}${cel(f.entregado)}${cel(f.pendiente)}</tr>`).join('')
+    : '<tr><td class="c-tramo vacio" colspan="4">Sin datos para esta fase</td></tr>';
 }
 const btnFase = document.getElementById('faseNext');
 function setFase(id){
@@ -804,10 +880,31 @@ function setFase(id){
 btnFase.onclick = ()=>{ const i = FASES.findIndex(f=>f.id===FASE); setFase(FASES[(i+1)%FASES.length].id); };
 setFase(FASE);
 document.getElementById('nTramos').textContent = TRAMOS.length.toLocaleString('es-MX');
+
+/* ---------- Vista: la portada lleva la maqueta; la de proyecto la esconde ---------- */
+let VISTA = 'inicio';
+const elStage = document.querySelector('.stage'), elVolver = document.getElementById('btnVolver');
+function setVista(v){
+  VISTA = v === 'proyecto' ? 'proyecto' : 'inicio';
+  const enProyecto = VISTA === 'proyecto';
+  document.getElementById('chainInicio').hidden = enProyecto;
+  document.getElementById('chainProyecto').hidden = !enProyecto;
+  elStage.classList.toggle('oculta', enProyecto);      // se esconde la maqueta, no el color del escenario
+  document.getElementById('panelProyecto').hidden = !enProyecto;
+  elVolver.hidden = !enProyecto;
+  fit();                                              // el encabezado cambia de alto
+}
+elVolver.onclick = ()=> setVista('inicio');
+
 /* ---------- Proyectos (fijos: se ven desde que abre la página) ---------- */
 {
   const menu=document.getElementById('tmenu');
-  const pick=(id)=>{ try{ localStorage.setItem('segmento', id); }catch(e){} location.href = location.pathname + location.search; };
+  // elegir un proyecto abre su vista; ya no recarga la página
+  const pick=(id)=>{
+    SEG = id; try{ localStorage.setItem('segmento', id); }catch(e){}
+    menu.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.tramo===id));
+    pintarDatos(); setVista('proyecto');
+  };
   const closeAll=()=>menu.querySelectorAll('li.open').forEach(x=>x.classList.remove('open'));
   TRAMOS.forEach(t=>{
     const li=document.createElement('li'); const b=document.createElement('button'); b.type='button';
@@ -820,7 +917,7 @@ document.getElementById('nTramos').textContent = TRAMOS.length.toLocaleString('e
       li.appendChild(ul);
       b.setAttribute('aria-haspopup','true');
       b.onclick=(e)=>{ e.stopPropagation(); const was=li.classList.contains('open'); closeAll(); if (!was) li.classList.add('open'); };
-    } else { if (t.id===SEG) b.classList.add('on'); b.onclick=()=>pick(t.id); }   // sin segmentos, el proyecto mismo es la selección
+    } else { b.dataset.tramo=t.id; if (t.id===SEG) b.classList.add('on'); b.onclick=()=>pick(t.id); }   // sin segmentos, el proyecto mismo es la selección
     menu.appendChild(li);
   });
   document.addEventListener('click',e=>{ if (!menu.contains(e.target)) closeAll(); });
@@ -835,21 +932,28 @@ function icon(id, build){
   m.poly([m.P(0,0,0),m.P(6,0,0),m.P(6,5,0),m.P(0,5,0)],'rgba(127,140,160,.22)');
   build(m);
 }
-icon('ico1', m=>{ m.box(0.4,0.6,0,2.6,3.4,1.6,C.hall); m.box(0.7,0.9,1.6,0.5,0.5,1.4,C.chimney); m.box(3.3,1.6,0,2.2,0.9,0.4,C.steel); m.box(3.4,1.9,0.4,1.9,0.25,0.25,C.hot); });
-icon('ico2', m=>{ m.box(0,0,-0.1,6,2,0.1,C.water,null,{t:0.15}); m.box(0.6,2.6,0,2.4,0.9,0.5,C.rail); m.box(3.6,1.6,0,0.3,0.3,2.4,C.crane); m.box(3.6,4.2,0,0.3,0.3,2.4,C.crane); m.box(3.5,0.4,2.4,0.5,4.1,0.3,C.crane); });
-icon('ico3', m=>{ m.box(0,0,-0.1,6,5,0.1,C.water,null,{t:0.15}); m.box(0.8,1.6,0.1,4.2,1.6,0.7,C.hull,null,{t:0.35}); m.box(1.0,1.9,0.8,0.9,1.0,0.8,C.house); m.box(1.2,2.2,1.6,0.3,0.3,0.4,C.funnel); });
-icon('ico4', m=>{ m.box(0,0,-0.1,6,2,0.1,C.water,null,{t:0.15}); m.box(0.5,3.4,0,2.6,0.8,0.3,'#6B7684'); m.box(2.6,3.4,0,0.7,0.8,0.8,C.truck); m.box(4.2,1.6,0,0.3,0.3,2.4,C.crane); m.box(4.2,4.2,0,0.3,0.3,2.4,C.crane); m.box(4.1,0.4,2.4,0.5,4.1,0.3,C.crane); });
-icon('ico6', m=>{ m.box(0.6,0.8,0,4.2,0.7,0.6,C.rail); m.box(0.6,2.4,0,4.2,0.7,0.6,C.rail); m.box(0.6,4.0,0,4.2,0.7,0.15,'rgba(127,140,160,.45)'); });
-icon('ico5', m=>{ for (let i=0;i<3;i++) m.box(0.6,0.6+i*1.3,0,4.2,0.7,0.6,C.rail); m.box(2.9,0.2,0,0.3,0.3,2.4,C.crane); m.box(2.9,4.2,0,0.3,0.3,2.4,C.crane); m.box(2.8,0.2,2.4,0.5,4.3,0.3,C.crane); });
+const DIB = {
+  fabrica:  m=>{ m.box(0.4,0.6,0,2.6,3.4,1.6,C.hall); m.box(0.7,0.9,1.6,0.5,0.5,1.4,C.chimney); m.box(3.3,1.6,0,2.2,0.9,0.4,C.steel); m.box(3.4,1.9,0.4,1.9,0.25,0.25,C.hot); },
+  puerto:   m=>{ m.box(0,0,-0.1,6,2,0.1,C.water,null,{t:0.15}); m.box(0.6,2.6,0,2.4,0.9,0.5,C.rail); m.box(3.6,1.6,0,0.3,0.3,2.4,C.crane); m.box(3.6,4.2,0,0.3,0.3,2.4,C.crane); m.box(3.5,0.4,2.4,0.5,4.1,0.3,C.crane); },
+  barco:    m=>{ m.box(0,0,-0.1,6,5,0.1,C.water,null,{t:0.15}); m.box(0.8,1.6,0.1,4.2,1.6,0.7,C.hull,null,{t:0.35}); m.box(1.0,1.9,0.8,0.9,1.0,0.8,C.house); m.box(1.2,2.2,1.6,0.3,0.3,0.4,C.funnel); },
+  descarga: m=>{ m.box(0,0,-0.1,6,2,0.1,C.water,null,{t:0.15}); m.box(0.5,3.4,0,2.6,0.8,0.3,'#6B7684'); m.box(2.6,3.4,0,0.7,0.8,0.8,C.truck); m.box(4.2,1.6,0,0.3,0.3,2.4,C.crane); m.box(4.2,4.2,0,0.3,0.3,2.4,C.crane); m.box(4.1,0.4,2.4,0.5,4.1,0.3,C.crane); },
+  faltante: m=>{ m.box(0.6,0.8,0,4.2,0.7,0.6,C.rail); m.box(0.6,2.4,0,4.2,0.7,0.6,C.rail); m.box(0.6,4.0,0,4.2,0.7,0.15,'rgba(127,140,160,.45)'); },
+  acopio:   m=>{ for (let i=0;i<3;i++) m.box(0.6,0.6+i*1.3,0,4.2,0.7,0.6,C.rail); m.box(2.9,0.2,0,0.3,0.3,2.4,C.crane); m.box(2.9,4.2,0,0.3,0.3,2.4,C.crane); m.box(2.8,0.2,2.4,0.5,4.3,0.3,C.crane); },
+};
+icon('ico1', DIB.fabrica);  icon('ico2', DIB.puerto);   icon('ico3', DIB.barco);
+icon('ico4', DIB.descarga); icon('ico6', DIB.faltante); icon('ico5', DIB.acopio);
+icon('ico7', DIB.fabrica);  icon('ico8', DIB.barco);    icon('ico9', DIB.faltante);   // tira de la vista de proyecto
 
 /* ---------- Bucle ---------- */
 let last = performance.now();
 function loop(now){
   const dt = Math.min(0.05, (now-last)/1000); last = now;
-  updaters.forEach(u=>u(now));
-  ships.forEach(s=>updateShip(s, dt, now));
-  updateTrucksA(dt); updateTrucksB(dt);
-  Object.values(cranes).forEach(c=>c.update(dt));
+  if (VISTA === 'inicio'){                       // con la maqueta escondida no hay nada que animar
+    updaters.forEach(u=>u(now));
+    ships.forEach(s=>updateShip(s, dt, now));
+    updateTrucksA(dt); updateTrucksB(dt);
+    Object.values(cranes).forEach(c=>c.update(dt));
+  }
   if (!REDUCE) requestAnimationFrame(loop);
 }
 // Fotograma inicial con actividad ya en marcha:
@@ -867,6 +971,7 @@ const GRASS_Y = 20;                            // hasta dónde llega el pasto vi
 function fit(){
   const W=innerWidth, H=innerHeight-MENU_H;
   const hdr=document.querySelector('header');
+  document.getElementById('panelProyecto').style.top = (hdr.offsetTop + hdr.offsetHeight + 18) + 'px';
   const pts=[sc.P(PX[0]-12,-8,9), sc.P(PX[0]-12,24,0), sc.P(PX[4]+PLATE+4,-8,9), sc.P(PX[4]+PLATE+4,18,0)];
   let x0=Math.min(...pts.map(p=>p[0])), x1=Math.max(...pts.map(p=>p[0]));
   let y0=Math.min(...pts.map(p=>p[1]))-10, y1=Math.max(...pts.map(p=>p[1]));
