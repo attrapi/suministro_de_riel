@@ -182,8 +182,8 @@
     </div>
     <div class="chain" id="chainProyecto" hidden>
       <div class="st"><div class="ico" id="ico7"></div><div class="num">Solicitado</div><div class="cnt"><span data-d="solicitado">0</span> <small>tm</small></div></div>
-      <div class="st"><div class="ico" id="ico8"></div><div class="num">Entregado</div><div class="cnt"><span data-d="entregado">0</span> <small>tm</small></div></div>
-      <div class="st"><div class="ico" id="ico9"></div><div class="num">Pendiente</div><div class="cnt"><span data-d="pendiente">0</span> <small>tm</small></div></div>
+      <div class="st"><div class="ico" id="ico8"></div><div class="num">Entregado</div><div class="cnt"><span data-d="entregadoP">0</span> <small>tm</small></div></div>
+      <div class="st"><div class="ico" id="ico9"></div><div class="num">Pendiente</div><div class="cnt"><span data-d="pendienteP">0</span> <small>tm</small></div></div>
     </div>
     <div class="tramo" id="tramo">
       <button type="button" class="volver" id="btnVolver" hidden>&larr; Volver</button>
@@ -218,18 +218,19 @@ const TRAMOS = [
 // produccion/puerto/traslado/descarga/acopio       → rótulos de la maqueta, en tm
 // contratado/proceso/entregado/pendiente (tm)
 // y monto pendiente (millones de pesos)             → tarjetas de la portada
-// solicitado/entregado/pendiente (tm)                → tarjetas de la vista de proyecto
+// solicitado/entregadoP/pendienteP (tm)             → tarjetas de la vista de proyecto:
+//                                                     son cifras propias, no las de la portada
 // un valor de texto ('88K') se imprime tal cual; uno numérico lleva separador de miles
 const FASES = [
   { id:'f1', nombre:'Fase I'  },
   { id:'f2', nombre:'Fase II' },
 ];
 // Fase II sigue sin cifras: el guión se imprime tal cual hasta que lleguen
-const SIN_DATOS = { produccion:'—', puerto:'—', traslado:'—', descarga:'—', acopio:'—', contratado:'—', proceso:'—', entregado:'—', pendiente:'—', monto:'—', solicitado:'—' };
+const SIN_DATOS = { produccion:'—', puerto:'—', traslado:'—', descarga:'—', acopio:'—', contratado:'—', proceso:'—', entregado:'—', pendiente:'—', monto:'—', solicitado:'—', entregadoP:'—', pendienteP:'—' };
 const DATOS_FASE = {
   f1: {
-    'qro-ira': { produccion: 28945, puerto: 0, traslado: 0, descarga: 22795, acopio: 13023, contratado: 64034, proceso: 22795, entregado: 13023, pendiente: 51011, monto: 245, solicitado: 64034 },
-    'sal-nl':  { produccion: 0, puerto: 0, traslado: 0, descarga: 0, acopio:  9480, contratado: '62K', proceso:  9480, entregado: 11468, pendiente: 34601, monto: 318, solicitado: 46069 },
+    'qro-ira': { produccion: 28945, puerto: 0, traslado: 0, descarga: 22795, acopio: 13023, contratado: 64034, proceso: 22795, entregado: 13023, pendiente: 51011, monto: 245, solicitado: 17965, entregadoP:  1555, pendienteP: 16410 },
+    'sal-nl':  { produccion: 0, puerto: 0, traslado: 0, descarga: 0, acopio:  9480, contratado: '62K', proceso:  9480, entregado:  9480, pendiente: 52520, monto: 318, solicitado: 46069, entregadoP: 11468, pendienteP: 34601 },
   },
   f2: {
     'qro-ira': { ...SIN_DATOS },
