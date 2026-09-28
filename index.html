@@ -62,9 +62,9 @@
   .tlabel{font:11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.6);margin-right:4px}
   .tmenu{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
   .tmenu>li{position:relative}
-  .tmenu button{font:11px var(--mono);color:#EAEFF5;background:rgba(10,15,22,.72);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.2);border-radius:5px;padding:7px 9px;cursor:pointer;display:flex;gap:6px;align-items:center;justify-content:center;text-align:center;width:100%;line-height:1.3}
-  .tmenu button:hover,.tmenu li.open>button{border-color:rgba(255,255,255,.45)}
-  .tmenu button.on{border-color:#FF9A4D;color:#FF9A4D}
+  /* los dos proyectos se ven igual siempre: elegir uno no cambia su aspecto */
+  .tmenu button{font:11px var(--mono);color:#FF9A4D;background:rgba(10,15,22,.72);backdrop-filter:blur(6px);border:1px solid #FF9A4D;border-radius:5px;padding:7px 9px;cursor:pointer;display:flex;gap:6px;align-items:center;justify-content:center;text-align:center;width:100%;line-height:1.3}
+  .tmenu button:hover,.tmenu li.open>button{background:rgba(255,154,77,.18)}
   .tmenu button:focus-visible{outline:2px solid #FF9A4D;outline-offset:2px}
   .tmenu .arrow{opacity:.6;font-style:normal}
   .tsub{list-style:none;margin:0;padding:6px;position:absolute;left:0;top:calc(100% + 6px);display:none;flex-direction:column;gap:2px;background:rgba(10,15,22,.94);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.16);border-radius:6px;min-width:190px;z-index:5}
@@ -86,7 +86,7 @@
   .st .ico{grid-row:1/3;width:50px;height:36px}
   .st .ico svg{width:100%;height:100%;overflow:visible}
   .st .num{font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.06em}
-  .st .cnt{font-family:var(--display);font-weight:600;font-size:24px;line-height:1;color:#FF9A4D;font-variant-numeric:tabular-nums;grid-column:2}
+  .st .cnt{font-family:var(--display);font-weight:600;font-size:24px;line-height:1;color:#FF9A4D;font-variant-numeric:tabular-nums;grid-column:2;white-space:nowrap}
   .st .cnt small{font:11px var(--mono);color:rgba(255,255,255,.6)}
   /* Panel de la vista de proyecto: título del proyecto y tabla de tramos */
   .panel{position:fixed;left:16px;right:16px;bottom:16px;z-index:2;overflow:auto;pointer-events:auto}
@@ -132,10 +132,9 @@
   :root[data-tema="claro"] .fases button{color:rgba(22,32,43,.72);border-left-color:rgba(180,82,26,.3)}
   :root[data-tema="claro"] .fases button.on{background:var(--accent-light);color:#FFF}
   :root[data-tema="claro"] .fases button:not(.on):hover{background:rgba(180,82,26,.14);color:var(--ink-light)}
-  :root[data-tema="claro"] .tmenu button{color:var(--ink-light);background:rgba(255,255,255,.86);border-color:rgba(22,32,43,.22)}
+  :root[data-tema="claro"] .tmenu button{color:var(--accent-light);background:rgba(255,255,255,.86);border-color:var(--accent-light)}
   :root[data-tema="claro"] .tmenu button:hover,
   :root[data-tema="claro"] .tmenu li.open>button{border-color:rgba(22,32,43,.5)}
-  :root[data-tema="claro"] .tmenu button.on{border-color:var(--accent-light);color:var(--accent-light)}
   :root[data-tema="claro"] .panel-t{color:var(--ink-light)}
   :root[data-tema="claro"] .tabla-wrap{background:rgba(255,255,255,.88);border-color:rgba(22,32,43,.16)}
   :root[data-tema="claro"] .tabla th{border-bottom-color:rgba(22,32,43,.2)}
@@ -177,7 +176,6 @@
 
 <div id="menu" class="menu"><!-- espacio reservado para el menú del sitio (100 % de ancho) -->
   <span class="mtitle">Estilo</span>
-  <button type="button" data-theme="sobrio">Sobrio</button>
   <button type="button" data-theme="institucional">Institucional</button>
   <button type="button" data-theme="marino">Marino</button>
   <button type="button" data-theme="arena">Arena</button>
@@ -231,58 +229,123 @@
 
 <script>
 /* ============================================================
-   DATOS — sustituir por los valores del Excel
+   DATOS — salen de la hoja de Google; el respaldo de abajo es lo último
+   que se leyó, y es lo que se ve si la hoja no se puede alcanzar.
    ============================================================ */
-// Un renglón por segmento (los valores de ejemplo se sustituyen por los del Excel)
+const HOJA_CSV = 'https://docs.google.com/spreadsheets/d/1yhYrAhYaH7InE_3JNbGBG2TCpqEnfxpG/export?format=csv&gid=17083721';
+const RECARGA_MIN = 5;                       // cada cuánto se vuelve a leer la hoja, con la página abierta
+
 const TRAMOS = [
   { id:'qro-ira', nombre:'Querétaro – Irapuato', segmentos:[] },
   { id:'sal-nl',  nombre:'Saltillo – Nuevo Laredo', segmentos:[] },
 ];
-// produccion/puerto/traslado/descarga/acopio       → rótulos de la maqueta, en tm
-// contratado/proceso/entregado/pendiente (tm)
-// y monto pendiente (millones de pesos)             → tarjetas de la portada
-// solicitado/entregadoP/pendienteP (tm)             → tarjetas de la vista de proyecto:
-//                                                     son cifras propias, no las de la portada
-// un valor de texto ('88K') se imprime tal cual; uno numérico lleva separador de miles
 const FASES = [
-  { id:'f1', nombre:'Fase I'   },
-  { id:'f2', nombre:'Fase II'  },
-  { id:'f3', nombre:'Fase III' },
+  { id:'f1', nombre:'Entrega I'   },
+  { id:'f2', nombre:'Entrega II'  },
+  { id:'f3', nombre:'Entrega III' },
 ];
-// Fase II y III siguen sin cifras: el guión se imprime tal cual hasta que lleguen
+const UNIDAD = 'tm';
 const SIN_DATOS = { produccion:'—', puerto:'—', traslado:'—', descarga:'—', acopio:'—', contratado:'—', proceso:'—', entregado:'—', pendiente:'—', monto:'—', solicitado:'—', entregadoP:'—', pendienteP:'—' };
-const DATOS_FASE = {
-  f1: {
-    'qro-ira': { produccion: 28945, puerto: 0, traslado: 0, descarga: 22795, acopio: 13023, contratado: 64034, proceso: 22795, entregado: 13023, pendiente: 51011, monto: 245, solicitado: 17965, entregadoP:  1555, pendienteP: 16410 },
-    'sal-nl':  { produccion: 0, puerto: 0, traslado: 0, descarga: 0, acopio:  9480, contratado: '62K', proceso:  9480, entregado:  9480, pendiente: 52520, monto: 318, solicitado: 46069, entregadoP: 11468, pendienteP: 34601 },
+
+// Así viene la hoja: KPIs de la portada (una sola vez), maqueta por entrega y una tabla por proyecto.
+const RESPALDO = {
+  kpis: { contratado:88559.16, proceso:40069.63, entregado:18006.65, pendiente:38048.25, monto:'—' },
+  maqueta: {
+    f1: { produccion:'—',     puerto:'—', traslado:'—', descarga:'—',      acopio:18010.84 },
+    f2: { produccion:'—',     puerto:'—', traslado:'—', descarga:30524.37, acopio:'—' },
+    f3: { produccion:40069.63, puerto:'—', traslado:'—', descarga:'—',     acopio:'—' },
   },
-  f2: {
-    'qro-ira': { ...SIN_DATOS },
-    'sal-nl':  { ...SIN_DATOS },
-  },
-  f3: {
-    'qro-ira': { ...SIN_DATOS },
-    'sal-nl':  { ...SIN_DATOS },
-  },
-};
-// Tabla de tramos de la vista de proyecto. 'Pendiente' y '—' se imprimen tal cual.
-const TABLA = {
-  f1: {
+  tramos: {
     'qro-ira': [
-      { tramo:'Tramo I',                    solicitado:'Pendiente', entregado:'Pendiente', pendiente:'Pendiente' },
-      { tramo:'Tramo II',                   solicitado:'Pendiente', entregado:1555,        pendiente:5396 },
+      { tramo:'T I',  solicitado: 6917,  entregado:    0,    pendiente:    0 },
+      { tramo:'T II', solicitado:16600,  entregado: 2150.56, pendiente: 7464.4 },
     ],
     'sal-nl': [
-      { tramo:'Tramo I · Seg. 13 y 14',     solicitado:'Pendiente', entregado:9419, pendiente:'—' },
-      { tramo:'Tramo V · Seg. 16 y 17',     solicitado:'Pendiente', entregado:2049, pendiente:5673 },
-      { tramo:'Tramo IV',                   solicitado:'—',         entregado:'—',  pendiente:4152 },
-      { tramo:'Tramo II · Seg. 13 y 14',    solicitado:'—',         entregado:0,    pendiente:723 },
-      { tramo:'Tramo VI · Seg. 18, 19 y 20',solicitado:'—',         entregado:'—',  pendiente:6122 },
+      { tramo:'T I, seg. 13 y 14',      solicitado:12774.97, entregado:13026.47, pendiente:   0 },
+      { tramo:'T V, seg. 16 y 17',      solicitado: 4088,    entregado: 2834,    pendiente:7846 },
+      { tramo:'T II, seg. 13 y 14',     solicitado:12775,    entregado:    0,    pendiente:1000 },
+      { tramo:'T IV, seg. 15B',         solicitado: 4422,    entregado:    0,    pendiente:7464.4 },
+      { tramo:'T VI, seg. 18, 19 y 20', solicitado: 8566,    entregado:    0,    pendiente:8467 },
     ],
   },
-  f2: { 'qro-ira': [], 'sal-nl': [] },      // Fase II y III todavía sin tramos
-  f3: { 'qro-ira': [], 'sal-nl': [] },
 };
+
+let DATOS_FASE = {}, TABLA = {};
+// Arma lo que consume la página: cada entrega lleva su maqueta, los KPIs de la portada
+// (que la hoja da una sola vez) y los totales por proyecto, sumados de su propia tabla.
+function armar(h){
+  const suma = (lista, k) => lista.reduce((a,f)=> a + (typeof f[k]==='number' ? f[k] : 0), 0);
+  DATOS_FASE = {}; TABLA = {};
+  for (const f of FASES){
+    DATOS_FASE[f.id] = {}; TABLA[f.id] = {};
+    for (const t of TRAMOS){
+      const lista = h.tramos[t.id] || [];
+      DATOS_FASE[f.id][t.id] = Object.assign({}, SIN_DATOS, h.maqueta[f.id] || {}, h.kpis, {
+        solicitado:  suma(lista,'solicitado'),
+        entregadoP:  suma(lista,'entregado'),
+        pendienteP:  suma(lista,'pendiente'),
+      });
+      TABLA[f.id][t.id] = lista;
+    }
+  }
+}
+
+/* ---------- Lectura de la hoja ---------- */
+function filasCSV(texto){                    // separa respetando las comillas: los números vienen como "88,559.16"
+  const filas = [[]]; let campo = '', entre = false;
+  for (let i=0; i<texto.length; i++){
+    const ch = texto[i];
+    if (entre){ if (ch === '"'){ if (texto[i+1] === '"'){ campo += '"'; i++; } else entre = false; } else campo += ch; }
+    else if (ch === '"') entre = true;
+    else if (ch === ','){ filas[filas.length-1].push(campo); campo = ''; }
+    else if (ch === '\n'){ filas[filas.length-1].push(campo); campo = ''; filas.push([]); }
+    else if (ch !== '\r') campo += ch;
+  }
+  filas[filas.length-1].push(campo);
+  return filas;
+}
+const aNum = v => { const t = (v||'').replace(/,/g,'').trim(); if (!t || t === '-') return '—'; const n = Number(t); return isNaN(n) ? '—' : n; };
+// un entero va sin decimales; con fracción se muestran dos, como en la hoja
+const fmt = v => typeof v === 'number' ? v.toLocaleString('es-MX', { minimumFractionDigits: Number.isInteger(v) ? 0 : 2, maximumFractionDigits: 2 }) : String(v);
+const clave = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+
+function leerHoja(filas){
+  const h = { kpis:{}, maqueta:{}, tramos:{} };
+  const fila = filas.find(f => clave(f[0]) === 'resumengeneral');
+  if (!fila) return null;                    // sin ese renglón la hoja cambió de forma: mejor no tocar nada
+  h.kpis = { contratado:aNum(fila[1]), proceso:aNum(fila[2]), entregado:aNum(fila[3]), pendiente:aNum(fila[4]), monto:aNum(fila[5]) };
+  const campos = ['produccion','puerto','traslado','descarga','acopio'];
+  for (const f of filas){                    // columnas H..M: una fila por entrega
+    const m = /^entrega\s+(i{1,3})\b/i.exec((f[7]||'').trim());
+    if (!m) continue;
+    const id = { i:'f1', ii:'f2', iii:'f3' }[m[1].toLowerCase()];
+    h.maqueta[id] = {}; campos.forEach((k,n)=> h.maqueta[id][k] = aNum(f[8+n]));
+  }
+  for (const t of TRAMOS){                   // el nombre del proyecto encabeza su tabla; los datos empiezan dos filas abajo
+    const i = filas.findIndex(f => clave(f[1]) === clave(t.nombre));
+    if (i < 0) continue;
+    const lista = [];
+    for (let r=i+2; r<filas.length; r++){
+      const f = filas[r];
+      if (!f || !(f[0]||'').trim()) break;
+      lista.push({ tramo:f[0].trim(), solicitado:aNum(f[1]), entregado:aNum(f[2]), pendiente:aNum(f[3]) });
+    }
+    h.tramos[t.id] = lista;
+  }
+  return h;
+}
+async function cargarHoja(){
+  try {
+    const r = await fetch(HOJA_CSV, { cache:'no-store' });
+    if (!r.ok) return false;
+    const h = leerHoja(filasCSV(await r.text()));
+    if (!h) return false;
+    armar(h); pintarDatos();
+    return true;
+  } catch(e){ return false; }               // sin red o con la hoja cerrada, se queda el respaldo
+}
+
+armar(RESPALDO);
 let SEG = 'qro-ira';
 try { SEG = localStorage.getItem('segmento') || SEG; } catch(e){}
 if (!DATOS_FASE.f1[SEG]) SEG='qro-ira';
@@ -290,7 +353,6 @@ let FASE = 'f1';
 try { FASE = localStorage.getItem('fase') || FASE; } catch(e){}
 if (!DATOS_FASE[FASE]) FASE = 'f1';
 let DATOS = DATOS_FASE[FASE][SEG];
-const UNIDAD = 'tm';
 
 /* ============================================================
    Motor isométrico mínimo. Mundo (x,y,z): x → abajo-derecha, y → abajo-izquierda, z → arriba.
@@ -353,9 +415,6 @@ function makeScene(svg, S, OX, OY, map, mapDelta){
 
 /* ---------- Estilos: solo cambian colores; se elige en el menú superior ---------- */
 const THEMES = {
-  // Sobrio: grafito neutro (sin cambios)
-  sobrio: { label:'Sobrio', water:'#4A657F', land:'#3B443E', land2:'#414A44', sand:'#5C6159', ground:'#2A3139', quay:'#3A4149', road:'#2F3944', crane:'#C9A24A',
-            stage:'#0F1A2A', grid:'rgba(255,255,255,.06)', wave:'rgba(255,255,255,.13)', lane:'rgba(255,255,255,.25)' },
   // Marino: azul institucional, desaturado, tipo carta náutica
   marino: { label:'Marino', water:'#2E5578', land:'#3A4750', land2:'#414F59', sand:'#666C6B', ground:'#2D353D', quay:'#3B444E', road:'#2F373F', crane:'#A98B3C',
             stage:'#16283A', grid:'rgba(255,255,255,.055)', wave:'rgba(255,255,255,.10)', lane:'rgba(255,255,255,.18)' },
@@ -370,9 +429,9 @@ const THEMES = {
   claro:  { label:'Claro',  water:'#8FA6BA', land:'#C2C5B5', land2:'#CACDBD', sand:'#DBD5C2', ground:'#C3C8CD', quay:'#CDD2D7', road:'#6E767E', crane:'#A88B3B',
             stage:'#8FA6BA', grid:'rgba(22,32,43,.08)', wave:'rgba(22,32,43,.13)', lane:'rgba(22,32,43,.22)', light:true },
 };
-let THEME = 'sobrio';
-try { THEME = new URLSearchParams(location.search).get('tema') || localStorage.getItem('tema') || 'sobrio'; } catch(e){}
-if (!THEMES[THEME]) THEME='sobrio';
+let THEME = 'institucional';
+try { THEME = new URLSearchParams(location.search).get('tema') || localStorage.getItem('tema') || 'institucional'; } catch(e){}
+if (!THEMES[THEME]) THEME='institucional';   // cubre a quien traiga 'sobrio' guardado de antes
 const T = THEMES[THEME];
 document.querySelector('.stage').style.background = T.stage;
 document.documentElement.dataset.tema = THEME;          // la interfaz se adapta al estilo elegido
@@ -906,13 +965,13 @@ PX.forEach((x0,i)=>{
 /* ---------- Fase: la flecha avanza a la siguiente y regresa a la primera ---------- */
 function pintarDatos(){
   DATOS = DATOS_FASE[FASE][SEG];
-  document.querySelectorAll('[data-d]').forEach(e=>{ e.textContent = DATOS[e.dataset.d].toLocaleString('es-MX'); });
+  document.querySelectorAll('[data-d]').forEach(e=>{ e.textContent = fmt(DATOS[e.dataset.d]); });
   pintarTabla();
 }
 function pintarTabla(){
   const filas = (TABLA[FASE] || {})[SEG] || [];
   document.getElementById('panelTitulo').textContent = (TRAMOS.find(t=>t.id===SEG) || {}).nombre || '';
-  const cel = v => typeof v === 'number' ? `<td>${v.toLocaleString('es-MX')}</td>` : `<td class="vacio">${v}</td>`;
+  const cel = v => typeof v === 'number' ? `<td>${fmt(v)}</td>` : `<td class="vacio">${v}</td>`;
   // Total = entregado + pendiente; si a la fila le falta una de las dos no se puede sumar
   const total = f => (typeof f.entregado === 'number' && typeof f.pendiente === 'number') ? f.entregado + f.pendiente : '—';
   document.getElementById('tablaBody').innerHTML = filas.length
@@ -961,7 +1020,7 @@ let elegirProyecto = null;              // lo llena el bloque de abajo; lo usa l
   // elegir un proyecto abre su vista; ya no recarga la página
   const pick=(id)=>{
     SEG = id; try{ localStorage.setItem('segmento', id); }catch(e){}
-    menu.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.tramo===id));
+    menu.querySelectorAll('button[data-tramo]').forEach(b=>b.setAttribute('aria-current', b.dataset.tramo===id));
     pintarDatos(); setVista('proyecto');
   };
   elegirProyecto = pick;
@@ -977,7 +1036,7 @@ let elegirProyecto = null;              // lo llena el bloque de abajo; lo usa l
       li.appendChild(ul);
       b.setAttribute('aria-haspopup','true');
       b.onclick=(e)=>{ e.stopPropagation(); const was=li.classList.contains('open'); closeAll(); if (!was) li.classList.add('open'); };
-    } else { b.dataset.tramo=t.id; if (t.id===SEG) b.classList.add('on'); b.onclick=()=>pick(t.id); }   // sin segmentos, el proyecto mismo es la selección
+    } else { b.dataset.tramo=t.id; b.setAttribute('aria-current', t.id===SEG); b.onclick=()=>pick(t.id); }   // sin segmentos, el proyecto mismo es la selección
     menu.appendChild(li);
   });
   document.addEventListener('click',e=>{ if (!menu.contains(e.target)) closeAll(); });
@@ -1093,6 +1152,9 @@ function fit(){
   });
 }
 fit(); addEventListener('resize', fit);
+// la hoja manda: se lee al abrir y cada RECARGA_MIN minutos, para que un cambio en el Excel llegue solo
+cargarHoja();
+setInterval(cargarHoja, RECARGA_MIN*60*1000);
 </script>
 
 </body>
