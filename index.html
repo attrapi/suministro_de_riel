@@ -75,11 +75,13 @@
   .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.55);margin:0 0 4px}
   h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,3.4vw,44px);line-height:.95;letter-spacing:-.01em;margin:0;text-wrap:balance;text-shadow:0 2px 12px rgba(0,0,0,.5)}
   h1 span{color:#FF9A4D}
-  .fase{display:inline-block;font:500 11px var(--mono);letter-spacing:.18em;text-transform:uppercase;color:#0B1017;background:#FF9A4D;border-radius:4px;padding:3px 4px 3px 11px;margin:8px 0 0;pointer-events:auto;white-space:nowrap}
-  .fase #faseTxt{display:inline-block;vertical-align:middle}
-  .fase button{display:inline-block;vertical-align:middle;margin-left:9px;font:600 13px var(--body);line-height:1;color:inherit;background:rgba(11,16,23,.16);border:0;border-radius:3px;padding:3px 8px 4px;cursor:pointer}
-  .fase button:hover{background:rgba(11,16,23,.32)}
-  .fase button:focus-visible{outline:2px solid currentColor;outline-offset:1px}
+  /* Control segmentado: las tres fases pegadas, la activa rellena */
+  .fases{display:inline-block;margin:8px 0 0;border:1px solid rgba(255,154,77,.55);border-radius:5px;overflow:hidden;white-space:nowrap;pointer-events:auto;background:rgba(10,15,22,.5)}
+  .fases button{display:inline-block;vertical-align:middle;font:500 11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.7);background:transparent;border:0;border-left:1px solid rgba(255,154,77,.35);padding:5px 12px;cursor:pointer}
+  .fases button:first-child{border-left:0}
+  .fases button.on{background:#FF9A4D;color:#0B1017}
+  .fases button:not(.on):hover{background:rgba(255,154,77,.18);color:#EAEFF5}
+  .fases button:focus-visible{outline:2px solid #FF9A4D;outline-offset:-2px}
   .st{background:rgba(10,15,22,.72);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:8px 12px;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:10px;align-items:center}
   .st .ico{grid-row:1/3;width:50px;height:36px}
   .st .ico svg{width:100%;height:100%;overflow:visible}
@@ -117,9 +119,10 @@
   :root[data-tema="claro"] .eyebrow{color:rgba(22,32,43,.6)}
   :root[data-tema="claro"] h1{color:var(--ink-light);text-shadow:0 1px 8px rgba(255,255,255,.65)}
   :root[data-tema="claro"] h1 span{color:var(--accent-light)}
-  :root[data-tema="claro"] .fase{color:#FFF;background:var(--accent-light)}
-  :root[data-tema="claro"] .fase button{background:rgba(255,255,255,.24)}
-  :root[data-tema="claro"] .fase button:hover{background:rgba(255,255,255,.42)}
+  :root[data-tema="claro"] .fases{border-color:rgba(180,82,26,.55);background:rgba(255,255,255,.7)}
+  :root[data-tema="claro"] .fases button{color:rgba(22,32,43,.72);border-left-color:rgba(180,82,26,.3)}
+  :root[data-tema="claro"] .fases button.on{background:var(--accent-light);color:#FFF}
+  :root[data-tema="claro"] .fases button:not(.on):hover{background:rgba(180,82,26,.14);color:var(--ink-light)}
   :root[data-tema="claro"] .tmenu button{color:var(--ink-light);background:rgba(255,255,255,.86);border-color:rgba(22,32,43,.22)}
   :root[data-tema="claro"] .tmenu button:hover,
   :root[data-tema="claro"] .tmenu li.open>button{border-color:rgba(22,32,43,.5)}
@@ -179,7 +182,7 @@
   <div class="brand">
     <p class="eyebrow">ATTRAPI / LA-09-D00-009DOO999-I-54-2025</p>
     <h1 id="h1">Adquisición <span>de riel</span></h1>
-    <div class="fase"><span id="faseTxt">Fase I</span><button type="button" id="faseNext">&rarr;</button></div>
+    <div class="fases" id="fases" role="group" aria-label="Fase"></div>
   </div>
   <div class="hstack">
     <div class="chain" id="chainInicio">
@@ -233,10 +236,11 @@ const TRAMOS = [
 //                                                     son cifras propias, no las de la portada
 // un valor de texto ('88K') se imprime tal cual; uno numérico lleva separador de miles
 const FASES = [
-  { id:'f1', nombre:'Fase I'  },
-  { id:'f2', nombre:'Fase II' },
+  { id:'f1', nombre:'Fase I'   },
+  { id:'f2', nombre:'Fase II'  },
+  { id:'f3', nombre:'Fase III' },
 ];
-// Fase II sigue sin cifras: el guión se imprime tal cual hasta que lleguen
+// Fase II y III siguen sin cifras: el guión se imprime tal cual hasta que lleguen
 const SIN_DATOS = { produccion:'—', puerto:'—', traslado:'—', descarga:'—', acopio:'—', contratado:'—', proceso:'—', entregado:'—', pendiente:'—', monto:'—', solicitado:'—', entregadoP:'—', pendienteP:'—' };
 const DATOS_FASE = {
   f1: {
@@ -244,6 +248,10 @@ const DATOS_FASE = {
     'sal-nl':  { produccion: 0, puerto: 0, traslado: 0, descarga: 0, acopio:  9480, contratado: '62K', proceso:  9480, entregado:  9480, pendiente: 52520, monto: 318, solicitado: 46069, entregadoP: 11468, pendienteP: 34601 },
   },
   f2: {
+    'qro-ira': { ...SIN_DATOS },
+    'sal-nl':  { ...SIN_DATOS },
+  },
+  f3: {
     'qro-ira': { ...SIN_DATOS },
     'sal-nl':  { ...SIN_DATOS },
   },
@@ -263,7 +271,8 @@ const TABLA = {
       { tramo:'Tramo VI · Seg. 18, 19 y 20',solicitado:'—',         entregado:'—',  pendiente:6122 },
     ],
   },
-  f2: { 'qro-ira': [], 'sal-nl': [] },      // Fase II todavía sin tramos
+  f2: { 'qro-ira': [], 'sal-nl': [] },      // Fase II y III todavía sin tramos
+  f3: { 'qro-ira': [], 'sal-nl': [] },
 };
 let SEG = 'qro-ira';
 try { SEG = localStorage.getItem('segmento') || SEG; } catch(e){}
@@ -341,12 +350,13 @@ const THEMES = {
   // Marino: azul institucional, desaturado, tipo carta náutica
   marino: { label:'Marino', water:'#2E5578', land:'#3A4750', land2:'#414F59', sand:'#666C6B', ground:'#2D353D', quay:'#3B444E', road:'#2F373F', crane:'#A98B3C',
             stage:'#16283A', grid:'rgba(255,255,255,.055)', wave:'rgba(255,255,255,.10)', lane:'rgba(255,255,255,.18)' },
-  // Institucional: casi monocromo, acero y pizarra; el más neutro de todos
-  institucional: { label:'Institucional', water:'#3E5164', land:'#454C50', land2:'#4C5357', sand:'#6B6B66', ground:'#333A41', quay:'#424950', road:'#343A40', crane:'#9C8A55',
-            stage:'#1C2530', grid:'rgba(255,255,255,.05)', wave:'rgba(255,255,255,.09)', lane:'rgba(255,255,255,.16)' },
+  // Institucional: el guinda #691C32 manda en la superficie más grande, el mar; la tierra
+  // baja al mismo tono y el oro apagado de las grúas es su complemento de siempre
+  institucional: { label:'Institucional', water:'#691C32', land:'#41242C', land2:'#4A2A33', sand:'#8A5C5E', ground:'#3A232B', quay:'#4A3038', road:'#2A1A20', crane:'#C2A05A',
+            stage:'#4E1526', tinte:'#8E5C5E', tinteF:0.42, grid:'rgba(255,255,255,.05)', wave:'rgba(255,255,255,.10)', lane:'rgba(255,255,255,.18)' },
   // Arena: atardecer cálido, tierra y mar apagados
   arena:  { label:'Arena',  water:'#5E757F', land:'#9C8B6E', land2:'#A5946F', sand:'#B6A585', ground:'#7A7264', quay:'#877F70', road:'#5F5A50', crane:'#A8833C',
-            stage:'#5E757F', grid:'rgba(30,24,16,.07)', wave:'rgba(30,24,16,.11)', lane:'rgba(30,24,16,.2)' },
+            stage:'#5E757F', tinte:'#8A7A62', tinteF:0.26, grid:'rgba(30,24,16,.07)', wave:'rgba(30,24,16,.11)', lane:'rgba(30,24,16,.2)' },
   // Claro: plano técnico sobre papel; la interfaz se invierte a tinta oscura
   claro:  { label:'Claro',  water:'#8FA6BA', land:'#C2C5B5', land2:'#CACDBD', sand:'#DBD5C2', ground:'#C3C8CD', quay:'#CDD2D7', road:'#6E767E', crane:'#A88B3B',
             stage:'#8FA6BA', grid:'rgba(22,32,43,.08)', wave:'rgba(22,32,43,.13)', lane:'rgba(22,32,43,.22)', light:true },
@@ -359,13 +369,21 @@ document.querySelector('.stage').style.background = T.stage;
 document.documentElement.dataset.tema = THEME;          // la interfaz se adapta al estilo elegido
 document.querySelectorAll('#menu button[data-theme]').forEach(b=>{ b.classList.toggle('on', b.dataset.theme===THEME); b.onclick=()=>{ try{ localStorage.setItem('tema', b.dataset.theme); }catch(e){} location.href = location.pathname + '?tema=' + b.dataset.theme; }; });
 
+// Los grises de las estructuras son azulados. Un estilo puede declarar 'tinte' para acercarlos
+// a su propia familia de color y que no desentonen; devuelve hex porque shade() y lerpColor() lo esperan.
+function mezcla(a, b, t){
+  const pa=parseInt(a.slice(1),16), pb=parseInt(b.slice(1),16);
+  const ch=s=>Math.round(((pa>>s)&255) + ((((pb>>s)&255)-((pa>>s)&255))*t));
+  return '#'+((1<<24)+(ch(16)<<16)+(ch(8)<<8)+ch(0)).toString(16).slice(1);
+}
+const tn = c => T.tinte ? mezcla(c, T.tinte, T.tinteF ?? 0.3) : c;
 const C = {
   ground:T.ground, quay:T.quay, water:T.water, gridLine:T.grid, road:T.road, land:T.land, land2:T.land2, sand:T.sand,
-  hall:'#555E69', roof:'#66707B', glass:'#9FB4C4', chimney:'#6E7782',
-  steel:'#5A6673', steelLight:'#9AA6B4', rail:'#B9C3CF', wheel:'#1E252E',
-  track:'#4A4540', crane:T.crane, hot:'#F0762A', warm:'#E8AE5C',
-  hull:'#3A4552', hullRed:'#7E3A3A', house:'#CFD5DC', funnel:'#9A4646',
-  truck:'#4C6E8F', office:'#8A94A3', fence:'#7A8594'
+  hall:tn('#555E69'), roof:tn('#66707B'), glass:tn('#9FB4C4'), chimney:tn('#6E7782'),
+  steel:tn('#5A6673'), steelLight:tn('#9AA6B4'), rail:tn('#B9C3CF'), wheel:'#1E252E',
+  track:tn('#4A4540'), crane:T.crane, hot:'#F0762A', warm:'#E8AE5C',
+  hull:tn('#3A4552'), hullRed:'#7E3A3A', house:tn('#CFD5DC'), funnel:'#9A4646',
+  truck:tn('#4C6E8F'), office:tn('#8A94A3'), fence:tn('#7A8594')
 };
 const Z0 = 0.4;
 
@@ -892,17 +910,23 @@ function pintarTabla(){
     ? filas.map(f=>`<tr><td class="c-tramo">${f.tramo}</td>${cel(f.solicitado)}${cel(f.entregado)}${cel(f.pendiente)}${cel(total(f))}</tr>`).join('')
     : '<tr><td class="c-tramo vacio" colspan="5">Sin datos para esta fase</td></tr>';
 }
-const btnFase = document.getElementById('faseNext');
+const elFases = document.getElementById('fases');
+FASES.forEach(f=>{                                  // un botón por fase: agregar una más aquí basta
+  const b = document.createElement('button');
+  b.type = 'button'; b.dataset.fase = f.id; b.textContent = f.nombre;
+  b.onclick = ()=> setFase(f.id);
+  elFases.appendChild(b);
+});
 function setFase(id){
   FASE = DATOS_FASE[id] ? id : 'f1';
-  const i = FASES.findIndex(f=>f.id===FASE), sig = FASES[(i+1)%FASES.length];
-  document.getElementById('faseTxt').textContent = FASES[i].nombre;
-  btnFase.title = 'Cambiar a ' + sig.nombre;
-  btnFase.setAttribute('aria-label', btnFase.title);
+  elFases.querySelectorAll('button').forEach(b=>{
+    const activa = b.dataset.fase === FASE;
+    b.classList.toggle('on', activa);
+    b.setAttribute('aria-pressed', activa);
+  });
   try { localStorage.setItem('fase', FASE); } catch(e){}
   pintarDatos();
 }
-btnFase.onclick = ()=>{ const i = FASES.findIndex(f=>f.id===FASE); setFase(FASES[(i+1)%FASES.length].id); };
 setFase(FASE);
 document.getElementById('nTramos').textContent = TRAMOS.length.toLocaleString('es-MX');
 
