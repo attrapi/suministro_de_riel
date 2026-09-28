@@ -114,6 +114,15 @@
   @media (max-width:1180px){ header{flex-wrap:wrap;gap:12px} .brand{flex:1 1 100%} .st .ico{display:none} }
   @media (max-width:900px){ .hstack{gap:4px} .st{padding:6px 8px} .st .cnt{grid-column:1;font-size:18px} .note{display:none} }
 
+  /* Institucional: las tarjetas, el selector de fase y la tabla también en guinda */
+  :root[data-tema="institucional"] .st{background:rgba(105,28,50,.88);border-color:rgba(255,255,255,.22)}
+  :root[data-tema="institucional"] .tabla-wrap{background:rgba(105,28,50,.88);border-color:rgba(255,255,255,.22)}
+  :root[data-tema="institucional"] .fases{background:rgba(105,28,50,.88);border-color:rgba(255,255,255,.3)}
+  :root[data-tema="institucional"] .fases button{color:rgba(255,255,255,.75);border-left-color:rgba(255,255,255,.24)}
+  :root[data-tema="institucional"] .fases button.on{background:#FFF;color:#691C32}
+  :root[data-tema="institucional"] .fases button:not(.on):hover{background:rgba(255,255,255,.16);color:#FFF}
+  :root[data-tema="institucional"] .fases button:focus-visible{outline-color:#FFF}
+
   /* Estilo Claro: tinta oscura sobre fondo claro, sin perder la barra de menú del sitio */
   :root[data-tema="claro"]{ --ink-light:#16202B; --accent-light:#B4521A; }
   :root[data-tema="claro"] .eyebrow{color:rgba(22,32,43,.6)}
