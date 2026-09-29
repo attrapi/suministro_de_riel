@@ -72,7 +72,7 @@
   .tsub button{width:100%;background:transparent;border:0;border-radius:4px;padding:8px 10px;font:13px var(--body);text-align:left}
   .tsub button:hover{background:rgba(255,255,255,.08)}
   .tsub button.on{color:#FF9A4D}
-  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.55);margin:0 0 4px}
+  .eyebrow{display:grid;grid-template-columns:auto auto;justify-content:start;column-gap:.5em;row-gap:2px;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.55);margin:0 0 4px}
   h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,3.4vw,44px);line-height:.95;letter-spacing:-.01em;margin:0;text-wrap:balance;text-shadow:0 2px 12px rgba(0,0,0,.5)}
   h1 span{color:#FF9A4D}
   /* Control segmentado: las tres fases pegadas, la activa rellena */
@@ -247,7 +247,10 @@
 </div>
 <header>
   <div class="brand">
-    <p class="eyebrow">ATTRAPI / LA-09-D00-009DOO999-I-54-2025</p>
+    <div class="eyebrow">
+      <span>ATTRAPI /</span><span>LA-09-D00-009DOO999-I-54-2025</span>
+      <span></span><span>ARTF / 076-A-P / 2025</span>
+    </div>
     <h1 id="h1">Adquisición <span>de riel</span></h1>
     <div class="fases" id="fases" role="group" aria-label="Fase"></div>
   </div>
