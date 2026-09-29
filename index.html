@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230B1017'/><path d='M10 4h12v5h-4l-.5 4v6l.5 4h9v5H5v-5h9l.5-4v-6L14 9h-4z' fill='%23FF9A4D'/></svg>">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<script src="html2canvas.min.js"></script><!-- local, no por CDN: la red de la oficina intercepta cdnjs -->
+<script src="html2canvas.min.js"></script><script src="jspdf.umd.min.js"></script><!-- locales, no por CDN: la red de la oficina intercepta cdnjs -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
   :root{
@@ -305,8 +305,8 @@ function filasCSV(texto){                    // separa respetando las comillas: 
   return filas;
 }
 const aNum = v => { const t = (v||'').replace(/,/g,'').trim(); if (!t || t === '-') return '—'; const n = Number(t); return isNaN(n) ? '—' : n; };
-// un entero va sin decimales; con fracción se muestran dos, como en la hoja
-const fmt = v => typeof v === 'number' ? v.toLocaleString('es-MX', { minimumFractionDigits: Number.isInteger(v) ? 0 : 2, maximumFractionDigits: 2 }) : String(v);
+// siempre dos decimales, como en la hoja: así los puntos quedan alineados en la tabla
+const fmt = v => typeof v === 'number' ? v.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : String(v);
 const clave = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
 
 function leerHoja(filas){
@@ -1043,36 +1043,110 @@ let elegirProyecto = null;              // lo llena el bloque de abajo; lo usa l
   document.addEventListener('keydown',e=>{ if (e.key==='Escape') closeAll(); });
 }
 
-/* ---------- Descargar: las tres vistas en una sola imagen ----------
-   Van juntas y no en tres archivos porque el navegador bloquea las descargas
-   seguidas: solo dejaba pasar la primera. */
+/* ---------- Descargar: un PDF de tres hojas, listo para imprimir ----------
+   La portada va como imagen, porque es la maqueta. Las dos vistas de proyecto
+   se dibujan como texto y tabla del propio PDF: salen nítidas al imprimir,
+   se pueden seleccionar y evitan dos capturas, que son lo lento. */
 {
   const btn = document.getElementById('btnDescargar');
-  const ESCALA = 1.5;
+  const A4 = { ancho:297, alto:210 }, M = 12, CABEZA = 14;   // milímetros
+  const TINTA = [26,32,40], SUAVE = [120,124,130], LINEA = [205,209,214];
   const esperar = ms => new Promise(r=>setTimeout(r, ms));
-  const tomar = () => html2canvas(document.body, { backgroundColor: getComputedStyle(elStage).backgroundColor, scale: ESCALA, logging: false });
+  const listo = () => typeof html2canvas === 'function' && window.jspdf && window.jspdf.jsPDF;
+  const nombreDe = id => (TRAMOS.find(x=>x.id===id)||{}).nombre || '';
+
+  function encabezado(pdf, fase, titulo, n, total, fecha){
+    pdf.setTextColor(...TINTA).setFont('helvetica','bold').setFontSize(13);
+    pdf.text('Adquisición de riel · ' + fase, M, M + 5);
+    pdf.setFont('helvetica','normal').setFontSize(9.5);
+    pdf.text(titulo, M, M + 10.5);
+    pdf.setTextColor(...SUAVE);
+    pdf.text(fecha, A4.ancho - M, M + 5, { align:'right' });
+    pdf.text(n + ' / ' + total, A4.ancho - M, M + 10.5, { align:'right' });
+    pdf.setDrawColor(...LINEA).setLineWidth(0.3);
+    pdf.line(M, M + 13, A4.ancho - M, M + 13);
+  }
+
+  function hojaProyecto(pdf, seg){
+    const d = DATOS_FASE[FASE][seg], filas = (TABLA[FASE] || {})[seg] || [];
+    let y = M + CABEZA + 8;
+    // los tres totales del proyecto
+    const kpis = [['Solicitado', d.solicitado], ['Entregado', d.entregadoP], ['Pendiente', d.pendienteP]];
+    kpis.forEach(([rot, val], k)=>{
+      const x = M + k*62;
+      pdf.setFont('helvetica','normal').setFontSize(8).setTextColor(...SUAVE);
+      pdf.text(rot.toUpperCase(), x, y);
+      pdf.setFont('helvetica','bold').setFontSize(16).setTextColor(...TINTA);
+      pdf.text(fmt(val) + ' ' + UNIDAD, x, y + 7);
+    });
+    y += 18;
+    // tabla de tramos
+    const cols = [{ t:'Tramo / segmento', w:93, der:false }, { t:'Solicitado', w:45, der:true },
+                  { t:'Entregado', w:45, der:true }, { t:'Pendiente', w:45, der:true }, { t:'Total', w:45, der:true }];
+    const dibujaFila = (celdas, negrita, alto)=>{
+      let x = M;
+      pdf.setFont('helvetica', negrita ? 'bold' : 'normal').setFontSize(negrita ? 8 : 9.5);
+      celdas.forEach((txt, k)=>{
+        const c = cols[k];
+        pdf.text(String(txt), c.der ? x + c.w - 2 : x, y + alto - 2.6, { align: c.der ? 'right' : 'left' });
+        x += c.w;
+      });
+      y += alto;
+      pdf.setDrawColor(...LINEA).setLineWidth(0.2);
+      pdf.line(M, y, A4.ancho - M, y);
+    };
+    pdf.setTextColor(...SUAVE); dibujaFila(cols.map(c=>c.t.toUpperCase()), true, 7);
+    if (!filas.length){
+      pdf.setTextColor(...SUAVE); dibujaFila(['Sin datos para esta entrega','','','',''], false, 8);
+      return;
+    }
+    for (const f of filas){
+      const total = (typeof f.entregado === 'number' && typeof f.pendiente === 'number') ? f.entregado + f.pendiente : '—';
+      const celdas = [f.tramo, fmt(f.solicitado), fmt(f.entregado), fmt(f.pendiente), fmt(total)];
+      pdf.setTextColor(...TINTA); dibujaFila(celdas, false, 8);
+    }
+  }
+
   btn.onclick = async ()=>{
-    if (typeof html2canvas !== 'function'){ btn.textContent = 'No disponible'; setTimeout(()=>btn.textContent='Descargar', 2500); return; }
+    if (!listo()){ btn.textContent = 'No disponible'; setTimeout(()=>btn.textContent='Descargar', 2500); return; }
     const vistaPrevia = VISTA, segPrevio = SEG;
+    const fase = (FASES.find(f=>f.id===FASE)||{}).nombre || '';
     btn.disabled = true;
     try {
-      const vistas = [];
-      btn.textContent = 'Capturando 1/3…'; setVista('inicio');        await esperar(500); vistas.push(await tomar());
-      btn.textContent = 'Capturando 2/3…'; elegirProyecto('qro-ira'); await esperar(500); vistas.push(await tomar());
-      btn.textContent = 'Capturando 3/3…'; elegirProyecto('sal-nl');  await esperar(500); vistas.push(await tomar());
-      btn.textContent = 'Armando…';
-      const sep = Math.round(22*ESCALA), ancho = Math.max(...vistas.map(c=>c.width));
-      const hoja = document.createElement('canvas');
-      hoja.width = ancho;
-      hoja.height = vistas.reduce((a,c)=>a+c.height,0) + sep*(vistas.length-1);
-      const g = hoja.getContext('2d');
-      g.fillStyle = getComputedStyle(document.body).backgroundColor; g.fillRect(0,0,hoja.width,hoja.height);
-      let y = 0; for (const c of vistas){ g.drawImage(c, 0, y); y += c.height + sep; }
-      const blob = await new Promise(r=>hoja.toBlob(r,'image/png'));
-      const url = URL.createObjectURL(blob), a = document.createElement('a');
-      const fase = (FASES.find(f=>f.id===FASE)||{}).nombre || '';
-      a.href = url; a.download = `adquisicion-de-riel-${fase.toLowerCase().replace(/\s+/g,'-')}.png`; a.click();
-      setTimeout(()=>URL.revokeObjectURL(url), 1000);
+      btn.textContent = 'Capturando…';
+      setVista('inicio'); await esperar(500);
+      // con la pestaña en segundo plano la captura puede quedarse colgada; se le pone un tope
+      const lienzo = await Promise.race([
+        html2canvas(document.body, { backgroundColor: getComputedStyle(elStage).backgroundColor, scale: 1.5, logging: false }),
+        new Promise((_, no)=>setTimeout(()=>no(new Error('La captura tardó demasiado')), 60000)),
+      ]);
+
+      btn.textContent = 'Armando PDF…';
+      const pdf = new window.jspdf.jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
+      const fecha = new Date().toLocaleDateString('es-MX', { day:'2-digit', month:'long', year:'numeric' });
+
+      encabezado(pdf, fase, 'Resumen general', 1, 3, fecha);
+      const hueco = { ancho: A4.ancho - 2*M, alto: A4.alto - 2*M - CABEZA };
+      const prop = lienzo.width / lienzo.height;
+      let w = hueco.ancho, alt = w / prop;
+      if (alt > hueco.alto){ alt = hueco.alto; w = alt * prop; }
+      pdf.addImage(lienzo, 'PNG', M + (hueco.ancho - w)/2, M + CABEZA + 4, w, alt, undefined, 'FAST');
+
+      TRAMOS.forEach((t, k)=>{
+        pdf.addPage();
+        encabezado(pdf, fase, t.nombre, k + 2, 3, fecha);
+        hojaProyecto(pdf, t.id);
+      });
+
+      // el save() de jsPDF no deja archivo aquí; se baja el blob con un ancla propia
+      const url = URL.createObjectURL(pdf.output('blob')), a = document.createElement('a');
+      a.href = url; a.download = 'adquisicion-de-riel-' + fase.toLowerCase().replace(/\s+/g,'-') + '.pdf';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 2000);
+    } catch(e){
+      btn.textContent = 'Falló';                      // que no se quede en silencio
+      console.error('Descarga PDF:', e);
+      await esperar(2500);
     } finally {
       elegirProyecto(segPrevio); setVista(vistaPrevia);   // se deja la pantalla como estaba
       btn.disabled = false; btn.textContent = 'Descargar';
