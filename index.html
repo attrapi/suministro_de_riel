@@ -103,6 +103,10 @@
   .tabla td.c-tramo{text-align:left;font:14px var(--body);color:rgba(255,255,255,.9)}
   .tabla tbody tr:last-child td{border-bottom:0}
   .tabla .vacio{color:rgba(255,255,255,.4)}
+  .tabla tr.total td{border-top:1px solid rgba(255,255,255,.28);border-bottom:0;font-weight:600;color:#FF9A4D}
+  .tabla tr.total td.c-tramo{color:#EAEFF5;font-weight:600}
+  .tabla .tot-ico{display:inline-block;vertical-align:-6px;width:22px;height:22px;margin-right:9px;color:#FF9A4D}
+  .tabla .tot-ico svg{width:100%;height:100%;display:block}
   .lbl .n{font:500 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;fill:rgba(255,255,255,.6)}
   .lbl .v{font:600 24px var(--display);fill:#FF9A4D}
   .lbl .u{font:11px var(--mono);fill:rgba(255,255,255,.65)}
@@ -143,6 +147,9 @@
   :root[data-tema="claro"] .tabla td{color:var(--ink-light);border-bottom-color:rgba(22,32,43,.1)}
   :root[data-tema="claro"] .tabla td.c-tramo{color:var(--ink-light)}
   :root[data-tema="claro"] .tabla .vacio{color:rgba(22,32,43,.45)}
+  :root[data-tema="claro"] .tabla tr.total td{border-top-color:rgba(22,32,43,.3);color:var(--accent-light)}
+  :root[data-tema="claro"] .tabla tr.total td.c-tramo{color:var(--ink-light)}
+  :root[data-tema="claro"] .tabla .tot-ico{color:var(--accent-light)}
   :root[data-tema="claro"] .volver{color:rgba(22,32,43,.72);border-color:rgba(22,32,43,.24)}
   :root[data-tema="claro"] .volver:hover{color:var(--ink-light);border-color:rgba(22,32,43,.5)}
   :root[data-tema="claro"] .tsub{background:rgba(255,255,255,.97);border-color:rgba(22,32,43,.18)}
@@ -220,7 +227,6 @@
         <th><span class="th-in"><span class="th-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M7.6 6.2h4.6l1.6 2.2H20.5v7.4"/><path d="M3.5 19.8V9.1h4.6l1.6 2.2h6.4v8.5z"/></svg></span>Solicitado</span></th>
         <th><span class="th-in"><span class="th-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7 3.5v17M17 3.5v17"/><path d="M3.5 7h17M3.5 12h17M3.5 17h17"/></svg></span>Entregado</span></th>
         <th><span class="th-in"><span class="th-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 16.8h19.5"/><path d="M15.3 16.8v-5.4h2.9l3 3.1v2.3"/><path d="M2.6 13.4h12.2"/><path d="M3.4 11.2h10.8M3.4 8.8h10.8"/><circle cx="7" cy="18.7" r="1.8"/><circle cx="17.8" cy="18.7" r="1.8"/></svg></span>Pendiente</span></th>
-        <th><span class="th-in"><span class="th-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M4 6.5h16M4 11h16M4 15.5h10" stroke-width="1.6"/><path d="M4 20h16" stroke-width="2.6"/></svg></span>Total</span></th>
       </tr></thead>
       <tbody id="tablaBody"></tbody>
     </table>
@@ -972,11 +978,12 @@ function pintarTabla(){
   const filas = (TABLA[FASE] || {})[SEG] || [];
   document.getElementById('panelTitulo').textContent = (TRAMOS.find(t=>t.id===SEG) || {}).nombre || '';
   const cel = v => typeof v === 'number' ? `<td>${fmt(v)}</td>` : `<td class="vacio">${v}</td>`;
-  // Total = entregado + pendiente; si a la fila le falta una de las dos no se puede sumar
-  const total = f => (typeof f.entregado === 'number' && typeof f.pendiente === 'number') ? f.entregado + f.pendiente : '—';
+  // el renglón de total suma cada columna; son las mismas cifras de las tres tarjetas de arriba
+  const totales = `<tr class="total"><td class="c-tramo"><span class="tot-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M4 6.5h16M4 11h16M4 15.5h10" stroke-width="1.6"/><path d="M4 20h16" stroke-width="2.6"/></svg></span>Total</td>` +
+                  cel(DATOS.solicitado) + cel(DATOS.entregadoP) + cel(DATOS.pendienteP) + '</tr>';
   document.getElementById('tablaBody').innerHTML = filas.length
-    ? filas.map(f=>`<tr><td class="c-tramo">${f.tramo}</td>${cel(f.solicitado)}${cel(f.entregado)}${cel(f.pendiente)}${cel(total(f))}</tr>`).join('')
-    : '<tr><td class="c-tramo vacio" colspan="5">Sin datos para esta fase</td></tr>';
+    ? filas.map(f=>`<tr><td class="c-tramo">${f.tramo}</td>${cel(f.solicitado)}${cel(f.entregado)}${cel(f.pendiente)}</tr>`).join('') + totales
+    : '<tr><td class="c-tramo vacio" colspan="4">Sin datos para esta entrega</td></tr>';
 }
 const elFases = document.getElementById('fases');
 FASES.forEach(f=>{                                  // un botón por fase: agregar una más aquí basta
@@ -1081,8 +1088,8 @@ let elegirProyecto = null;              // lo llena el bloque de abajo; lo usa l
     });
     y += 18;
     // tabla de tramos
-    const cols = [{ t:'Tramo / segmento', w:93, der:false }, { t:'Solicitado', w:45, der:true },
-                  { t:'Entregado', w:45, der:true }, { t:'Pendiente', w:45, der:true }, { t:'Total', w:45, der:true }];
+    const cols = [{ t:'Tramo / segmento', w:108, der:false }, { t:'Solicitado', w:55, der:true },
+                  { t:'Entregado', w:55, der:true }, { t:'Pendiente', w:55, der:true }];
     const dibujaFila = (celdas, negrita, alto)=>{
       let x = M;
       pdf.setFont('helvetica', negrita ? 'bold' : 'normal').setFontSize(negrita ? 8 : 9.5);
@@ -1097,14 +1104,15 @@ let elegirProyecto = null;              // lo llena el bloque de abajo; lo usa l
     };
     pdf.setTextColor(...SUAVE); dibujaFila(cols.map(c=>c.t.toUpperCase()), true, 7);
     if (!filas.length){
-      pdf.setTextColor(...SUAVE); dibujaFila(['Sin datos para esta entrega','','','',''], false, 8);
+      pdf.setTextColor(...SUAVE); dibujaFila(['Sin datos para esta entrega','','',''], false, 8);
       return;
     }
     for (const f of filas){
-      const total = (typeof f.entregado === 'number' && typeof f.pendiente === 'number') ? f.entregado + f.pendiente : '—';
-      const celdas = [f.tramo, fmt(f.solicitado), fmt(f.entregado), fmt(f.pendiente), fmt(total)];
-      pdf.setTextColor(...TINTA); dibujaFila(celdas, false, 8);
+      pdf.setTextColor(...TINTA);
+      dibujaFila([f.tramo, fmt(f.solicitado), fmt(f.entregado), fmt(f.pendiente)], false, 8);
     }
+    pdf.setTextColor(...TINTA);              // el total cierra la tabla, con las mismas cifras de los tres totales de arriba
+    dibujaFila(['Total', fmt(d.solicitado), fmt(d.entregadoP), fmt(d.pendienteP)], true, 9);
   }
 
   btn.onclick = async ()=>{
