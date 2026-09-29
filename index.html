@@ -88,6 +88,16 @@
   .st .num{font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.06em}
   .st .cnt{font-family:var(--display);font-weight:600;font-size:24px;line-height:1;color:#FF9A4D;font-variant-numeric:tabular-nums;grid-column:2;white-space:nowrap}
   .st .cnt small{font:11px var(--mono);color:rgba(255,255,255,.6)}
+  /* Cadena en vertical: reemplaza la maqueta en pantallas angostas, escalonada para que se lea el avance */
+  .cadena{position:fixed;left:10px;right:10px;bottom:10px;z-index:2;display:none;flex-direction:column;gap:5px;overflow:auto;pointer-events:auto}
+  .cadena[hidden]{display:none}
+  .cadena .paso{display:flex;align-items:center;gap:10px;background:rgba(10,15,22,.72);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:9px 11px}
+  .cadena .paso-ico{flex:0 0 auto;width:34px;height:24px}
+  .cadena .paso-ico svg{width:100%;height:100%;overflow:visible}
+  .cadena .paso-n{flex:1 1 auto;min-width:0;font:500 10px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.72)}
+  .cadena .paso-v{flex:0 0 auto;font:600 17px var(--display);color:#FF9A4D;white-space:nowrap}
+  .cadena .paso-v small{font:10px var(--mono);color:rgba(255,255,255,.6)}
+
   /* Panel de la vista de proyecto: título del proyecto y tabla de tramos */
   .panel{position:fixed;left:16px;right:16px;bottom:16px;z-index:2;overflow:auto;pointer-events:auto}
   .panel[hidden]{display:none}
@@ -116,11 +126,61 @@
   .note{position:fixed;left:24px;top:calc(var(--menu-h) + 76px);z-index:2;font:11px/1.5 var(--mono);color:rgba(255,255,255,.55);max-width:44ch}
   @media (max-width:1400px){ .st{padding:8px 10px} .st .ico{width:36px;height:26px} }
   @media (max-width:1180px){ header{flex-wrap:wrap;gap:12px} .brand{flex:1 1 100%} .st .ico{display:none} }
-  @media (max-width:900px){ .hstack{gap:4px} .st{padding:6px 8px} .st .cnt{grid-column:1;font-size:18px} .note{display:none} }
+  /* de seis columnas a tres y luego a dos: seis tarjetas no caben en una pantalla angosta */
+  @media (max-width:1040px){ .hstack{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px} .tramo{grid-column:1 / -1} .tmenu{flex-direction:row;flex-wrap:wrap} .tmenu>li{flex:1 1 200px} }
+  @media (max-width:900px){ .st{padding:6px 8px} .st .cnt{grid-column:1;font-size:18px} .note{display:none} }
+
+  /* Celular */
+  @media (max-width:760px){
+    .menu{justify-content:flex-start;gap:5px;padding-inline:12px;overflow-x:auto;overflow-y:hidden;white-space:nowrap}
+    .menu .mtitle{display:none}
+    .menu button{flex:0 0 auto;font-size:11px;padding:4px 9px}
+    .menu .dl{margin-left:8px}
+
+    header{left:10px;right:10px;top:calc(var(--menu-h) + 10px);flex-direction:column;flex-wrap:nowrap;gap:10px}
+    .brand{flex:0 0 auto;width:100%}
+    h1{font-size:27px}
+    .eyebrow{font-size:10px}
+    .fases button{padding:5px 9px;letter-spacing:.1em}
+    .hstack{width:100%;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+    .st .num{font-size:9px}
+    .st .cnt{font-size:18px}
+    .tramo{gap:6px}
+    .tmenu>li{flex:1 1 100%}
+
+    /* En celular nada va fijo: la página se desplaza como documento normal, así el
+       encabezado deja de comerse la pantalla y la cadena no queda en una franja. */
+    html,body{height:auto;overflow:visible}
+    body{padding-top:var(--menu-h)}
+    .stage{display:none}                      /* la maqueta isométrica no cabe: la sustituye la cadena */
+    header{position:static;left:auto;right:auto;top:auto;padding:12px 10px 0}
+    .cadena{position:static;display:flex;margin:10px 10px 0;bottom:auto;overflow:visible}
+    .panel{position:static;margin:10px 10px 0;bottom:auto;overflow:visible;padding-bottom:16px}
+
+    .panel{left:10px;right:10px;bottom:10px}
+    .panel-t{font-size:14px}
+    .tabla th{padding:9px 6px}
+    .tabla td{padding:8px 6px;font-size:11px}
+    .tabla td.c-tramo{font-size:11px}
+    .tabla .th-in{font-size:8px;gap:4px;letter-spacing:.06em}
+    .tabla .th-ico{width:16px;height:16px}
+    .tabla .tot-ico{width:16px;height:16px;vertical-align:-3px;margin-right:5px}
+  }
+
+  /* Celular angosto: cada tarjeta es un renglón, con el rótulo a la izquierda y la cifra a la derecha.
+     Con dos columnas la cifra no cabía y se salía de su recuadro. */
+  @media (max-width:560px){
+    .hstack{grid-template-columns:1fr;gap:5px}
+    .st{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:8px 11px}
+    .st .num{font-size:10px}
+    .st .cnt{font-size:18px}
+    .tramo{grid-column:1}
+  }
 
   /* Institucional: las tarjetas, el selector de fase y la tabla también en guinda */
   :root[data-tema="institucional"] .st{background:rgba(105,28,50,.88);border-color:rgba(255,255,255,.22)}
   :root[data-tema="institucional"] .tabla-wrap{background:rgba(105,28,50,.88);border-color:rgba(255,255,255,.22)}
+  :root[data-tema="institucional"] .cadena .paso{background:rgba(105,28,50,.88);border-color:rgba(255,255,255,.22)}
   :root[data-tema="institucional"] .fases{background:rgba(105,28,50,.88);border-color:rgba(255,255,255,.3)}
   :root[data-tema="institucional"] .fases button{color:rgba(255,255,255,.75);border-left-color:rgba(255,255,255,.24)}
   :root[data-tema="institucional"] .fases button.on{background:#FFF;color:#691C32}
@@ -140,6 +200,10 @@
   :root[data-tema="claro"] .tmenu button:hover,
   :root[data-tema="claro"] .tmenu li.open>button{border-color:rgba(22,32,43,.5)}
   :root[data-tema="claro"] .panel-t{color:var(--ink-light)}
+  :root[data-tema="claro"] .cadena .paso{background:rgba(255,255,255,.88);border-color:rgba(22,32,43,.16)}
+  :root[data-tema="claro"] .cadena .paso-n{color:rgba(22,32,43,.7)}
+  :root[data-tema="claro"] .cadena .paso-v{color:var(--accent-light)}
+  :root[data-tema="claro"] .cadena .paso-v small{color:rgba(22,32,43,.6)}
   :root[data-tema="claro"] .tabla-wrap{background:rgba(255,255,255,.88);border-color:rgba(22,32,43,.16)}
   :root[data-tema="claro"] .tabla th{border-bottom-color:rgba(22,32,43,.2)}
   :root[data-tema="claro"] .tabla .th-in{color:rgba(22,32,43,.62)}
@@ -218,6 +282,7 @@
     </div>
   </div>
 </header>
+<div class="cadena" id="cadena"></div>
 <div class="panel" id="panelProyecto" hidden>
   <h2 class="panel-t" id="panelTitulo"></h2>
   <div class="tabla-wrap">
@@ -448,6 +513,7 @@ try { THEME = new URLSearchParams(location.search).get('tema') || localStorage.g
 if (!THEMES[THEME]) THEME='institucional';   // cubre a quien traiga 'sobrio' guardado de antes
 const T = THEMES[THEME];
 document.querySelector('.stage').style.background = T.stage;
+document.body.style.background = T.stage;     // en celular la maqueta se oculta y el fondo lo pone el cuerpo
 document.documentElement.dataset.tema = THEME;          // la interfaz se adapta al estilo elegido
 document.querySelectorAll('#menu button[data-theme]').forEach(b=>{ b.classList.toggle('on', b.dataset.theme===THEME); b.onclick=()=>{ try{ localStorage.setItem('tema', b.dataset.theme); }catch(e){} location.href = location.pathname + '?tema=' + b.dataset.theme; }; });
 
@@ -1013,6 +1079,14 @@ function setFase(id){
 setFase(FASE);
 document.getElementById('nTramos').textContent = TRAMOS.length.toLocaleString('es-MX');
 
+/* ---------- La cadena en vertical: los mismos cinco pasos de la maqueta ---------- */
+document.getElementById('cadena').innerHTML = names.map((n,i)=>
+  `<div class="paso" style="margin-left:${i*7}px">
+     <span class="paso-ico" id="icoc${i+1}"></span>
+     <span class="paso-n">${n}</span>
+     <span class="paso-v"><span data-d="${keys[i]}">0</span> <small>${UNIDAD}</small></span>
+   </div>`).join('');
+
 /* ---------- Vista: la portada lleva la maqueta; la de proyecto la esconde ---------- */
 let VISTA = 'inicio';
 const elStage = document.querySelector('.stage'), elVolver = document.getElementById('btnVolver');
@@ -1023,6 +1097,7 @@ function setVista(v){
   document.getElementById('chainProyecto').hidden = !enProyecto;
   elStage.classList.toggle('oculta', enProyecto);      // se esconde la maqueta, no el color del escenario
   document.getElementById('panelProyecto').hidden = !enProyecto;
+  document.getElementById('cadena').hidden = enProyecto;     // la cadena es de la portada
   elVolver.hidden = !enProyecto;
   fit();                                              // el encabezado cambia de alto
 }
@@ -1189,12 +1264,13 @@ const DIB = {
 icon('ico1', DIB.fabrica);  icon('ico2', DIB.puerto);   icon('ico3', DIB.barco);
 icon('ico4', DIB.descarga); icon('ico6', DIB.faltante); icon('ico5', DIB.acopio);
 icon('ico7', DIB.fabrica);  icon('ico8', DIB.barco);    icon('ico9', DIB.faltante);   // tira de la vista de proyecto
+[DIB.fabrica, DIB.puerto, DIB.barco, DIB.descarga, DIB.acopio].forEach((d,i)=> icon('icoc'+(i+1), d));   // cadena en vertical
 
 /* ---------- Bucle ---------- */
 let last = performance.now();
 function loop(now){
   const dt = Math.min(0.05, (now-last)/1000); last = now;
-  if (VISTA === 'inicio'){                       // con la maqueta escondida no hay nada que animar
+  if (VISTA === 'inicio' && !matchMedia('(max-width:760px)').matches){   // con la maqueta escondida no hay nada que animar
     updaters.forEach(u=>u(now));
     ships.forEach(s=>updateShip(s, dt, now));
     updateTrucksA(dt); updateTrucksB(dt);
@@ -1214,10 +1290,13 @@ requestAnimationFrame(loop);
 
 /* ---------- Encuadre: la cadena completa cabe en pantalla y el paisaje rellena el resto ---------- */
 const GRASS_Y = 20;                            // hasta dónde llega el pasto visible por delante de las placas
+const ANCHO_MIN = 1100;                        // por debajo de esto la maqueta se desplaza en vez de encogerse hasta ser ilegible
 function fit(){
-  const W=innerWidth, H=innerHeight-MENU_H;
+  const W=Math.max(innerWidth, ANCHO_MIN), H=innerHeight-MENU_H;
   const hdr=document.querySelector('header');
-  document.getElementById('panelProyecto').style.top = (hdr.offsetTop + hdr.offsetHeight + 18) + 'px';
+  const bajoEncabezado = (hdr.offsetTop + hdr.offsetHeight + 18) + 'px';
+  document.getElementById('panelProyecto').style.top = bajoEncabezado;
+  document.getElementById('cadena').style.top = bajoEncabezado;
   const pts=[sc.P(PX[0]-12,-8,9), sc.P(PX[0]-12,24,0), sc.P(PX[4]+PLATE+4,-8,9), sc.P(PX[4]+PLATE+4,18,0)];
   let x0=Math.min(...pts.map(p=>p[0])), x1=Math.max(...pts.map(p=>p[0]));
   let y0=Math.min(...pts.map(p=>p[1]))-10, y1=Math.max(...pts.map(p=>p[1]));
