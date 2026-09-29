@@ -255,23 +255,23 @@ const SIN_DATOS = { produccion:'—', puerto:'—', traslado:'—', descarga:'�
 
 // Así viene la hoja: KPIs de la portada (una sola vez), maqueta por entrega y una tabla por proyecto.
 const RESPALDO = {
-  kpis: { contratado:88559.16, proceso:40069.63, entregado:18006.65, pendiente:38048.25, monto:'—' },
+  kpis: { contratado:88559.16, proceso:40028.78, entregado:18014.99, pendiente:30515.39, monto:983.24671196 },
   maqueta: {
-    f1: { produccion:'—',     puerto:'—', traslado:'—', descarga:'—',      acopio:18010.84 },
-    f2: { produccion:'—',     puerto:'—', traslado:'—', descarga:30524.37, acopio:'—' },
-    f3: { produccion:40069.63, puerto:'—', traslado:'—', descarga:'—',     acopio:'—' },
+    f1: { produccion:'—',      puerto:'—', traslado:'—', descarga:'—',      acopio:18010.81 },
+    f2: { produccion:'—',      puerto:'—', traslado:'—', descarga:30517.28, acopio:'—' },
+    f3: { produccion:40028.78, puerto:'—', traslado:'—', descarga:'—',      acopio:'—' },
   },
   tramos: {
     'qro-ira': [
       { tramo:'T I',  solicitado: 6917,  entregado:    0,    pendiente:    0 },
-      { tramo:'T II', solicitado:16600,  entregado: 2150.56, pendiente: 7464.4 },
+      { tramo:'T II', solicitado:16600,  entregado: 2150.56, pendiente: 7462.67 },
     ],
     'sal-nl': [
       { tramo:'T I, seg. 13 y 14',      solicitado:12774.97, entregado:13026.47, pendiente:   0 },
-      { tramo:'T V, seg. 16 y 17',      solicitado: 4088,    entregado: 2834,    pendiente:7846 },
-      { tramo:'T II, seg. 13 y 14',     solicitado:12775,    entregado:    0,    pendiente:1000 },
-      { tramo:'T IV, seg. 15B',         solicitado: 4422,    entregado:    0,    pendiente:7464.4 },
-      { tramo:'T VI, seg. 18, 19 y 20', solicitado: 8566,    entregado:    0,    pendiente:8467 },
+      { tramo:'T V, seg. 16 y 17',      solicitado: 4088,    entregado: 2829.62, pendiente:7845.76 },
+      { tramo:'T II, seg. 13 y 14',     solicitado: 1000,    entregado:    0,    pendiente:1000 },
+      { tramo:'T IV, seg. 15B',         solicitado: 4422,    entregado:    0,    pendiente:5742.22 },
+      { tramo:'T VI, seg. 18, 19 y 20', solicitado:16418.64, entregado:    0,    pendiente:8466.73 },
     ],
   },
 };
@@ -310,7 +310,13 @@ function filasCSV(texto){                    // separa respetando las comillas: 
   filas[filas.length-1].push(campo);
   return filas;
 }
-const aNum = v => { const t = (v||'').replace(/,/g,'').trim(); if (!t || t === '-') return '—'; const n = Number(t); return isNaN(n) ? '—' : n; };
+const aNum = v => {                          // limpia $, comas y espacios; '-' significa que no hay dato
+  const s = (v||'').trim();
+  if (!s || s === '-' || s === '—') return '—';
+  const t = s.replace(/[^\d.\-]/g, '');
+  const n = Number(t);
+  return (t === '' || isNaN(n)) ? '—' : n;
+};
 // siempre dos decimales, como en la hoja: así los puntos quedan alineados en la tabla
 const fmt = v => typeof v === 'number' ? v.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : String(v);
 const clave = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
@@ -319,7 +325,9 @@ function leerHoja(filas){
   const h = { kpis:{}, maqueta:{}, tramos:{} };
   const fila = filas.find(f => clave(f[0]) === 'resumengeneral');
   if (!fila) return null;                    // sin ese renglón la hoja cambió de forma: mejor no tocar nada
-  h.kpis = { contratado:aNum(fila[1]), proceso:aNum(fila[2]), entregado:aNum(fila[3]), pendiente:aNum(fila[4]), monto:aNum(fila[5]) };
+  const monto = aNum(fila[5]);               // la hoja lo da en pesos; la tarjeta lo muestra en millones
+  h.kpis = { contratado:aNum(fila[1]), proceso:aNum(fila[2]), entregado:aNum(fila[3]), pendiente:aNum(fila[4]),
+             monto: typeof monto === 'number' ? monto/1e6 : monto };
   const campos = ['produccion','puerto','traslado','descarga','acopio'];
   for (const f of filas){                    // columnas H..M: una fila por entrega
     const m = /^entrega\s+(i{1,3})\b/i.exec((f[7]||'').trim());
