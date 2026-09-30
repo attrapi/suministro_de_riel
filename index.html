@@ -7,7 +7,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230B1017'/><path d='M10 4h12v5h-4l-.5 4v6l.5 4h9v5H5v-5h9l.5-4v-6L14 9h-4z' fill='%23FF9A4D'/></svg>">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <script src="html2canvas.min.js"></script><script src="jspdf.umd.min.js"></script><!-- locales, no por CDN: la red de la oficina intercepta cdnjs -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,600;0,700;1,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
   :root{
     --bg:#EDF0F4; --panel:#FFFFFF; --line:#C9D2DE;
@@ -72,11 +72,12 @@
   .tsub button{width:100%;background:transparent;border:0;border-radius:4px;padding:8px 10px;font:13px var(--body);text-align:left}
   .tsub button:hover{background:rgba(255,255,255,.08)}
   .tsub button.on{color:#FF9A4D}
-  .eyebrow{display:grid;grid-template-columns:auto auto;justify-content:start;column-gap:.5em;row-gap:2px;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.55);margin:0 0 4px}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.55);margin:0 0 4px}
   h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,3.4vw,44px);line-height:.95;letter-spacing:-.01em;margin:0;text-wrap:balance;text-shadow:0 2px 12px rgba(0,0,0,.5)}
   h1 span{color:#FF9A4D}
+  .fase-rot{font-family:var(--display);font-style:italic;font-weight:600;font-size:19px;letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.8);margin:5px 0 0}
   /* Control segmentado: las tres fases pegadas, la activa rellena */
-  .fases{display:inline-block;margin:8px 0 0;border:1px solid rgba(255,154,77,.55);border-radius:5px;overflow:hidden;white-space:nowrap;pointer-events:auto;background:rgba(10,15,22,.5)}
+  .fases{display:inline-block;margin:6px 0 0;border:1px solid rgba(255,154,77,.55);border-radius:5px;overflow:hidden;white-space:nowrap;pointer-events:auto;background:rgba(10,15,22,.5)}
   .fases button{display:inline-block;vertical-align:middle;font:500 11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.7);background:transparent;border:0;border-left:1px solid rgba(255,154,77,.35);padding:5px 12px;cursor:pointer}
   .fases button:first-child{border-left:0}
   .fases button.on{background:#FF9A4D;color:#0B1017}
@@ -185,6 +186,7 @@
   :root[data-tema="claro"] .eyebrow{color:rgba(22,32,43,.6)}
   :root[data-tema="claro"] h1{color:var(--ink-light);text-shadow:0 1px 8px rgba(255,255,255,.65)}
   :root[data-tema="claro"] h1 span{color:var(--accent-light)}
+  :root[data-tema="claro"] .fase-rot{color:rgba(22,32,43,.78)}
   :root[data-tema="claro"] .fases{border-color:rgba(180,82,26,.55);background:rgba(255,255,255,.7)}
   :root[data-tema="claro"] .fases button{color:rgba(22,32,43,.72);border-left-color:rgba(180,82,26,.3)}
   :root[data-tema="claro"] .fases button.on{background:var(--accent-light);color:#FFF}
@@ -247,11 +249,9 @@
 </div>
 <header>
   <div class="brand">
-    <div class="eyebrow">
-      <span>ATTRAPI /</span><span>LA-09-D00-009DOO999-I-54-2025</span>
-      <span></span><span>ARTF / 076-A-P / 2025</span>
-    </div>
+    <p class="eyebrow">ATTRAPI / ARTF / 076-A-P / 2025</p>
     <h1 id="h1">Adquisición <span>de riel</span></h1>
+    <p class="fase-rot">Fase I</p>
     <div class="fases" id="fases" role="group" aria-label="Fase"></div>
   </div>
   <div class="hstack">
