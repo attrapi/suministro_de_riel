@@ -842,6 +842,12 @@ function construir(){
   muelleCompleto(SITIO.descarga, 'destino', 'mx');
   acopio();
   vialidades();
+  [SITIO.planta, SITIO.origen, SITIO.descarga, SITIO.acopio].forEach(S=>{
+    // En franjas que ninguna nave esconde y que ningún acceso cruza.
+    estacionamiento(S.x0 + 18, 104, 1, 13);
+    estacionamiento(S.x0 + 26, 150, 2, 10);
+    estacionamiento(S.x0 + 96, 150, 2, 6);
+  });
   relleno();
 
   camionesDeRuta();
@@ -926,7 +932,7 @@ function planta(){
 
   pilas.produccion = grupo(P.x0 + 10, 0, 78, world);              // patio del dato
   patioDecorativo(rejilla(P.x0 + 12, 94, 6, 1, 15.5, 10));        // patio de fondo
-  ACCESO.planta = {e:P.x0 + 158, s:P.x0 + 188};
+  ACCESO.planta = {e:P.x0 + 122, s:P.x0 + 150};
 }
 
 /* =================== 2 y 4 · LOS DOS MUELLES =================== */
@@ -970,7 +976,7 @@ function muelleCompleto(S, lado, bandera){
   // queda en el patio, no a pie de calle.
   pilas[esOrigen ? 'puerto' : 'descarga'] = grupo(S.x0 + 14, 0, 80, world);
   patioDecorativo(rejilla(S.x0 + 12, 96, 7, 1, 15.5, 10));
-  ACCESO[esOrigen ? 'origen' : 'destino'] = {e:S.x0 + 140, s:S.x0 + 172};
+  ACCESO[esOrigen ? 'origen' : 'destino'] = {e:S.x0 + 132, s:S.x0 + 156};
   naveIndustrial(S.x0 + 40, 180, 54, 26, 12, 0);                 // naves, pasada la carretera
   naveIndustrial(S.x0 + 124, 180, 46, 26, 11, 0);
   oficina(S.x0 + 14, 180, 16, 14, 3);
@@ -1023,7 +1029,29 @@ function acopio(){
       {zo:30, zd:BAHIA_SALIDA, o:()=> fondo, d:()=> muelles.salidaBahia.pila},           // y del patio a la obra
     ],
   }));
-  ACCESO.acopio = {e:A.x0 + 136, s:A.x0 + 168};
+  ACCESO.acopio = {e:A.x0 + 146, s:A.x0 + 172};
+}
+
+/* ---------- estacionamiento: lo que llena el frente del predio ---------- */
+// Filas de unidades paradas junto a las oficinas. Son piezas instanciadas, de
+// modo que llenar el terreno no cuesta llamadas de dibujo.
+function estacionamiento(x0, z0, filas, porFila){
+  const puntos = [];
+  for (let f=0; f<filas; f++)
+    for (let i=0; i<porFila; i++)
+      puntos.push({x:x0 + i*5.2, z:z0 + f*12});
+  if (!puntos.length) return;
+  const caja = new THREE.InstancedMesh(new THREE.BoxGeometry(2.4, 2.2, 5.6), mat(C.caja), puntos.length);
+  const techo = new THREE.InstancedMesh(new THREE.BoxGeometry(2.2, 0.9, 2.6), mat(C.vidrio), puntos.length);
+  caja.castShadow = caja.receiveShadow = true;
+  const m = new THREE.Matrix4();
+  puntos.forEach((p,i)=>{
+    m.makeTranslation(p.x, 1.1, p.z); caja.setMatrixAt(i, m);
+    m.makeTranslation(p.x, 2.7, p.z - 0.4); techo.setMatrixAt(i, m);
+  });
+  world.add(caja); world.add(techo);
+  detalles.push(caja, techo);
+  placa(x0 - 4, x0 + porFila*5.2, z0 - 7, z0 + (filas-1)*12 + 7, 0.016, C.piso);
 }
 
 /* ---------- vialidad de cada recinto ---------- */
@@ -1037,7 +1065,7 @@ function vialidades(){
     {s:SITIO.acopio,   a:ACCESO.acopio},
   ];
   tramos.forEach(t=>{
-    carretera(t.s.x0 + 6, Math.max(t.a.s + 14, t.s.x1 - 8), VIAL_Z, 10, world);
+    carretera(t.s.x0 + 6, Math.min(t.s.x1 - 6, t.a.s + 14), VIAL_Z, 10, world);
     [t.a.e, t.a.s].forEach(x=>{                                            // uno de entrada y otro de salida
       placa(x - 5.5, x + 5.5, VIAL_Z, CAMINO_Z + 2, 0.02, C.asfalto);
       for (let z = VIAL_Z + 12; z < CAMINO_Z - 8; z += 14){
@@ -1056,7 +1084,7 @@ function relleno(){
     for (let x=b[0]; x<b[1]; x+=9){
       // La carretera ocupa de 115 a 141 y las naves de 167 a 193: el arbolado va
       // en la franja libre de en medio, nunca sobre el camino.
-      if (rnd() < 0.5) arboles.push({x:x + rnd()*7, z:147 + rnd()*16, r:1.8 + rnd()*1.4});
+      if (rnd() < 0.45) arboles.push({x:x + rnd()*7, z:Z_FRENTE - 2, r:2 + rnd()*1.6});
     }
     const accesos = Object.keys(ACCESO).reduce((a,k)=> a.concat([ACCESO[k].e, ACCESO[k].s]), []);
     for (let x=b[0]; x<b[1]; x+=30){
@@ -1230,7 +1258,7 @@ function camionesDeRuta(){
   // De la bahía sale a la vialidad interna del recinto, de ahí al acceso, y del
   // acceso a la carretera. Antes cortaba campo a través por encima de los patios.
   const hacerRuta = (xA, zA, aA, xB, zB, aB, i)=>{
-    const dA = xA + 16 + i*14, dB = xB - 16 - i*14;              // cada bahía, su ramal
+    const dA = xA + 13 + i*9, dB = xB - 13 - i*9;                // cada bahía, su ramal
     return {
       bA:null, bB:null,                                          // los pone quien arma la ruta
       ida: camino([ {x:xA + OFS_CAMION, z:zA}, {x:dA, z:zA}, {x:dA, z:VIAL_Z},
