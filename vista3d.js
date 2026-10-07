@@ -160,6 +160,16 @@ const CSS = `
 #riel3d .r3-medidor.oro i{background:var(--r3-oro)}
 #riel3d .r3-medidor.mal i{background:var(--r3-mal)}
 
+/* dona: el reparto del contratado, entre las tarjetas y la cadena */
+#riel3d .r3-dona{position:absolute;top:166px;left:16px;display:flex;align-items:center;gap:11px;
+  padding:10px 14px 10px 10px;width:max-content}
+#riel3d .r3-dona svg{width:78px;height:78px;flex:none;overflow:visible}
+#riel3d .r3-dona .leyenda{display:flex;flex-direction:column;gap:4px}
+#riel3d .r3-dona .l{display:grid;grid-template-columns:8px 1fr auto;align-items:center;gap:8px;
+  font-size:10.5px;font-weight:600;color:var(--r3-ink2);white-space:nowrap}
+#riel3d .r3-dona .l i{width:9px;height:9px;border-radius:3px}
+#riel3d .r3-dona .l b{font-family:var(--r3-m);font-weight:700;color:var(--r3-ink);font-variant-numeric:tabular-nums}
+
 /* panel derecho: la tabla del proyecto */
 #riel3d .r3-panel{position:absolute;top:172px;right:16px;bottom:124px;width:336px;display:flex;
   flex-direction:column;overflow:hidden}
@@ -233,6 +243,8 @@ const CSS = `
 }
 @media (max-width:980px){
   #riel3d .r3-panel{display:none}
+  #riel3d .r3-dona{padding:9px 12px 9px 9px}
+  #riel3d .r3-dona svg{width:76px;height:76px}
   #riel3d .r3-chain{right:16px}
   #riel3d .r3-code,#riel3d .r3-site small{display:none}
 }
@@ -244,7 +256,7 @@ const CSS = `
   #riel3d .r3-kpi{min-width:148px;flex:none}
   #riel3d .r3-chain{left:10px;right:10px;grid-template-columns:repeat(5,minmax(104px,1fr));overflow-x:auto}
   #riel3d .r3-paso{flex-direction:column;align-items:flex-start;gap:4px;padding:7px 8px}
-  #riel3d .r3-hint,#riel3d .r3-tools{display:none}
+  #riel3d .r3-hint,#riel3d .r3-tools,#riel3d .r3-dona{display:none}
 }
 `;
 
@@ -301,9 +313,11 @@ raiz.innerHTML = `
 
   <div class="r3-kpis" id="r3Kpis"></div>
 
+  <div class="r3-dona r3-glass" id="r3Dona"></div>
+
   <aside class="r3-panel r3-glass" id="r3Panel">
     <div class="r3-ph">
-      <p class="eyebrow" id="r3PanelFase">Entrega</p>
+      <p class="eyebrow" id="r3PanelFase">Lote</p>
       <h2 id="r3PanelNom">—</h2>
     </div>
     <div class="r3-tot" id="r3Tot"></div>
@@ -447,7 +461,7 @@ function carretera(x0, x1, z, ancho, parent){
 /* ---------- grúa de pórtico: la pieza que más se repite en la maqueta ---------- */
 // Sobre el muelle monta a caballo la vía y asoma el brazo al agua; en el acopio
 // cruza el patio. El carro corre por la viga y el aparejo sube y baja.
-function gruaPortico(x, z0, z1, alto, voladizo){
+function gruaPortico(x, z0, z1, alto, voladizo, desfase){
   const g = grupo(x, 0, 0, world);
   const vol = voladizo || 0;
   const zv0 = z0 - vol, zc = (zv0 + z1)/2;                       // la viga sale sobre el agua
@@ -470,19 +484,39 @@ function gruaPortico(x, z0, z1, alto, voladizo){
   const cable2 = box(0.12, 4, 0.12, C.gruaOsc, 0, -5, 1.1, carro, true);
   const viga = box(11.6, 0.45, 1.5, C.grua, 0, -6.9, 0, carro);    // bastidor de izaje
   const pinza = hazRiel(0, -6.4, 0, 11, 1, carro, C.acero2);
-  const z0c = zv0 + 2.5, z1c = z1 - 2.5;
-  const fase = Math.random()*Math.PI*2;
-  animadores.push((t)=>{
-    const u = (Math.sin(t*0.26 + fase) + 1)/2;                   // vaivén del carro
-    carro.position.z = z0c + (z1c - z0c)*u;
-    const h = 1.8 + Math.abs(Math.sin(t*0.52 + fase))*4.8;       // el aparejo sube al cruzar
-    viga.position.y = -0.4 - h;
-    pinza.position.y = 0.1 - h;
-    pinza.visible = u > 0.16 && u < 0.88;                         // suelta el haz en cada punta
-    cable1.scale.y = cable2.scale.y = h/4;
-    cable1.position.y = cable2.position.y = -0.2 - h/2;
-  });
-  return g;
+  const zMar = zv0 + 2.5, zTierra = z1 - 2.5;                     // las dos puntas del recorrido
+  const ALTO = 1.8, BAJO = 6.6;                                   // cuánto cuelga el aparejo
+  let t = desfase || 0;                                           // dos grúas a la par se ven mecánicas
+  function poner(z, cuelga, lleva){
+    carro.position.z = z;
+    viga.position.y = -0.4 - cuelga;
+    pinza.position.y = 0.1 - cuelga;
+    pinza.visible = lleva;
+    cable1.scale.y = cable2.scale.y = cuelga/4;
+    cable1.position.y = cable2.position.y = -0.2 - cuelga/2;
+  }
+  const suave = u => u*u*(3 - 2*u);
+  poner(zTierra, ALTO, false);
+  // Una maniobra completa: baja, engancha, cruza con el haz a la vista, baja,
+  // suelta y vuelve en vacío. Así se ve qué está haciendo y hacia dónde va la carga.
+  return {
+    update(dt, modo){
+      if (!modo){                                                 // sin buque, la grúa espera
+        t = desfase || 0; poner(zTierra, ALTO, false);
+        return;
+      }
+      t = (t + dt/6.2) % 1;
+      const aMar = modo === 'carga';                              // carga: de tierra al buque
+      const A = aMar ? zTierra : zMar;                            // de dónde toma
+      const B = aMar ? zMar : zTierra;                            // dónde deja
+      if (t < 0.10)      poner(A, ALTO + (BAJO-ALTO)*(t/0.10), false);
+      else if (t < 0.18) poner(A, BAJO - (BAJO-ALTO)*((t-0.10)/0.08), true);
+      else if (t < 0.46) poner(A + (B-A)*suave((t-0.18)/0.28), ALTO, true);
+      else if (t < 0.56) poner(B, ALTO + (BAJO-ALTO)*((t-0.46)/0.10), true);
+      else if (t < 0.64) poner(B, BAJO - (BAJO-ALTO)*((t-0.56)/0.08), false);
+      else               poner(B + (A-B)*suave((t-0.64)/0.36), ALTO, false);
+    },
+  };
 }
 
 /* ---------------------------------------------------------------- buques ---- */
@@ -530,6 +564,7 @@ function camion(){
    ARMADO DE LA MAQUETA
    ============================================================================ */
 const pilas = {};        // los patios que cambian con el dato
+const gruas = {origen:[], destino:[], acopio:[]};   // se les manda según lo que esté pasando
 let buques = [], camiones = [], vapor = [];
 
 function construir(){
@@ -600,8 +635,8 @@ function construir(){
   pilas.produccion = grupo(PLANTA.x0 + 2, 0, 27.5, world);                    // lo laminado, delante de la nave
 
   /* ---------- 2 · puerto de origen ---------- */
-  gruaPortico(PUERTO.x0 + 6,  PATA_Z0, PATA_Z1, 13, 12);
-  gruaPortico(PUERTO.x0 + 22, PATA_Z0, PATA_Z1, 13, 12);
+  gruas.origen = [gruaPortico(PUERTO.x0 + 6,  PATA_Z0, PATA_Z1, 13, 12, 0),
+                  gruaPortico(PUERTO.x0 + 22, PATA_Z0, PATA_Z1, 13, 12, 0.42)];
   pilas.puerto = grupo(PUERTO.x0 + 2, 0, 8.6, world);
   bodega(PUERTO.x0 + 30, 18, 8, 6, 4.6);
   banderaEn(MAR0 - 6, 13.5, 'cn');
@@ -615,8 +650,8 @@ function construir(){
   }
 
   /* ---------- 4 · descarga ---------- */
-  gruaPortico(DESCARGA.x0 + 5,  PATA_Z0, PATA_Z1, 13, 12);
-  gruaPortico(DESCARGA.x0 + 21, PATA_Z0, PATA_Z1, 13, 12);
+  gruas.destino = [gruaPortico(DESCARGA.x0 + 5,  PATA_Z0, PATA_Z1, 13, 12, 0.25),
+                   gruaPortico(DESCARGA.x0 + 21, PATA_Z0, PATA_Z1, 13, 12, 0.67)];
   pilas.descarga = grupo(DESCARGA.x0 + 2, 0, 8.6, world);
   bodega(DESCARGA.x0 + 30, 18, 9, 6, 5.0);
   banderaEn(MAR1 + 6, 13.5, 'mx');
@@ -625,8 +660,8 @@ function construir(){
   via(MAR1 + 2, X_FIN - 1, VIA_Z, world);
 
   /* ---------- 5 · centro de acopio ---------- */
-  gruaPortico(ACOPIO.x0 + 10, 4, 18, 11, 0);
-  gruaPortico(ACOPIO.x0 + 26, 4, 18, 11, 0);
+  gruas.acopio = [gruaPortico(ACOPIO.x0 + 10, 4, 18, 11, 0, 0.15),
+                  gruaPortico(ACOPIO.x0 + 26, 4, 18, 11, 0, 0.58)];
   pilas.acopio = grupo(ACOPIO.x0 + 2, 0, 5, world);
   const ofi = grupo(ACOPIO.x1 - 1, 0, 26, world);                             // caseta de control
   box(7, 3.4, 5, C.muro, 0, 0, 0, ofi);
@@ -636,49 +671,78 @@ function construir(){
   arbolado();
 
   /* ---------- flota ---------- */
-  // Dos buques desfasados: siempre hay uno cargando y otro en el mar, como en el plano.
+  // Un solo reloj manda el proceso: el buque dice en qué está y las grúas del muelle
+  // le siguen. Sin eso cada pieza se movía por su cuenta y no se entendía nada.
   const AMARRE = -6.4, IDA = -15.5, VUELTA = -24.5, CALADO = -1.2;
   const X_ORIG = PUERTO.x0 + 14, X_DEST = DESCARGA.x0 + 13;
+  const lerp = (a,b,u)=> a + (b-a)*u;
+  const suave = u => u*u*(3 - 2*u);
   buques = [buque(), buque()];
-  buques[0].userData.t = 0.52; buques[1].userData.t = 0.04;
+  buques[0].userData.t = 0.60; buques[1].userData.t = 0.10;
   animadores.push((t, dt)=>{
+    let enOrigen = null, enDestino = null;
     buques.forEach((b,i)=>{
       const u = b.userData;
-      u.t = (u.t + dt*0.019) % 1;
-      // 0–.13 carga en origen · .13–.60 travesía · .60–.73 descarga · .73–1 regreso en vacío
-      let x, z = AMARRE, dir = 1, cargado = true;
-      if (u.t < 0.13){ x = X_ORIG; cargado = u.t > 0.07; }
-      else if (u.t < 0.60){ x = X_ORIG + (X_DEST - X_ORIG)*((u.t - 0.13)/0.47); z = IDA; }
-      else if (u.t < 0.73){ x = X_DEST; cargado = u.t < 0.66; }
-      else { x = X_DEST + (X_ORIG - X_DEST)*((u.t - 0.73)/0.27); z = VUELTA; dir = -1; cargado = false; }
+      u.t = (u.t + dt*0.015) % 1;
+      const k = u.t;
+      let x = X_ORIG, z = AMARRE, giro = 0, haces = 0;
+      // atraca · carga · zarpa · cruza · atraca · descarga · zarpa · regresa
+      if (k < 0.05){                      // entra de reversa al muelle de origen y endereza
+        z = lerp(VUELTA, AMARRE, suave(k/0.05)); giro = Math.PI*(1 - suave(k/0.05));
+      } else if (k < 0.22){               // cargando: los haces aparecen de uno en uno
+        enOrigen = true; haces = Math.min(3, Math.floor((k - 0.05)/0.17*3.4));
+      } else if (k < 0.27){               // zarpa de origen
+        z = lerp(AMARRE, IDA, suave((k - 0.22)/0.05)); haces = 3;
+      } else if (k < 0.56){               // travesía
+        x = lerp(X_ORIG, X_DEST, (k - 0.27)/0.29); z = IDA; haces = 3;
+      } else if (k < 0.61){               // atraca en destino
+        x = X_DEST; z = lerp(IDA, AMARRE, suave((k - 0.56)/0.05)); haces = 3;
+      } else if (k < 0.78){               // descargando: los haces se van de uno en uno
+        x = X_DEST; enDestino = true; haces = Math.max(0, 3 - Math.floor((k - 0.61)/0.17*3.4));
+      } else if (k < 0.83){               // zarpa de destino y da la vuelta
+        x = X_DEST; z = lerp(AMARRE, VUELTA, suave((k - 0.78)/0.05));
+        giro = Math.PI*suave((k - 0.78)/0.05);
+      } else {                            // regreso en vacío
+        x = lerp(X_DEST, X_ORIG, (k - 0.83)/0.17); z = VUELTA; giro = Math.PI;
+      }
       b.position.set(x, CALADO + Math.sin(t*0.8 + i*2)*0.14, z);   // flota con su línea de agua
-      b.rotation.y = dir > 0 ? 0 : Math.PI;
+      b.rotation.y = giro;
       b.rotation.z = Math.sin(t*0.9 + i)*0.012;
-      u.carga.visible = cargado;
+      u.haces.forEach((h,n)=> h.visible = n < haces);
     });
+    // Las grúas del muelle solo trabajan cuando hay buque; si no, se quedan en tierra.
+    gruas.origen.forEach(g=> g.update(dt, enOrigen ? 'carga' : null));
+    gruas.destino.forEach(g=> g.update(dt, enDestino ? 'descarga' : null));
+    gruas.acopio.forEach(g=> g.update(dt, 'carga'));              // el patio siempre acomoda
   });
 
-  /* ---------- camiones: planta→muelle en China, descarga→acopio en México ---------- */
+  /* ---------- camiones: viaje redondo, con su parada para cargar y descargar ---------- */
+  // Van por el carril de ida con el haz a la vista y vuelven vacíos por el de regreso,
+  // parándose en cada punta: es lo que hace legible que estén entregando algo.
   const rutas = [
-    {x0:PLANTA.x0 + 6,   x1:PUERTO.x0 + 18, z:CAMINO_Z - 1.4, dir: 1},
-    {x0:PUERTO.x0 + 18,  x1:PLANTA.x0 + 6,  z:CAMINO_Z + 1.4, dir:-1},
-    {x0:DESCARGA.x0 + 6, x1:ACOPIO.x1 - 4,  z:CAMINO_Z - 1.4, dir: 1},
-    {x0:ACOPIO.x1 - 4,   x1:DESCARGA.x0 + 6,z:CAMINO_Z + 1.4, dir:-1},
+    {x0:PLANTA.x0 + 8,   x1:PUERTO.x0 + 18},                       // planta → muelle de origen
+    {x0:DESCARGA.x0 + 8, x1:ACOPIO.x1 - 6},                        // descarga → centro de acopio
   ];
   rutas.forEach((r,i)=>{
-    for (let n=0;n<2;n++){
+    for (let n=0;n<3;n++){
       const c = camion();
-      c.userData.r = r; c.userData.t = (n*0.5 + i*0.13) % 1;
-      c.rotation.y = r.dir > 0 ? 0 : Math.PI;
-      c.userData.carga.visible = r.dir > 0;             // cargados van, vacíos vuelven
+      c.userData.r = r; c.userData.t = (n/3 + i*0.17) % 1;
       camiones.push(c);
     }
   });
   animadores.push((t, dt)=>{
     camiones.forEach(c=>{
       const u = c.userData, r = u.r;
-      u.t = (u.t + dt*0.05) % 1;
-      c.position.set(r.x0 + (r.x1 - r.x0)*u.t, 0, r.z);
+      u.t = (u.t + dt*0.045) % 1;
+      const k = u.t;
+      let x, z, giro, lleva;
+      if (k < 0.12){        x = r.x0; z = CAMINO_Z - 1.4; giro = 0;       lleva = k > 0.07; }
+      else if (k < 0.46){   x = lerp(r.x0, r.x1, (k - 0.12)/0.34); z = CAMINO_Z - 1.4; giro = 0; lleva = true; }
+      else if (k < 0.58){   x = r.x1; z = CAMINO_Z - 1.4; giro = 0;       lleva = k < 0.51; }
+      else {                x = lerp(r.x1, r.x0, (k - 0.58)/0.42); z = CAMINO_Z + 1.4; giro = Math.PI; lleva = false; }
+      c.position.set(x, 0, z);
+      c.rotation.y = giro;
+      u.carga.visible = lleva;
     });
   });
 
@@ -778,10 +842,6 @@ function pintarPatios(){
         hazRiel(i*PASO_X + LARGO_HAZ/2, 0, f*PASO_Z, LARGO_HAZ, n, g);
       }
   });
-  // El tonelaje en travesía no tiene patio: se ve en lo que llevan los buques.
-  const t = d.traslado;
-  const cuantos = typeof t === 'number' && t > 0 ? Math.max(1, Math.min(3, Math.round(t/TOPE*3))) : 0;
-  buques.forEach(b=> b.userData.haces.forEach((h,i)=>{ h.visible = i < cuantos; }));
 }
 
 /* ============================================================================
@@ -834,10 +894,12 @@ function encuadrar(suave){
     x0=Math.min(x0,px); x1=Math.max(x1,px); y0=Math.min(y0,py); y1=Math.max(y1,py);
   })));
   const W = innerWidth, H = innerHeight, angosto = W <= 760;
-  // El HUD flota encima de la maqueta, así que solo se le reserva lo justo para que
-  // los rótulos no se metan bajo las tarjetas; el resto del lienzo sí se aprovecha.
-  const padT = angosto ? 118 : 148, padB = angosto ? 164 : 82;
-  const padL = 20, padR = (W > 980 ? 296 : 20);                   // el panel de la derecha
+  // La maqueta ocupa el lienzo entero y el HUD flota encima: reservarle sitio la
+  // dejaba metida en un rincón. Solo se aparta el borde de la barra y el de la
+  // cadena, y a la derecha lo suficiente para que el acopio no caiga bajo el panel.
+  const padT = angosto ? 112 : 108, padB = angosto ? 150 : 76;
+  const padL = 24;
+  const padR = (W > 980 ? 300 : 24);
   // unidades de mundo por píxel: lo que haga falta para que quepa en la franja libre
   const k = Math.max((x1-x0)/Math.max(80, W - padL - padR), (y1-y0)/Math.max(80, H - padT - padB));
   const xc = (padL + W - padR)/2, yc = (padT + H - padB)/2;       // centro de la franja libre
@@ -871,8 +933,8 @@ function pintarKpis(){
     {k:'contratado', n:'Contratado',       u:UNIDAD,  ic:ICO.riel,     cl:'',      pct:100},
     {k:'proceso',    n:'En proceso',       u:UNIDAD,  ic:ICO.reloj,    cl:'oro',   pct:num(d.proceso)/contratado*100,   m:'oro'},
     {k:'entregado',  n:'Entregado',        u:UNIDAD,  ic:ICO.check,    cl:'ok',    pct:num(d.entregado)/contratado*100, m:'ok'},
-    {k:'pendiente',  n:'Pendiente',        u:UNIDAD,  ic:ICO.falta,    cl:'mal',   pct:num(d.pendiente)/contratado*100, m:'mal'},
-    {k:'monto',      n:'Monto pendiente',  u:'M',     ic:ICO.dinero,   cl:'flama', pct:null},
+    {k:'pendiente',  n:'Por fabricar',     u:UNIDAD,  ic:ICO.falta,    cl:'mal',   pct:num(d.pendiente)/contratado*100, m:'mal'},
+    {k:'monto',      n:'Monto pagado',     u:'M',     ic:ICO.dinero,   cl:'flama', pct:null},
   ];
   const notas = d.notas || {};
   $('#r3Kpis').innerHTML = tarjetas.map(c=>{
@@ -889,6 +951,46 @@ function pintarKpis(){
   '<span class="t"><label>Proyectos</label><span class="v">' + TRAMOS.length +
   ' <small>proyectos</small></span></span></div>';
 }
+/* Dona: el contratado es el total, así que va al centro y no como gajo; los gajos
+   son sus tres partes, que suman ese total. Es cifra del contrato, no del lote. */
+const DONA = [
+  {k:'entregado', n:'Entregado',    c:'#1f9a63'},
+  {k:'proceso',   n:'En proceso',   c:'#f2c230'},
+  {k:'pendiente', n:'Por fabricar', c:'#c9d2e0'},
+];
+function pintarDona(){
+  const el = $('#r3Dona');
+  const d = datos(FASE, SEG);
+  const num = v => typeof v === 'number' ? v : 0;
+  const total = num(d.contratado);
+  if (!total){ el.hidden = true; return; }
+  el.hidden = false;
+  // Los atributos van en el propio SVG, igual que en la vista plana, para que el
+  // dibujo no dependa de reglas de hoja de estilo que no viajan con el elemento.
+  const aro = (color, pct, desde) => '<circle cx="50" cy="50" r="38" fill="none" stroke-width="13"' +
+    ' transform="rotate(-90 50 50)" pathLength="100" stroke="' + color +
+    '" stroke-dasharray="' + pct.toFixed(2) + ' ' + (100-pct).toFixed(2) +
+    '" stroke-dashoffset="' + (-desde).toFixed(2) + '"/>';
+  let acc = 0;
+  const aros = DONA.map(p=>{
+    p.pct = Math.max(0, Math.min(100, num(d[p.k])/total*100));
+    const a = aro(p.c, p.pct, acc);
+    acc += p.pct;
+    return a;
+  }).join('');
+  el.innerHTML =
+    '<svg viewBox="0 0 100 100" role="img" aria-label="Reparto de lo contratado">' +
+    aro('#eef1f6', 100, 0) + aros +
+    '<text x="50" y="50" text-anchor="middle" fill="#1b2638" font-weight="800" font-size="19"' +
+    ' font-family="Bricolage Grotesque, Barlow Condensed, sans-serif">' +
+    (total/1000).toLocaleString('es-MX',{maximumFractionDigits:1}) + '</text>' +
+    '<text x="50" y="62" text-anchor="middle" fill="#8796ab" font-size="7.5" letter-spacing="0.9"' +
+    ' font-family="JetBrains Mono, IBM Plex Mono, monospace">MIL ' + UNIDAD.toUpperCase() + '</text></svg>' +
+    '<div class="leyenda">' +
+    '<div class="l"><i style="background:transparent;box-shadow:inset 0 0 0 1px var(--r3-ink3)"></i>Contratado<b>100 %</b></div>' +
+    DONA.map(p=>'<div class="l"><i style="background:' + p.c + '"></i>' + p.n + '<b>' + p.pct.toFixed(1) + ' %</b></div>').join('') +
+    '</div>';
+}
 function pintarPanel(){
   const d = datos(FASE, SEG);
   const filas = tabla(FASE, SEG);
@@ -901,7 +1003,7 @@ function pintarPanel(){
     '<div class="r3-mini"><label>Entregado</label><b>' + fmt(d.entregadoP) + '</b></div>' +
     '<div class="r3-mini"><label>Pendiente</label><b>' + fmt(d.pendienteP) + '</b></div>';
   if (!filas.length){
-    $('#r3Rows').innerHTML = '<p class="r3-vacio">Sin datos para esta entrega.</p>';
+    $('#r3Rows').innerHTML = '<p class="r3-vacio">Sin datos para este lote.</p>';
     return;
   }
   const nota = n => n ? ' <span class="r3-pill">' + n + '</span>' : '';
@@ -958,19 +1060,27 @@ function pintarLabs(){
 const _v = new THREE.Vector3();
 function moverLabs(){
   const w = innerWidth, h = innerHeight;
-  // El rótulo se esconde si cae fuera, bajo la barra o detrás del panel: ahí estorbaría
-  const panel = $('#r3Panel');
-  const limite = (panel && panel.offsetParent) ? panel.getBoundingClientRect().left - 10 : w;
+  // El rótulo se esconde si cae fuera o si lo taparía una tarjeta del HUD: ahí no se leería
+  const estorbos = [];
+  ['#r3Panel', '#r3Dona', '#r3Kpis'].forEach(sel=>{
+    const e = $(sel);
+    if (e && e.offsetParent && !e.hidden) estorbos.push(e.getBoundingClientRect());
+  });
   labs.forEach(L=>{
     _v.set(L.e.x, L.e.y, L.e.z).project(cam);
     const x = (_v.x*0.5 + 0.5)*w, y = (-_v.y*0.5 + 0.5)*h;
     L.el.style.transform = 'translate(' + (x|0) + 'px,' + (y|0) + 'px) translate(-50%,-100%)';
-    // y es el pie del rótulo: la tarjeta va encima, así que se descuenta su alto
-    L.el.style.visibility = (x < 80 || x > limite || y < 205 || y > h - 60) ? 'hidden' : 'visible';
+    // y es el pie del rótulo; la tarjeta cuelga hacia arriba, de ahí el recuadro
+    const caja = {x0:x - 72, x1:x + 72, y0:y - 76, y1:y};
+    // se esconde solo si de verdad lo tapa; rozar una esquina por unos píxeles no cuenta
+    const tapado = estorbos.some(r=>
+      Math.min(caja.x1, r.right) - Math.max(caja.x0, r.left) > 18 &&
+      Math.min(caja.y1, r.bottom) - Math.max(caja.y0, r.top) > 18);
+    L.el.style.visibility = (tapado || x < 0 || x > w || y < 60 || y > h - 50) ? 'hidden' : 'visible';
   });
 }
 function pintarTodo(){
-  pintarKpis(); pintarPanel(); pintarCadena(); pintarLabs(); pintarPatios();
+  pintarKpis(); pintarDona(); pintarPanel(); pintarCadena(); pintarLabs(); pintarPatios();
   $('#r3SiteNom').textContent = (TRAMOS.find(t=>t.id===SEG) || {}).nombre || '—';
   $('#r3SiteCod').textContent = 'P' + (TRAMOS.findIndex(t=>t.id===SEG) + 1);
 }

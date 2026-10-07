@@ -88,6 +88,16 @@
   .fases button:not(.on){opacity:.4}                       /* siguen a la vista, pero apagadas */
   .fases button:not(.on):hover{opacity:1;background:rgba(255,154,77,.18);color:#EAEFF5}
   .fases button:focus-visible{outline:2px solid #FF9A4D;outline-offset:-2px}
+  /* Dona: el reparto del contratado, en el hueco que queda entre los lotes y la maqueta */
+  .dona{margin:14px 0 0;display:flex;align-items:center;gap:13px;pointer-events:auto;
+        background:rgba(10,15,22,.72);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.12);
+        border-radius:6px;padding:10px 14px 10px 10px;width:max-content;max-width:100%}
+  .dona svg{width:96px;height:96px;flex:0 0 auto;overflow:visible}
+  .dona .leyenda{display:flex;flex-direction:column;gap:7px;min-width:0}
+  .dona .l{display:grid;grid-template-columns:9px 1fr auto;align-items:center;gap:8px;
+           font:11px var(--mono);color:rgba(255,255,255,.7);white-space:nowrap}
+  .dona .l i{width:9px;height:9px;border-radius:2px}
+  .dona .l b{font-weight:600;color:#EAEFF5;font-variant-numeric:tabular-nums;letter-spacing:.02em}
   .st{background:rgba(10,15,22,.72);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:8px 12px;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:10px;align-items:center}
   .st .ico{grid-row:1/3;width:50px;height:36px}
   .st .ico svg{width:100%;height:100%;overflow:visible}
@@ -244,11 +254,6 @@
 
 
 <div id="menu" class="menu"><!-- espacio reservado para el menú del sitio (100 % de ancho) -->
-  <span class="mtitle">Estilo</span>
-  <button type="button" data-theme="institucional">Institucional</button>
-  <button type="button" data-theme="marino">Marino</button>
-  <button type="button" data-theme="arena">Arena</button>
-  <button type="button" data-theme="claro">Claro</button>
   <button type="button" id="btn3d" class="v3d" title="Abrir la maqueta en 3D (otra vista, aparte de esta)">3D</button>
   <button type="button" id="btnDescargar" class="dl">Descargar</button>
 </div>
@@ -260,15 +265,16 @@
     <p class="eyebrow">ATTRAPI / ARTF / 076-A-P / 2025</p>
     <h1 id="h1">Adquisición <span>de riel</span></h1>
     <p class="fase-rot">Fase I</p>
-    <div class="fases" id="fases" role="group" aria-label="Fase"></div>
+    <div class="fases" id="fases" role="group" aria-label="Lote"></div>
+    <div class="dona" id="dona"></div>
   </div>
   <div class="hstack">
     <div class="chain" id="chainInicio">
       <div class="st"><div class="ico" id="ico1"></div><div class="num">Contratado</div><div class="cnt"><span data-d="contratado">0</span> <small>tm</small></div></div>
       <div class="st"><div class="ico" id="ico2"></div><div class="num">En proceso</div><div class="cnt"><span data-d="proceso">0</span> <small>tm</small></div></div>
       <div class="st"><div class="ico" id="ico3"></div><div class="num">Entregado</div><div class="cnt"><span data-d="entregado">0</span> <small>tm</small></div></div>
-      <div class="st"><div class="ico" id="ico6"></div><div class="num">Pendiente</div><div class="cnt"><span data-d="pendiente">0</span> <small>tm</small></div></div>
-      <div class="st"><div class="ico" id="ico4"></div><div class="num">Monto pendiente</div><div class="cnt"><span data-d="monto">0</span> <small>M</small></div></div>
+      <div class="st"><div class="ico" id="ico6"></div><div class="num">Por fabricar</div><div class="cnt"><span data-d="pendiente">0</span> <small>tm</small></div></div>
+      <div class="st"><div class="ico" id="ico4"></div><div class="num">Monto pagado</div><div class="cnt"><span data-d="monto">0</span> <small>M</small></div></div>
       <div class="st"><div class="ico" id="ico5"></div><div class="num">Proyectos</div><div class="cnt"><span id="nTramos">0</span> <small>proyectos</small></div></div>
     </div>
     <div class="chain" id="chainProyecto" hidden>
@@ -311,9 +317,9 @@ const TRAMOS = [
   { id:'sal-nl',  nombre:'Saltillo – Nuevo Laredo', segmentos:[] },
 ];
 const FASES = [
-  { id:'f1', nombre:'Entrega I'   },
-  { id:'f2', nombre:'Entrega II'  },
-  { id:'f3', nombre:'Entrega III' },
+  { id:'f1', nombre:'Lote I'   },
+  { id:'f2', nombre:'Lote II'  },
+  { id:'f3', nombre:'Lote III' },
 ];
 const UNIDAD = 'tm';
 const SIN_DATOS = { produccion:'—', puerto:'—', traslado:'—', descarga:'—', acopio:'—', contratado:'—', proceso:'—', entregado:'—', pendiente:'—', monto:'—', solicitado:'—', entregadoP:'—', pendienteP:'—' };
@@ -405,7 +411,7 @@ function leerHoja(filas){
               pendiente:aCelda(fila[4]).nota, monto:aCelda(fila[5]).nota };
   const campos = ['produccion','puerto','traslado','descarga','acopio'];
   for (const f of filas){                    // columnas H..M: una fila por entrega
-    const m = /^entrega\s+(i{1,3})\b/i.exec((f[7]||'').trim());
+    const m = /^(?:entrega|lote)\s+(i{1,3})\b/i.exec((f[7]||'').trim());
     if (!m) continue;
     const id = { i:'f1', ii:'f2', iii:'f3' }[m[1].toLowerCase()];
     h.maqueta[id] = {}; h.maqueta[id].notas = {};
@@ -521,14 +527,13 @@ const THEMES = {
   claro:  { label:'Claro',  water:'#8FA6BA', land:'#C2C5B5', land2:'#CACDBD', sand:'#DBD5C2', ground:'#C3C8CD', quay:'#CDD2D7', road:'#6E767E', crane:'#A88B3B',
             stage:'#8FA6BA', grid:'rgba(22,32,43,.08)', wave:'rgba(22,32,43,.13)', lane:'rgba(22,32,43,.22)', light:true },
 };
-let THEME = 'institucional';
-try { THEME = new URLSearchParams(location.search).get('tema') || localStorage.getItem('tema') || 'institucional'; } catch(e){}
-if (!THEMES[THEME]) THEME='institucional';   // cubre a quien traiga 'sobrio' guardado de antes
+// La página se queda en Marino y ya no se puede cambiar: el menú de estilos se quitó.
+// Los otros tres quedan arriba por si algún día hace falta volver: basta cambiar esta línea.
+const THEME = 'marino';
 const T = THEMES[THEME];
 document.querySelector('.stage').style.background = T.stage;
 document.body.style.background = T.stage;     // en celular la maqueta se oculta y el fondo lo pone el cuerpo
-document.documentElement.dataset.tema = THEME;          // la interfaz se adapta al estilo elegido
-document.querySelectorAll('#menu button[data-theme]').forEach(b=>{ b.classList.toggle('on', b.dataset.theme===THEME); b.onclick=()=>{ try{ localStorage.setItem('tema', b.dataset.theme); }catch(e){} location.href = location.pathname + '?tema=' + b.dataset.theme; }; });
+document.documentElement.dataset.tema = THEME;
 
 // Los grises de las estructuras son azulados. Un estilo puede declarar 'tinte' para acercarlos
 // a su propia familia de color y que no desentonen; devuelve hex porque shade() y lerpColor() lo esperan.
@@ -1063,11 +1068,56 @@ function pintarDatos(){
     const k = e.dataset.d, n = notas[k];
     e.textContent = fmt(DATOS[k]) + (n ? ' ' + n : '');
   });
-  // los pasos de la cadena sí cambian con la entrega, así que su unidad la nombra
+  // los pasos de la cadena sí cambian con el lote, así que su unidad lo nombra
   const laFase = (FASES.find(f=>f.id===FASE) || {}).nombre || '';
   document.querySelectorAll('[data-u]').forEach(e=>{ e.textContent = UNIDAD + ' / ' + laFase; });
   pintarTabla();
+  pintarDona();
   if (window.RIEL3D) window.RIEL3D.refrescar();   // si el 3D está cargado, se entera del mismo cambio
+}
+/* ---------- Dona: cómo se reparte lo contratado ----------
+   El contratado es el total, así que va al centro y no como gajo: los gajos son
+   sus tres partes, que suman ese total. Son cifras del contrato completo, no del
+   lote, de modo que la dona no cambia al moverse entre Lote I, II y III.       */
+const DONA = [
+  { k:'entregado', n:'Entregado',   c:'#FF9A4D' },
+  { k:'proceso',   n:'En proceso',  c:'#7FA8CC' },
+  { k:'pendiente', n:'Por fabricar',c:'rgba(255,255,255,.3)' },
+];
+function pintarDona(){
+  const el = document.getElementById('dona');
+  if (!el) return;
+  const num = v => typeof v === 'number' ? v : 0;
+  const total = num(DATOS.contratado);
+  if (!total){ el.hidden = true; return; }       // sin contratado no hay reparto que mostrar
+  el.hidden = false;
+  // Los atributos van en el propio SVG, no en el CSS: el PDF lo serializa suelto
+  // y se perdería el grosor y el giro de los aros.
+  const aro = (color, pct, desde) => `<circle cx="50" cy="50" r="38" fill="none" stroke-width="13"
+      transform="rotate(-90 50 50)" pathLength="100" stroke="${color}"
+      stroke-dasharray="${pct.toFixed(2)} ${(100-pct).toFixed(2)}" stroke-dashoffset="${(-desde).toFixed(2)}"/>`;
+  let acc = 0;
+  const aros = DONA.map(p=>{
+    p.pct = Math.max(0, Math.min(100, num(DATOS[p.k])/total*100));
+    const a = aro(p.c, p.pct, acc);
+    acc += p.pct;
+    return a;
+  }).join('');
+  el.innerHTML =
+    `<svg viewBox="0 0 100 100" role="img" aria-label="Reparto de lo contratado">
+       ${aro('rgba(255,255,255,.08)', 100, 0)}
+       ${aros}
+       <text x="50" y="50" text-anchor="middle" fill="#FF9A4D"
+             font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="600" font-size="20"
+             >${(total/1000).toLocaleString('es-MX',{maximumFractionDigits:1})}</text>
+       <text x="50" y="62" text-anchor="middle" fill="rgba(255,255,255,.55)"
+             font-family="IBM Plex Mono, Consolas, monospace" font-size="8" letter-spacing="1"
+             >MIL ${UNIDAD.toUpperCase()}</text>
+     </svg>
+     <div class="leyenda">
+       <div class="l" style="color:rgba(255,255,255,.9)"><i style="background:transparent;border:1px solid rgba(255,255,255,.35)"></i>Contratado<b>100 %</b></div>
+       ${DONA.map(p=>`<div class="l"><i style="background:${p.c}"></i>${p.n}<b>${p.pct.toFixed(1)} %</b></div>`).join('')}
+     </div>`;
 }
 function pintarTabla(){
   const filas = (TABLA[FASE] || {})[SEG] || [];
@@ -1082,7 +1132,7 @@ function pintarTabla(){
   document.getElementById('tablaBody').innerHTML = filas.length
     ? filas.map(f=>{ const n = f.notas || {};
         return `<tr><td class="c-tramo">${f.tramo}</td>${cel(f.solicitado,n.solicitado)}${cel(f.entregado,n.entregado)}${cel(f.pendiente,n.pendiente)}</tr>`; }).join('') + totales
-    : '<tr><td class="c-tramo vacio" colspan="4">Sin datos para esta entrega</td></tr>';
+    : '<tr><td class="c-tramo vacio" colspan="4">Sin datos para este lote</td></tr>';
 }
 const elFases = document.getElementById('fases');
 FASES.forEach(f=>{                                  // un botón por fase: agregar una más aquí basta
@@ -1212,7 +1262,7 @@ let elegirProyecto = null;              // lo llena el bloque de abajo; lo usa l
     };
     pdf.setTextColor(...SUAVE); dibujaFila(cols.map(c=>c.t.toUpperCase()), true, 7);
     if (!filas.length){
-      pdf.setTextColor(...SUAVE); dibujaFila(['Sin datos para esta entrega','','',''], false, 8);
+      pdf.setTextColor(...SUAVE); dibujaFila(['Sin datos para este lote','','',''], false, 8);
       return;
     }
     for (const f of filas){
