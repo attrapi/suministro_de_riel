@@ -37,7 +37,7 @@ const C = {
   grua:'#f2c230', gruaOsc:'#39404c', casco:'#24487f', cascoBajo:'#16233a',
   cubierta:'#dde4ee', torre:'#fbfcfe', chimenea:'#d24b42',
   camion:'#fbfcfe', caja:'#e3e9f2', llanta:'#2a2f38', cobalto:'#2f5be0',
-  durmiente:'#ab9174', fleje:'#d9743a', loco:'#a8462c',
+  fleje:'#d9743a',
 };
 
 /* ------------------------------------------------------- traza del mundo ---- */
@@ -480,14 +480,6 @@ function hazRiel(x, y, z, largo, n, parent, color){
   }
   return g;
 }
-// Vía con durmientes: cose la planta con el muelle y el acopio con la salida
-function via(x0, x1, z, parent){
-  const g = grupo(0,0,0,parent);
-  box(x1-x0, 0.12, 0.16, C.acero2, (x0+x1)/2, 0.22, z-0.72, g, true);
-  box(x1-x0, 0.12, 0.16, C.acero2, (x0+x1)/2, 0.22, z+0.72, g, true);
-  for (let x=x0+0.9; x<x1; x+=2.0) box(0.9, 0.22, 2.2, C.durmiente, x, 0, z, g, true);
-  return g;
-}
 // Carretera con raya central
 function carretera(x0, x1, z, ancho, parent){
   placa(x0, x1, z-ancho/2, z+ancho/2, 0.03, C.asfalto);
@@ -716,11 +708,6 @@ function tanque(x, z, r, h){
   cil(r*0.22, h + 2, C.acero, r + 1.4, 0, 0, g, 8);
   return g;
 }
-// Haz de vías paralelas: una terminal de riel tiene varias, no una
-function viaMulti(x0, x1, z, n, paso){
-  for (let i=0;i<n;i++) via(x0, x1, z + i*(paso || 6), world);
-}
-
 /* ---------- relleno instanciado: cientos de piezas en pocas llamadas ---------- */
 const detalles = [];                              // se apagan al mirar todo de lejos
 function arbolesEn(puntos){
@@ -846,8 +833,6 @@ function construir(){
   pavimento(MAR1, SITIO.descarga.x1 + 10);
   pavimento(SITIO.acopio.x0 - 12, SITIO.acopio.x1 + 12);
 
-  viaMulti(X_INI + 8, MAR0 - 5, VIA_Z, 2, 7);
-  viaMulti(MAR1 + 5, X_FIN - 8, VIA_Z, 2, 7);
   carretera(X_INI + 8, MAR0 - 5, CAMINO_Z, 26, world);
   carretera(MAR1 + 5, X_FIN - 8, CAMINO_Z, 26, world);
 
@@ -941,7 +926,7 @@ function planta(){
 
   pilas.produccion = grupo(P.x0 + 10, 0, 78, world);              // patio del dato
   patioDecorativo(rejilla(P.x0 + 12, 94, 6, 1, 15.5, 10));        // patio de fondo
-  ACCESO.planta = P.x0 + 176;
+  ACCESO.planta = {e:P.x0 + 158, s:P.x0 + 188};
 }
 
 /* =================== 2 y 4 · LOS DOS MUELLES =================== */
@@ -985,7 +970,7 @@ function muelleCompleto(S, lado, bandera){
   // queda en el patio, no a pie de calle.
   pilas[esOrigen ? 'puerto' : 'descarga'] = grupo(S.x0 + 14, 0, 80, world);
   patioDecorativo(rejilla(S.x0 + 12, 96, 7, 1, 15.5, 10));
-  ACCESO[esOrigen ? 'origen' : 'destino'] = S.x0 + 158;
+  ACCESO[esOrigen ? 'origen' : 'destino'] = {e:S.x0 + 140, s:S.x0 + 172};
   naveIndustrial(S.x0 + 40, 180, 54, 26, 12, 0);                 // naves, pasada la carretera
   naveIndustrial(S.x0 + 124, 180, 46, 26, 11, 0);
   oficina(S.x0 + 14, 180, 16, 14, 3);
@@ -1011,7 +996,6 @@ function acopio(){
   naveIndustrial(A.x0 + 70, 180, 60, 26, 12, 0);                  // y una hilera pasada la carretera
   pilas.acopio = grupo(A.x0 + 12, 0, 80, world);
   patioDecorativo(rejilla(A.x0 + 14, 96, 7, 1, 15.5, 10));
-  viaMulti(A.x0 - 6, A.x1 + 6, 16, 1);
 
   // Dos carriles de descarga, uno por ruta, y el patio detrás.
   muelles.acopioX = [A.x0 + 60, A.x0 + 104];
@@ -1039,7 +1023,7 @@ function acopio(){
       {zo:30, zd:BAHIA_SALIDA, o:()=> fondo, d:()=> muelles.salidaBahia.pila},           // y del patio a la obra
     ],
   }));
-  ACCESO.acopio = A.x0 + 150;
+  ACCESO.acopio = {e:A.x0 + 136, s:A.x0 + 168};
 }
 
 /* ---------- vialidad de cada recinto ---------- */
@@ -1053,13 +1037,15 @@ function vialidades(){
     {s:SITIO.acopio,   a:ACCESO.acopio},
   ];
   tramos.forEach(t=>{
-    carretera(t.s.x0 + 6, Math.max(t.a + 12, t.s.x1 - 8), VIAL_Z, 10, world);
-    placa(t.a - 5.5, t.a + 5.5, VIAL_Z, CAMINO_Z + 2, 0.02, C.asfalto);   // el acceso
-    for (let z = VIAL_Z + 12; z < CAMINO_Z - 8; z += 14){                 // raya del acceso
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(0.26, 5), mat(C.raya, {roughness:.7}));
-      m.rotation.x = -Math.PI/2; m.position.set(t.a, 0.05, z);
-      world.add(m);
-    }
+    carretera(t.s.x0 + 6, Math.max(t.a.s + 14, t.s.x1 - 8), VIAL_Z, 10, world);
+    [t.a.e, t.a.s].forEach(x=>{                                            // uno de entrada y otro de salida
+      placa(x - 5.5, x + 5.5, VIAL_Z, CAMINO_Z + 2, 0.02, C.asfalto);
+      for (let z = VIAL_Z + 12; z < CAMINO_Z - 8; z += 14){
+        const m = new THREE.Mesh(new THREE.PlaneGeometry(0.26, 5), mat(C.raya, {roughness:.7}));
+        m.rotation.x = -Math.PI/2; m.position.set(x, 0.05, z);
+        world.add(m);
+      }
+    });
   });
 }
 
@@ -1068,14 +1054,28 @@ function relleno(){
   const arboles = [], faroles = [];
   [[X_INI + 12, MAR0 - 12], [MAR1 + 12, X_FIN - 12]].forEach(b=>{
     for (let x=b[0]; x<b[1]; x+=9){
-      if (rnd() < 0.45) arboles.push({x:x + rnd()*7, z:112 + rnd()*22, r:1.8 + rnd()*1.4});
-      if (rnd() < 0.55) arboles.push({x:x + rnd()*7, z:172 + rnd()*22, r:2 + rnd()*1.8});
+      // La carretera ocupa de 115 a 141 y las naves de 167 a 193: el arbolado va
+      // en la franja libre de en medio, nunca sobre el camino.
+      if (rnd() < 0.5) arboles.push({x:x + rnd()*7, z:147 + rnd()*16, r:1.8 + rnd()*1.4});
     }
-    const accesos = Object.keys(ACCESO).map(k=> ACCESO[k]);
+    const accesos = Object.keys(ACCESO).reduce((a,k)=> a.concat([ACCESO[k].e, ACCESO[k].s]), []);
     for (let x=b[0]; x<b[1]; x+=30){
       if (accesos.some(a=> Math.abs(a - x) < 14)) continue;      // no en mitad del acceso
       faroles.push({x, z:CAMINO_Z - 14, lado:1});
       faroles.push({x, z:CAMINO_Z + 14, lado:-1});
+    }
+  });
+  // En los claros entre recintos no hay nada construido: ahí el monte es tupido.
+  const claros = [[X_INI + 10, SITIO.planta.x0 - 14], [SITIO.planta.x1 + 14, SITIO.origen.x0 - 14],
+                  [SITIO.descarga.x1 + 14, SITIO.acopio.x0 - 14], [SITIO.acopio.x1 + 14, X_FIN - 10]];
+  claros.forEach(c=>{
+    for (let x=c[0]; x<c[1]; x+=8){
+      for (let k=0;k<3;k++){
+        if (rnd() > 0.5) continue;
+        // la carretera cruza también los claros: el monte le deja su franja libre
+        const z = rnd() < 0.3 ? 98 + rnd()*12 : 146 + rnd()*46;
+        arboles.push({x:x + rnd()*7, z, r:1.8 + rnd()*2});
+      }
     }
   });
   arbolesEn(arboles);
@@ -1234,12 +1234,12 @@ function camionesDeRuta(){
     return {
       bA:null, bB:null,                                          // los pone quien arma la ruta
       ida: camino([ {x:xA + OFS_CAMION, z:zA}, {x:dA, z:zA}, {x:dA, z:VIAL_Z},
-                    {x:aA, z:VIAL_Z}, {x:aA, z:CARRIL_IDA},
-                    {x:aB, z:CARRIL_IDA}, {x:aB, z:VIAL_Z},
+                    {x:aA.s, z:VIAL_Z}, {x:aA.s, z:CARRIL_IDA},
+                    {x:aB.e, z:CARRIL_IDA}, {x:aB.e, z:VIAL_Z},
                     {x:dB, z:VIAL_Z}, {x:dB, z:zB}, {x:xB + OFS_CAMION, z:zB} ]),
       vuelta: camino([ {x:xB + OFS_CAMION, z:zB}, {x:dB, z:zB}, {x:dB, z:VIAL_Z},
-                       {x:aB, z:VIAL_Z}, {x:aB, z:CARRIL_VUELTA},
-                       {x:aA, z:CARRIL_VUELTA}, {x:aA, z:VIAL_Z},
+                       {x:aB.s, z:VIAL_Z}, {x:aB.s, z:CARRIL_VUELTA},
+                       {x:aA.e, z:CARRIL_VUELTA}, {x:aA.e, z:VIAL_Z},
                        {x:dA, z:VIAL_Z}, {x:dA, z:zA}, {x:xA + OFS_CAMION, z:zA} ]),
     };
   };
@@ -1278,10 +1278,10 @@ function camionesDeRuta(){
     bA: ()=> muelles.salidaBahia,
     bB: ()=> null,
     ida: camino([ {x:A.x0 + 76 + OFS_CAMION, z:BAHIA_SALIDA}, {x:A.x0 + 108, z:BAHIA_SALIDA},
-                  {x:A.x0 + 108, z:VIAL_Z}, {x:ACCESO.acopio + 14, z:VIAL_Z},
-                  {x:ACCESO.acopio + 14, z:BORDE_IDA}, {x:X_FIN + 40, z:BORDE_IDA} ]),
-    vuelta: camino([ {x:X_FIN + 40, z:BORDE_VUELTA}, {x:ACCESO.acopio + 14, z:BORDE_VUELTA},
-                     {x:ACCESO.acopio + 14, z:VIAL_Z}, {x:A.x0 + 44, z:VIAL_Z},
+                  {x:A.x0 + 108, z:VIAL_Z}, {x:ACCESO.acopio.s, z:VIAL_Z},
+                  {x:ACCESO.acopio.s, z:BORDE_IDA}, {x:X_FIN + 40, z:BORDE_IDA} ]),
+    vuelta: camino([ {x:X_FIN + 40, z:BORDE_VUELTA}, {x:ACCESO.acopio.e, z:BORDE_VUELTA},
+                     {x:ACCESO.acopio.e, z:VIAL_Z}, {x:A.x0 + 44, z:VIAL_Z},
                      {x:A.x0 + 44, z:BAHIA_SALIDA}, {x:A.x0 + 76 + OFS_CAMION, z:BAHIA_SALIDA} ]),
     esSalida: true,
   };
@@ -1292,35 +1292,9 @@ function camionesDeRuta(){
   cs.userData.u = 0; cs.userData.espera = 0; cs.userData.ang = 0;
   camiones.push(cs);
 
-  // Camiones de relleno: solo circulan por la carretera y dan la vuelta en los
-  // extremos de su continente, sin cruzar el mar de un salto.
-  [[X_INI + 20, MAR0 - 20], [MAR1 + 20, X_FIN - 20]].forEach((tramo, j)=>{
-    const vuelta = camino([ {x:tramo[0], z:BORDE_IDA}, {x:tramo[1], z:BORDE_IDA},
-                            {x:tramo[1] + 14, z:CAMINO_Z}, {x:tramo[1], z:BORDE_VUELTA},
-                            {x:tramo[0], z:BORDE_VUELTA}, {x:tramo[0] - 14, z:CAMINO_Z},
-                            {x:tramo[0], z:BORDE_IDA} ], 18);
-    for (let i=0;i<3;i++){
-      const c = camion();
-      c.userData.relleno = vuelta;
-      c.userData.pila = pilaVehiculo(c, 2.3, 1);
-      c.userData.pila.n = (i + j) % 2;
-      c.userData.t = i/3;
-      c.userData.ang = 0;
-      camiones.push(c);
-    }
-  });
-
   animadores.push((t, dt)=>{
     camiones.forEach(c=>{
       const u = c.userData;
-      if (u.relleno){
-        u.t = (u.t + dt*VEL_CAMION/u.relleno.total) % 1;
-        const p = u.relleno.en(u.t);
-        c.position.set(p.x, 0, p.z);
-        u.ang = haciaAngulo(u.ang, p.ang, dt*3.5);
-        c.rotation.y = u.ang;
-        return;
-      }
       const r = u.r;
       const bA = r.bA(), bB = r.bB ? r.bB() : null;
       u.espera += dt;
