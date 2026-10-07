@@ -68,7 +68,7 @@ const NIVEL_MAR = -1.4;                          // el agua va bajo la tierra: e
 // respiro por delante para que no tapen nada que importe.
 const VIA_Z = 8;                                 // línea principal, pegada a la costa
 const CAMINO_Z = 58;                             // carretera, a media profundidad
-const PATA_Z0 = -9, PATA_Z1 = 28;                // dónde apoyan las grúas de muelle
+const PATA_Z0 = 3, PATA_Z1 = 28;                 // las dos patas, ambas sobre el muelle
 const MUELLE_Z = 14;                             // la pila de maniobra del muelle
 
 // Las cinco estaciones. 'enc' es el recuadro que la cámara encuadra al visitarlas.
@@ -521,9 +521,9 @@ function gruaPortico(x, zPata0, zPata1, alto, opc){
   const carro = grupo(0, carroY, zReposo, g);
   box(3.0, 1.4, 3.6, C.gruaOsc, 0, -1.4, 0, carro);
   const cables = [];
-  [[-1.4,-5.2],[1.4,-5.2],[-1.4,5.2],[1.4,5.2]].forEach(c=>
+  [[-1.4,-1.9],[1.4,-1.9],[-1.4,1.9],[1.4,1.9]].forEach(c=>
     cables.push(box(0.14, 4, 0.14, C.gruaOsc, c[0], -5, c[1], carro, true)));
-  const bastidor = box(13.5, 0.6, 11.4, C.grua, 0, -7.2, 0, carro);   // bastidor de izaje
+  const bastidor = box(13.5, 0.7, 4.5, C.grua, 0, -7.2, 0, carro);    // bastidor de izaje
   const pinza = hazRiel(0, -6.6, 0, 11, 1, carro, C.acero2);
 
   const ALTO = 2.2;                                               // cuánto cuelga en viaje
@@ -630,10 +630,13 @@ function buque(){
   box(7.8, 1.3, A - 1.8, C.vidrio, 0, 4.0, 0, casilla, true);
   box(6.4, 1.8, A - 4, C.torre, 0, 6.4, 0, casilla);
   cil(1.4, 4.6, C.chimenea, -0.8, 8.2, 0, casilla, 12);
-  const cargas = [];                                              // seis bultos en cubierta
-  for (let i=0;i<6;i++)
-    cargas.push(hazRiel((i % 3)*11.5 - 5, 5.1, (i < 3 ? -2.7 : 2.7), 10.6, 2, g));
-  g.userData = {cargas};
+  // Dos columnas de cubierta, cada una bajo su grúa y apilada de tres.
+  const columnas = [-20, 20].map(lx=>{
+    const col = [];
+    for (let k=0;k<3;k++) col.push(hazRiel(lx, 4.6 + k*PASO_PILA, 0, 10.6, 2, g));
+    return col;
+  });
+  g.userData = {cargas: columnas[0].concat(columnas[1]), columnas};
   return g;
 }
 
@@ -955,9 +958,9 @@ function muelleCompleto(S, lado, bandera){
     gruas.push(gruaPortico(x, PATA_Z0, PATA_Z1, 23, {
       vol: 26, desfase: i*0.5, reposo: MUELLE_Z,
       trabajos: esOrigen
-        ? [ {zo:MUELLE_Z, zd:-20, o:()=> pila, d:cubierta},                  // de la pila al buque
+        ? [ {zo:MUELLE_Z, zd:-9, o:()=> pila, d:cubierta},                   // de la pila al buque
             {zo:24, zd:MUELLE_Z, o:()=> bah.pila, d:()=> pila} ]             // y del camión a la pila
-        : [ {zo:-20, zd:MUELLE_Z, o:cubierta, d:()=> pila},                  // del buque a la pila
+        : [ {zo:-9, zd:MUELLE_Z, o:cubierta, d:()=> pila},                   // del buque a la pila
             {zo:MUELLE_Z, zd:24, o:()=> pila, d:()=> bah.pila} ],            // y de la pila al camión
     }));
   });
@@ -1023,16 +1026,13 @@ function relleno(){
 
 /* ---------- buques: el reloj del proceso ---------- */
 function flota(){
-  const AMARRE = -20, IDA = -48, VUELTA = -74, CALADO = -1.6;
+  const AMARRE = -9, IDA = -48, VUELTA = -74, CALADO = -1.6;
   const xO = SITIO.origen.x0 + 66, xD = SITIO.descarga.x0 + 66;
   buques = [buque(), buque()];
   buques[0].userData.t = 0.55; buques[1].userData.t = 0.05;
   buques.forEach(b=>{
     // Dos columnas de cubierta, una por grúa: cada una se llena y se vacía sola.
-    b.userData.pilas = [0,1].map(i=>{
-      const cargas = b.userData.cargas.filter((c,k)=> (k % 2) === i);
-      return pilaVehiculo({userData:{cargas}}, 4.6, 3);
-    });
+    b.userData.pilas = b.userData.columnas.map(col=> pilaVehiculo({userData:{cargas:col}}, 4.6, 3));
   });
   animadores.push((t, dt)=>{
     buques.forEach((b,i)=>{
