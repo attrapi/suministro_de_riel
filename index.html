@@ -1420,6 +1420,7 @@ window.RIEL3D_API = {
   },
   pausar2D(v){ PAUSA3D = !!v; if (!v){ last = performance.now(); } },
 };
+const VERSION_3D = '2026-10-07a';     // súbele al cambiar vista3d.js
 {
   const btn = document.getElementById('btn3d');
   const script = src => new Promise((ok, falla)=>{
@@ -1432,7 +1433,9 @@ window.RIEL3D_API = {
     btn.disabled = true; btn.textContent = 'Cargando…';
     try {
       if (!window.THREE) await script('three.min.js');       // local, como las otras bibliotecas
-      await script('vista3d.js');                            // se abre sola al cargar
+      // La versión va en la dirección: sin ella el navegador se queda con la copia
+      // vieja de vista3d.js y los cambios no se ven aunque ya estén publicados.
+      await script('vista3d.js?v=' + VERSION_3D);            // se abre sola al cargar
     } catch(e){
       alert('No se pudo cargar la vista 3D. Revisa que three.min.js y vista3d.js estén junto a esta página.');
     }

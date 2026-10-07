@@ -70,7 +70,9 @@ const VIA_Z = 8;                                 // línea principal, pegada a l
 const CAMINO_Z = 58;                             // carretera, a media profundidad
 // Las bahías de carga, todas bien apartadas del carril: así la entrada es una
 // vuelta que se ve, y no un empujón de costado.
-const BAHIA_PLANTA = 44, BAHIA_MUELLE = 24, BAHIA_ACOPIO = 42, BAHIA_SALIDA = 18;
+// Van bien adentro del predio: pegadas a la carretera, un camión de paso rozaba
+// al que estaba cargando.
+const BAHIA_PLANTA = 36, BAHIA_MUELLE = 24, BAHIA_ACOPIO = 34, BAHIA_SALIDA = 16;
 const PATA_Z0 = 3, PATA_Z1 = 28;                 // las dos patas, ambas sobre el muelle
 const MUELLE_Z = 14;                             // la pila de maniobra del muelle
 
@@ -828,8 +830,8 @@ function construir(){
 
   viaMulti(X_INI + 8, MAR0 - 5, VIA_Z, 2, 7);
   viaMulti(MAR1 + 5, X_FIN - 8, VIA_Z, 2, 7);
-  carretera(X_INI + 8, MAR0 - 5, CAMINO_Z, 12, world);
-  carretera(MAR1 + 5, X_FIN - 8, CAMINO_Z, 12, world);
+  carretera(X_INI + 8, MAR0 - 5, CAMINO_Z, 26, world);
+  carretera(MAR1 + 5, X_FIN - 8, CAMINO_Z, 26, world);
 
   planta();
   muelleCompleto(SITIO.origen, 'origen', 'cn');
@@ -902,11 +904,14 @@ function planta(){
   pilas.produccion = grupo(P.x0 + 8, 0, 34, world);
   patioDecorativo(rejilla(P.x0 + 6, 20, 8, 2, 15.5, 7));
 
-  muelles.plantaBahia = bahia();
-  gruas.push(gruaPortico(P.x0 + 80, 38, 72, 16, {
+  // Dos posiciones de carga: con una sola, los cuatro camiones de las dos rutas
+  // se paraban en el mismo punto y se encimaban.
+  muelles.plantaBahias = [bahia(), bahia()];
+  gruas.push(gruaPortico(P.x0 + 80, 22, 72, 16, {
     desfase: 0.2, ciclo: CICLO_CARGA, reposo: 68,
     trabajos: [
-      {zo:68, zd:BAHIA_PLANTA, o:()=> muelles.planta, d:()=> muelles.plantaBahia.pila},
+      {zo:68, zd:BAHIA_PLANTA,     o:()=> muelles.planta, d:()=> muelles.plantaBahias[0].pila},
+      {zo:68, zd:BAHIA_PLANTA - 8, o:()=> muelles.planta, d:()=> muelles.plantaBahias[1].pila},
     ],
   }));
 }
@@ -972,12 +977,13 @@ function acopio(){
   muelles.acopio = pilaMuelle(A.x0 + 76, 50, 6);
   muelles.acopio.n = 2;
   const fondo = pilaMuelle(A.x0 + 76, 30, 8);
-  muelles.acopioBahia = bahia();
+  muelles.acopioBahias = [bahia(), bahia()];
   muelles.salidaBahia = bahia();
-  gruas.push(gruaPortico(A.x0 + 76, 12, 58, 16, {
+  gruas.push(gruaPortico(A.x0 + 76, 10, 58, 16, {
     desfase: 0.1, reposo: 50, ciclo: CICLO_CARGA,
     trabajos: [
-      {zo:BAHIA_ACOPIO, zd:50, o:()=> muelles.acopioBahia.pila, d:()=> muelles.acopio}, // del camión a la pila
+      {zo:BAHIA_ACOPIO,     zd:50, o:()=> muelles.acopioBahias[0].pila, d:()=> muelles.acopio},
+      {zo:BAHIA_ACOPIO - 8, zd:50, o:()=> muelles.acopioBahias[1].pila, d:()=> muelles.acopio},
       {zo:50, zd:30, o:()=> muelles.acopio, d:()=> fondo},                               // de la pila al patio
       {zo:30, zd:BAHIA_SALIDA, o:()=> fondo, d:()=> muelles.salidaBahia.pila},           // y del patio a la obra
     ],
@@ -1106,7 +1112,29 @@ function flota(){
 // Un camión no entra de lado a la bahía: sigue un camino con sus vueltas y mira
 // siempre hacia donde avanza. El recorrido se arma con puntos y el rumbo sale de
 // la dirección del tramo, así el giro se ve.
-function camino(pts){
+// Las vueltas en escuadra no existen: se redondean con un arco corto, y así el
+// rumbo cambia poco a poco en vez de saltar.
+function redondear(pts, r){
+  if (pts.length < 3) return pts;
+  const out = [pts[0]];
+  for (let i=1;i<pts.length-1;i++){
+    const a = pts[i-1], b = pts[i], c = pts[i+1];
+    const d1 = Math.hypot(b.x-a.x, b.z-a.z) || 1, d2 = Math.hypot(c.x-b.x, c.z-b.z) || 1;
+    const t1 = Math.min(r, d1*0.45)/d1, t2 = Math.min(r, d2*0.45)/d2;
+    const p1 = {x:b.x + (a.x-b.x)*t1, z:b.z + (a.z-b.z)*t1};
+    const p2 = {x:b.x + (c.x-b.x)*t2, z:b.z + (c.z-b.z)*t2};
+    out.push(p1);
+    for (let k=1;k<4;k++){                                       // arco de Bézier
+      const u = k/4, m = (1-u)*(1-u), n = 2*(1-u)*u, o = u*u;
+      out.push({x:m*p1.x + n*b.x + o*p2.x, z:m*p1.z + n*b.z + o*p2.z});
+    }
+    out.push(p2);
+  }
+  out.push(pts[pts.length-1]);
+  return out;
+}
+function camino(pts, r){
+  pts = redondear(pts, r || 11);
   const seg = [], acc = [0];
   for (let i=1;i<pts.length;i++){
     const d = Math.hypot(pts[i].x - pts[i-1].x, pts[i].z - pts[i-1].z);
@@ -1135,28 +1163,38 @@ function haciaAngulo(actual, meta, k){
 }
 
 function camionesDeRuta(){
+  // Cuatro carriles bien repartidos. Los de ruta van por dentro; por fuera, en el
+  // continente de la planta los de relleno y en el del acopio los que salen a la
+  // obra. Nunca comparten carril con los de ruta, que era lo que los encimaba.
   const CARRIL_IDA = CAMINO_Z - 4, CARRIL_VUELTA = CAMINO_Z + 4;
+  const BORDE_IDA = CAMINO_Z - 11, BORDE_VUELTA = CAMINO_Z + 11;
   // Cada ruta: bahía de origen, bahía de destino, y el camino de ida y de vuelta
   // con sus entradas y salidas. El riel sube y baja únicamente por grúa.
-  const hacerRuta = (xA, zA, xB, zB, bA, bB)=>({
-    bA, bB,
-    ida: camino([ {x:xA, z:zA}, {x:xA + 14, z:zA}, {x:xA + 14, z:CARRIL_IDA},
-                  {x:xB - 20, z:CARRIL_IDA}, {x:xB - 20, z:zB}, {x:xB, z:zB} ]),
-    vuelta: camino([ {x:xB, z:zB}, {x:xB + 16, z:zB}, {x:xB + 16, z:CARRIL_VUELTA},
-                     {x:xA - 16, z:CARRIL_VUELTA}, {x:xA - 16, z:zA}, {x:xA, z:zA} ]),
-  });
+  // Cada bahía tiene su propio acceso, desplazado según el carril que le toca: si
+  // los dos entraran por el mismo sitio, un camión le pasaría por encima al que
+  // ya está cargando.
+  const hacerRuta = (xA, zA, xB, zB, bA, bB, i)=>{
+    const eA = 16 + i*20, eB = 22 + i*20;                        // desvíos de entrada y salida
+    return {
+      bA, bB,
+      ida: camino([ {x:xA, z:zA}, {x:xA + eA, z:zA}, {x:xA + eA, z:CARRIL_IDA},
+                    {x:xB - eB, z:CARRIL_IDA}, {x:xB - eB, z:zB}, {x:xB, z:zB} ]),
+      vuelta: camino([ {x:xB, z:zB}, {x:xB + eB, z:zB}, {x:xB + eB, z:CARRIL_VUELTA},
+                       {x:xA - eA, z:CARRIL_VUELTA}, {x:xA - eA, z:zA}, {x:xA, z:zA} ]),
+    };
+  };
 
   const O = SITIO.origen, D = SITIO.descarga, A = SITIO.acopio, P = SITIO.planta;
   const rutas = [];
   // Planta → muelle de origen. Un camión por cada grúa del muelle.
   muelles.origenBahias.forEach((b, i)=>{
-    rutas.push(hacerRuta(P.x0 + 80, BAHIA_PLANTA, muelles.origenX[i], BAHIA_MUELLE,
-                         ()=> muelles.plantaBahia, ()=> b));
+    rutas.push(hacerRuta(P.x0 + 80, BAHIA_PLANTA - i*8, muelles.origenX[i], BAHIA_MUELLE,
+                         ()=> muelles.plantaBahias[i], ()=> b, i));
   });
   // Muelle de descarga → centro de acopio.
   muelles.destinoBahias.forEach((b, i)=>{
-    rutas.push(hacerRuta(muelles.destinoX[i], BAHIA_MUELLE, A.x0 + 76, BAHIA_ACOPIO,
-                         ()=> b, ()=> muelles.acopioBahia));
+    rutas.push(hacerRuta(muelles.destinoX[i], BAHIA_MUELLE, A.x0 + 76, BAHIA_ACOPIO - i*8,
+                         ()=> b, ()=> muelles.acopioBahias[i], i));
   });
 
   rutas.forEach((r, i)=>{
@@ -1175,10 +1213,10 @@ function camionesDeRuta(){
   // y vuelven vacíos, que es lo que pasa de verdad.
   const salida = {
     bA: ()=> muelles.salidaBahia,
-    ida: camino([ {x:A.x0 + 76, z:BAHIA_SALIDA}, {x:A.x0 + 90, z:BAHIA_SALIDA},
-                  {x:A.x0 + 90, z:CARRIL_IDA}, {x:X_FIN + 30, z:CARRIL_IDA} ]),
-    vuelta: camino([ {x:X_FIN + 30, z:CARRIL_VUELTA}, {x:A.x0 + 62, z:CARRIL_VUELTA},
-                     {x:A.x0 + 62, z:BAHIA_SALIDA}, {x:A.x0 + 76, z:BAHIA_SALIDA} ]),
+    ida: camino([ {x:A.x0 + 76, z:BAHIA_SALIDA}, {x:A.x0 + 96, z:BAHIA_SALIDA},
+                  {x:A.x0 + 96, z:BORDE_IDA}, {x:X_FIN + 30, z:BORDE_IDA} ]),
+    vuelta: camino([ {x:X_FIN + 30, z:BORDE_VUELTA}, {x:A.x0 + 56, z:BORDE_VUELTA},
+                     {x:A.x0 + 56, z:BAHIA_SALIDA}, {x:A.x0 + 76, z:BAHIA_SALIDA} ]),
     esSalida: true,
   };
   for (let n=0;n<2;n++){
@@ -1192,17 +1230,17 @@ function camionesDeRuta(){
 
   // Camiones de relleno: solo circulan por la carretera de su continente y dan
   // la vuelta en los extremos, sin cruzar el mar de un salto.
-  [[X_INI + 14, MAR0 - 14], [MAR1 + 14, X_FIN - 14]].forEach((tramo, j)=>{
-    const vuelta = camino([ {x:tramo[0], z:CARRIL_IDA}, {x:tramo[1], z:CARRIL_IDA},
-                            {x:tramo[1] + 7, z:CAMINO_Z}, {x:tramo[1], z:CARRIL_VUELTA},
-                            {x:tramo[0], z:CARRIL_VUELTA}, {x:tramo[0] - 7, z:CAMINO_Z},
-                            {x:tramo[0], z:CARRIL_IDA} ]);
-    for (let i=0;i<4;i++){
+  [[X_INI + 14, MAR0 - 14]].forEach((tramo, j)=>{
+    const vuelta = camino([ {x:tramo[0], z:BORDE_IDA}, {x:tramo[1], z:BORDE_IDA},
+                            {x:tramo[1] + 10, z:CAMINO_Z}, {x:tramo[1], z:BORDE_VUELTA},
+                            {x:tramo[0], z:BORDE_VUELTA}, {x:tramo[0] - 10, z:CAMINO_Z},
+                            {x:tramo[0], z:BORDE_IDA} ], 14);
+    for (let i=0;i<3;i++){
       const c = camion();
       c.userData.relleno = vuelta;
       c.userData.pila = pilaVehiculo(c, 2.3, 1);
       c.userData.pila.n = (i + j) % 2;
-      c.userData.t = i/4;
+      c.userData.t = i/3;
       c.userData.ang = 0;
       camiones.push(c);
     }
