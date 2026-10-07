@@ -41,6 +41,10 @@
   .menu .mtitle{font:11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-right:6px}
   .menu button{font:12px var(--mono);color:rgba(255,255,255,.75);background:transparent;border:1px solid rgba(255,255,255,.18);border-radius:4px;padding:5px 10px;cursor:pointer}
   .menu button.on{background:#FF9A4D;border-color:#FF9A4D;color:#0B1017}
+  /* El 3D es otra maqueta, no un estilo de esta: el botón va aparte y con el acento */
+  .menu .v3d{margin-left:16px;border-color:#FF9A4D;color:#FF9A4D;font-weight:600;letter-spacing:.1em}
+  .menu .v3d:hover{background:rgba(255,154,77,.16)}
+  .menu .v3d[disabled]{opacity:.6;cursor:default}
   .menu .dl{margin-left:16px;border-color:rgba(255,255,255,.4)}
   .menu .dl:hover{border-color:#FF9A4D;color:#FF9A4D}
   .menu .dl[disabled]{opacity:.5;cursor:default;border-color:rgba(255,255,255,.2)}
@@ -245,6 +249,7 @@
   <button type="button" data-theme="marino">Marino</button>
   <button type="button" data-theme="arena">Arena</button>
   <button type="button" data-theme="claro">Claro</button>
+  <button type="button" id="btn3d" class="v3d" title="Abrir la maqueta en 3D (otra vista, aparte de esta)">3D</button>
   <button type="button" id="btnDescargar" class="dl">Descargar</button>
 </div>
 <div class="stage">
@@ -1062,6 +1067,7 @@ function pintarDatos(){
   const laFase = (FASES.find(f=>f.id===FASE) || {}).nombre || '';
   document.querySelectorAll('[data-u]').forEach(e=>{ e.textContent = UNIDAD + ' / ' + laFase; });
   pintarTabla();
+  if (window.RIEL3D) window.RIEL3D.refrescar();   // si el 3D está cargado, se entera del mismo cambio
 }
 function pintarTabla(){
   const filas = (TABLA[FASE] || {})[SEG] || [];
@@ -1287,10 +1293,11 @@ icon('ico7', DIB.fabrica);  icon('ico8', DIB.barco);    icon('ico9', DIB.faltant
 [DIB.fabrica, DIB.puerto, DIB.barco, DIB.descarga, DIB.acopio].forEach((d,i)=> icon('icoc'+(i+1), d));   // cadena en vertical
 
 /* ---------- Bucle ---------- */
+let PAUSA3D = false;                   // con la vista 3D encima, esta maqueta no anima a ciegas
 let last = performance.now();
 function loop(now){
   const dt = Math.min(0.05, (now-last)/1000); last = now;
-  if (VISTA === 'inicio' && !matchMedia('(max-width:760px)').matches){   // con la maqueta escondida no hay nada que animar
+  if (VISTA === 'inicio' && !PAUSA3D && !matchMedia('(max-width:760px)').matches){   // con la maqueta escondida no hay nada que animar
     updaters.forEach(u=>u(now));
     ships.forEach(s=>updateShip(s, dt, now));
     updateTrucksA(dt); updateTrucksB(dt);
@@ -1341,6 +1348,47 @@ function fit(){
   });
 }
 fit(); addEventListener('resize', fit);
+/* ============================================================
+   VISTA 3D — maqueta aparte (vista3d.js). Esta página no sabe nada de ella:
+   solo le presta los datos por este puente y le cede la pantalla mientras esté
+   abierta. Si el 3D no carga, aquí no se rompe nada.
+   ============================================================ */
+window.RIEL3D_API = {
+  FASES, TRAMOS, UNIDAD, fmt,
+  get fase(){ return FASE; },
+  get proyecto(){ return SEG; },
+  datos: (f,t)=> (DATOS_FASE[f || FASE] || {})[t || SEG] || {},
+  tabla: (f,t)=> ((TABLA[f || FASE] || {})[t || SEG]) || [],
+  setFase,                                                  // entrega elegida en 3D: la plana queda igual
+  setProyecto(id){                                          // cambia el proyecto sin mover la vista de abajo
+    if (!DATOS_FASE[FASE] || !DATOS_FASE[FASE][id]) return;
+    SEG = id;
+    try { localStorage.setItem('segmento', id); } catch(e){}
+    document.querySelectorAll('#tmenu button[data-tramo]')
+      .forEach(b=> b.setAttribute('aria-current', b.dataset.tramo === id));
+    pintarDatos();
+  },
+  pausar2D(v){ PAUSA3D = !!v; if (!v){ last = performance.now(); } },
+};
+{
+  const btn = document.getElementById('btn3d');
+  const script = src => new Promise((ok, falla)=>{
+    const s = document.createElement('script');
+    s.src = src; s.onload = ok; s.onerror = ()=>falla(new Error(src));
+    document.head.appendChild(s);
+  });
+  btn.onclick = async ()=>{
+    if (window.RIEL3D){ window.RIEL3D.refrescar(); window.RIEL3D.abrir(); return; }
+    btn.disabled = true; btn.textContent = 'Cargando…';
+    try {
+      if (!window.THREE) await script('three.min.js');       // local, como las otras bibliotecas
+      await script('vista3d.js');                            // se abre sola al cargar
+    } catch(e){
+      alert('No se pudo cargar la vista 3D. Revisa que three.min.js y vista3d.js estén junto a esta página.');
+    }
+    btn.disabled = false; btn.textContent = '3D';
+  };
+}
 // la hoja manda: se lee al abrir y cada RECARGA_MIN minutos, para que un cambio en el Excel llegue solo
 cargarHoja();
 setInterval(cargarHoja, RECARGA_MIN*60*1000);
