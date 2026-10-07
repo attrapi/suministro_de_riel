@@ -37,7 +37,7 @@ const C = {
   grua:'#f2c230', gruaOsc:'#39404c', casco:'#24487f', cascoBajo:'#16233a',
   cubierta:'#dde4ee', torre:'#fbfcfe', chimenea:'#d24b42',
   camion:'#fbfcfe', caja:'#e3e9f2', llanta:'#2a2f38', cobalto:'#2f5be0',
-  durmiente:'#ab9174', fleje:'#d9743a',
+  durmiente:'#ab9174', fleje:'#d9743a', loco:'#a8462c',
 };
 
 /* ------------------------------------------------------- tramos del eje X ---- */
@@ -48,12 +48,17 @@ const PLANTA   = {x0:2,   x1:34};
 const PUERTO   = {x0:38,  x1:70};
 const DESCARGA = {x0:118, x1:148};
 const ACOPIO   = {x0:152, x1:186};
+// Ritmos del proceso, en segundos. Puestos para que se siga con la vista; el
+// control de velocidad de la barra los multiplica.
+const CICLO_GRUA = 9.5, CICLO_BUQUE = 96, CICLO_CAMION = 46, CICLO_TREN = 64;
+let VEL = 1;                                     // 0 = pausa · 0.5 · 1 · 2
+
 const NIVEL_MAR = -1.4;                          // el agua va bajo la tierra: el corte del muelle se ve
 const VIA_Z = 3;                                 // vía férrea pegada a la costa, a todo lo largo
 // Una sola carretera por continente, delante de todo: con esta cámara lo que tiene
 // más Z queda en primer plano, así que lo alto va al fondo y los patios adelante.
 const CAMINO_Z = 23;
-const PATA_Z0 = -1.5, PATA_Z1 = 6.5;             // dónde apoyan las grúas de muelle
+const PATA_Z0 = -1.5, PATA_Z1 = 8.5;             // dónde apoyan las grúas de muelle
 
 // Las cinco estaciones, en el mismo orden que el modelo plano.
 const EST = [
@@ -129,6 +134,7 @@ const CSS = `
 #riel3d .r3-seg{display:inline-flex;background:var(--r3-mute);border-radius:10px;padding:3px;gap:2px}
 #riel3d .r3-seg button{font-size:11px;font-weight:700;padding:5px 10px;border-radius:7px;color:var(--r3-ink3);white-space:nowrap}
 #riel3d .r3-seg button.on{background:#fff;color:var(--r3-ink);box-shadow:0 1px 2px rgba(20,30,60,.12)}
+#riel3d .r3-vel button{min-width:34px;text-align:center}
 #riel3d .r3-tools{display:flex;background:var(--r3-mute);border-radius:10px;padding:3px;gap:2px}
 #riel3d .r3-ibtn{height:28px;min-width:30px;padding:0 8px;border-radius:7px;display:grid;place-items:center;
   color:var(--r3-ink2);font-weight:700;font-size:12px}
@@ -301,6 +307,12 @@ raiz.innerHTML = `
       </button>
       <div class="r3-pop" id="r3Pop" role="menu"></div>
     </div>
+    <div class="r3-seg r3-vel" id="r3Vel" role="group" aria-label="Velocidad">
+      <button type="button" data-v="0" title="Pausa" aria-label="Pausa">&#10073;&#10073;</button>
+      <button type="button" data-v="0.5">&frac12;&times;</button>
+      <button type="button" data-v="1" class="on">1&times;</button>
+      <button type="button" data-v="2">2&times;</button>
+    </div>
     <div class="r3-tools">
       <button class="r3-ibtn" data-rot="-1" title="Girar a la izquierda" aria-label="Girar a la izquierda">${ICO.izq}</button>
       <button class="r3-ibtn" data-rot="1" title="Girar a la derecha" aria-label="Girar a la derecha">${ICO.der}</button>
@@ -433,7 +445,7 @@ function hazRiel(x, y, z, largo, n, parent, color){
   const col = color || C.acero;
   for (let i=0;i<n;i++){
     const yy = i*0.66;
-    for (let k=-1.5; k<=1.5; k++) box(largo, 0.56, 0.52, col, 0, yy, k*0.62, g);
+    for (let k=-1; k<=1; k++) box(largo, 0.56, 0.68, col, 0, yy, k*0.78, g);
     // flejes en los extremos: sin ellos el haz se lee como una estera, no como bulto
     box(0.55, 0.64, 2.9, C.fleje, -largo/2 + 1.2, yy - 0.04, 0, g);
     box(0.55, 0.64, 2.9, C.fleje,  largo/2 - 1.2, yy - 0.04, 0, g);
@@ -461,7 +473,7 @@ function carretera(x0, x1, z, ancho, parent){
 /* ---------- grúa de pórtico: la pieza que más se repite en la maqueta ---------- */
 // Sobre el muelle monta a caballo la vía y asoma el brazo al agua; en el acopio
 // cruza el patio. El carro corre por la viga y el aparejo sube y baja.
-function gruaPortico(x, z0, z1, alto, voladizo, desfase){
+function gruaPortico(x, z0, z1, alto, voladizo, desfase, pilaA, pilaB){
   const g = grupo(x, 0, 0, world);
   const vol = voladizo || 0;
   const zv0 = z0 - vol, zc = (zv0 + z1)/2;                       // la viga sale sobre el agua
@@ -484,9 +496,12 @@ function gruaPortico(x, z0, z1, alto, voladizo, desfase){
   const cable2 = box(0.12, 4, 0.12, C.gruaOsc, 0, -5, 1.1, carro, true);
   const viga = box(11.6, 0.45, 1.5, C.grua, 0, -6.9, 0, carro);    // bastidor de izaje
   const pinza = hazRiel(0, -6.4, 0, 11, 1, carro, C.acero2);
-  const zMar = zv0 + 2.5, zTierra = z1 - 2.5;                     // las dos puntas del recorrido
-  const ALTO = 1.8, BAJO = 6.6;                                   // cuánto cuelga el aparejo
+  const carroY = alto + 0.2;
+  const zMar = zv0 + 2.5, zTierra = z1 - 1.0;                     // las dos puntas del recorrido
+  const ALTO = 1.8;                                               // cuánto cuelga en viaje
+  const CUBIERTA = 2.8;                                           // altura de la cubierta del buque
   let t = desfase || 0;                                           // dos grúas a la par se ven mecánicas
+  let sentido = 1;                                                // para el vaivén del acopio
   function poner(z, cuelga, lleva){
     carro.position.z = z;
     viga.position.y = -0.4 - cuelga;
@@ -495,27 +510,59 @@ function gruaPortico(x, z0, z1, alto, voladizo, desfase){
     cable1.scale.y = cable2.scale.y = cuelga/4;
     cable1.position.y = cable2.position.y = -0.2 - cuelga/2;
   }
+  // Baja hasta lo que haya abajo: el tope de la pila, o la cubierta si es el buque.
+  const cuelgaHasta = y => carroY + 0.1 - y;
+  const yTomar  = p => p ? Math.max(0, p.n - 1)*PASO_PILA : CUBIERTA;
+  const yDejar  = p => p ? p.n*PASO_PILA : CUBIERTA;
   const suave = u => u*u*(3 - 2*u);
   poner(zTierra, ALTO, false);
-  // Una maniobra completa: baja, engancha, cruza con el haz a la vista, baja,
-  // suelta y vuelve en vacío. Así se ve qué está haciendo y hacia dónde va la carga.
+  // Una maniobra completa: baja hasta la pila, engancha, cruza con el haz a la
+  // vista, baja del otro lado y lo deja ahí. El haz no desaparece: cambia de pila.
   return {
     update(dt, modo){
       if (!modo){                                                 // sin buque, la grúa espera
         t = desfase || 0; poner(zTierra, ALTO, false);
         return;
       }
-      t = (t + dt/6.2) % 1;
-      const aMar = modo === 'carga';                              // carga: de tierra al buque
-      const A = aMar ? zTierra : zMar;                            // de dónde toma
-      const B = aMar ? zMar : zTierra;                            // dónde deja
-      if (t < 0.10)      poner(A, ALTO + (BAJO-ALTO)*(t/0.10), false);
-      else if (t < 0.18) poner(A, BAJO - (BAJO-ALTO)*((t-0.10)/0.08), true);
-      else if (t < 0.46) poner(A + (B-A)*suave((t-0.18)/0.28), ALTO, true);
-      else if (t < 0.56) poner(B, ALTO + (BAJO-ALTO)*((t-0.46)/0.10), true);
-      else if (t < 0.64) poner(B, BAJO - (BAJO-ALTO)*((t-0.56)/0.08), false);
-      else               poner(B + (A-B)*suave((t-0.64)/0.36), ALTO, false);
+      let haciaB;
+      if (modo === 'vaiven'){                                     // el patio mueve el lote de un lado al otro
+        const fuente = sentido > 0 ? pilaA : pilaB;
+        if (fuente && fuente.n === 0 && t < 0.03) sentido = -sentido;
+        haciaB = sentido > 0;
+      } else haciaB = modo === 'carga';                           // carga: de tierra al buque
+      const zD = haciaB ? zTierra : zMar, pD = haciaB ? pilaA : pilaB;   // de dónde toma
+      const zH = haciaB ? zMar : zTierra, pH = haciaB ? pilaB : pilaA;   // dónde deja
+      const bajoD = cuelgaHasta(yTomar(pD)), bajoH = cuelgaHasta(yDejar(pH));
+      const antes = t;
+      t = (t + dt/CICLO_GRUA) % 1;
+      const paso = u => antes < u && (t >= u || t < antes);        // cruzó el instante u
+      if (paso(0.18) && pD) pD.n--;                                // ya lo levantó: sale de su pila
+      if (paso(0.64) && pH) pH.n++;                                // ya lo soltó: entra en la otra
+      if (t < 0.10)      poner(zD, ALTO + (bajoD-ALTO)*(t/0.10), false);
+      else if (t < 0.18) poner(zD, bajoD - (bajoD-ALTO)*((t-0.10)/0.08), true);
+      else if (t < 0.46) poner(zD + (zH-zD)*suave((t-0.18)/0.28), ALTO, true);
+      else if (t < 0.56) poner(zH, ALTO + (bajoH-ALTO)*((t-0.46)/0.10), true);
+      else if (t < 0.64) poner(zH, bajoH - (bajoH-ALTO)*((t-0.56)/0.08), false);
+      else               poner(zH + (zD-zH)*suave((t-0.64)/0.36), ALTO, false);
     },
+  };
+}
+
+/* ---------- pila de muelle: lo que la grúa deja se queda a la vista ---------- */
+const PASO_PILA = 1.5;
+function pilaMuelle(x, z, max){
+  const items = [];
+  for (let i=0;i<max;i++){
+    const h = hazRiel(x, i*PASO_PILA, z, 11, 2, world);
+    h.visible = false;
+    items.push(h);
+  }
+  let n = 0;
+  return {
+    max,
+    get n(){ return n; },
+    set n(v){ n = Math.max(0, Math.min(max, Math.round(v))); items.forEach((h,i)=> h.visible = i < n); },
+    get alto(){ return n*PASO_PILA; },
   };
 }
 
@@ -545,6 +592,31 @@ function buque(){
   return g;
 }
 
+/* ------------------------------------------------------------------- tren ---- */
+// La vía recorre los dos continentes y estaba sin usar. El convoy se mete bajo
+// el pórtico, que es justo lo que pasa en un muelle de riel.
+function tren(nVagones){
+  const g = grupo(0, 0, 0, world);
+  box(8.4, 0.7, 3.4, C.gruaOsc, 0, 0.2, 0, g);                   // bastidor
+  box(8, 2.6, 3.0, C.loco, 0, 0.9, 0, g);
+  box(4.4, 2.0, 3.0, '#5c2b22', -1.4, 3.5, 0, g);                // cabina
+  box(4.8, 0.5, 3.3, C.gruaOsc, -1.4, 5.5, 0, g);
+  box(1.1, 1.2, 1.1, C.gruaOsc, 3.0, 3.5, 0, g);                 // escape
+  const rueda = (p, x, z, r)=>{ const m = cil(r, 0.42, C.llanta, x, 0, z, p, 8);
+                                m.rotation.x = Math.PI/2; m.position.y = r; m.castShadow = false; };
+  [-2.6, 0, 2.6].forEach(x=>{ rueda(g, x, -1.25, 0.62); rueda(g, x, 1.25, 0.62); });
+  const cargas = [];
+  for (let i=0;i<nVagones;i++){
+    const v = grupo(-(6.4 + i*9.6), 0, 0, g);
+    box(8.8, 0.8, 3.0, C.acero2, 0, 0.5, 0, v);                  // plataforma
+    box(0.5, 1.1, 3.0, C.acero2, -4.1, 1.3, 0, v);               // testeros
+    box(0.5, 1.1, 3.0, C.acero2,  4.1, 1.3, 0, v);
+    [-2.9, 2.9].forEach(x=>{ rueda(v, x, -1.2, 0.55); rueda(v, x, 1.2, 0.55); });
+    cargas.push(hazRiel(0, 1.3, 0, 7.8, 2, v));
+  }
+  return {obj:g, cargas};
+}
+
 /* ------------------------------------------------------------------ camión ---- */
 function camion(){
   const g = grupo(0,0,0,world);
@@ -554,7 +626,7 @@ function camion(){
   box(0.5, 1.1, 2.7, C.caja, -7.6, 1.7, 0, g);
   const carga = grupo(-3.2, 1.7, 0, g);
   hazRiel(0, 0, 0, 8.4, 2, carga, C.acero);
-  const rueda = (x,z)=>{ const r = cil(0.72, 0.5, C.llanta, x, 0, z, g, 12); r.rotation.x = Math.PI/2; r.position.y = 0.72; };
+  const rueda = (x,z)=>{ const r = cil(0.72, 0.5, C.llanta, x, 0, z, g, 8); r.rotation.x = Math.PI/2; r.position.y = 0.72; r.castShadow = false; };
   [3.1, -0.6, -5.6, -6.9].forEach(x=>{ rueda(x, -1.25); rueda(x, 1.25); });
   g.userData = {carga};
   return g;
@@ -565,6 +637,7 @@ function camion(){
    ============================================================================ */
 const pilas = {};        // los patios que cambian con el dato
 const gruas = {origen:[], destino:[], acopio:[]};   // se les manda según lo que esté pasando
+const muelles = {origen:[], destino:[], acopio:[]}; // lo que está esperando en cada muelle
 let buques = [], camiones = [], vapor = [];
 
 function construir(){
@@ -635,9 +708,11 @@ function construir(){
   pilas.produccion = grupo(PLANTA.x0 + 2, 0, 27.5, world);                    // lo laminado, delante de la nave
 
   /* ---------- 2 · puerto de origen ---------- */
-  gruas.origen = [gruaPortico(PUERTO.x0 + 6,  PATA_Z0, PATA_Z1, 13, 12, 0),
-                  gruaPortico(PUERTO.x0 + 22, PATA_Z0, PATA_Z1, 13, 12, 0.42)];
-  pilas.puerto = grupo(PUERTO.x0 + 2, 0, 8.6, world);
+  muelles.origen = [pilaMuelle(PUERTO.x0 + 6, PATA_Z1 - 1, 4), pilaMuelle(PUERTO.x0 + 22, PATA_Z1 - 1, 4)];
+  muelles.origen.forEach(p=> p.n = 3);                                        // el muelle arranca con existencia
+  gruas.origen = [gruaPortico(PUERTO.x0 + 6,  PATA_Z0, PATA_Z1, 13, 12, 0,    muelles.origen[0], null),
+                  gruaPortico(PUERTO.x0 + 22, PATA_Z0, PATA_Z1, 13, 12, 0.42, muelles.origen[1], null)];
+  pilas.puerto = grupo(PUERTO.x0 + 2, 0, 11, world);
   bodega(PUERTO.x0 + 30, 18, 8, 6, 4.6);
   banderaEn(MAR0 - 6, 13.5, 'cn');
   faro(MAR0 - 3, 2.5);
@@ -650,9 +725,11 @@ function construir(){
   }
 
   /* ---------- 4 · descarga ---------- */
-  gruas.destino = [gruaPortico(DESCARGA.x0 + 5,  PATA_Z0, PATA_Z1, 13, 12, 0.25),
-                   gruaPortico(DESCARGA.x0 + 21, PATA_Z0, PATA_Z1, 13, 12, 0.67)];
-  pilas.descarga = grupo(DESCARGA.x0 + 2, 0, 8.6, world);
+  muelles.destino = [pilaMuelle(DESCARGA.x0 + 5, PATA_Z1 - 1, 4), pilaMuelle(DESCARGA.x0 + 21, PATA_Z1 - 1, 4)];
+  muelles.destino.forEach(p=> p.n = 1);
+  gruas.destino = [gruaPortico(DESCARGA.x0 + 5,  PATA_Z0, PATA_Z1, 13, 12, 0.25, muelles.destino[0], null),
+                   gruaPortico(DESCARGA.x0 + 21, PATA_Z0, PATA_Z1, 13, 12, 0.67, muelles.destino[1], null)];
+  pilas.descarga = grupo(DESCARGA.x0 + 2, 0, 11, world);
   bodega(DESCARGA.x0 + 30, 18, 9, 6, 5.0);
   banderaEn(MAR1 + 6, 13.5, 'mx');
   faro(MAR1 + 3, 2.5);
@@ -660,9 +737,13 @@ function construir(){
   via(MAR1 + 2, X_FIN - 1, VIA_Z, world);
 
   /* ---------- 5 · centro de acopio ---------- */
-  gruas.acopio = [gruaPortico(ACOPIO.x0 + 10, 4, 18, 11, 0, 0.15),
-                  gruaPortico(ACOPIO.x0 + 26, 4, 18, 11, 0, 0.58)];
-  pilas.acopio = grupo(ACOPIO.x0 + 2, 0, 5, world);
+  // En el acopio la grúa va y viene entre la pila de llegada y la del fondo del patio
+  muelles.acopio = [pilaMuelle(ACOPIO.x0 + 10, 18, 4), pilaMuelle(ACOPIO.x0 + 26, 18, 4)];
+  const fondo = [pilaMuelle(ACOPIO.x0 + 10, 4.5, 4), pilaMuelle(ACOPIO.x0 + 26, 4.5, 4)];
+  muelles.acopio.forEach(p=> p.n = 4);
+  gruas.acopio = [gruaPortico(ACOPIO.x0 + 10, 2, 19, 11, 0, 0.15, muelles.acopio[0], fondo[0]),
+                  gruaPortico(ACOPIO.x0 + 26, 2, 19, 11, 0, 0.58, muelles.acopio[1], fondo[1])];
+  pilas.acopio = grupo(ACOPIO.x0 + 2, 0, 8, world);
   const ofi = grupo(ACOPIO.x1 - 1, 0, 26, world);                             // caseta de control
   box(7, 3.4, 5, C.muro, 0, 0, 0, ofi);
   box(7.4, 0.5, 5.4, C.cobalto, 0, 3.4, 0, ofi);
@@ -683,7 +764,7 @@ function construir(){
     let enOrigen = null, enDestino = null;
     buques.forEach((b,i)=>{
       const u = b.userData;
-      u.t = (u.t + dt*0.015) % 1;
+      u.t = (u.t + dt/CICLO_BUQUE) % 1;
       const k = u.t;
       let x = X_ORIG, z = AMARRE, giro = 0, haces = 0;
       // atraca · carga · zarpa · cruza · atraca · descarga · zarpa · regresa
@@ -713,36 +794,64 @@ function construir(){
     // Las grúas del muelle solo trabajan cuando hay buque; si no, se quedan en tierra.
     gruas.origen.forEach(g=> g.update(dt, enOrigen ? 'carga' : null));
     gruas.destino.forEach(g=> g.update(dt, enDestino ? 'descarga' : null));
-    gruas.acopio.forEach(g=> g.update(dt, 'carga'));              // el patio siempre acomoda
+    gruas.acopio.forEach(g=> g.update(dt, 'vaiven'));             // el patio siempre acomoda
   });
 
   /* ---------- camiones: viaje redondo, con su parada para cargar y descargar ---------- */
-  // Van por el carril de ida con el haz a la vista y vuelven vacíos por el de regreso,
-  // parándose en cada punta: es lo que hace legible que estén entregando algo.
+  // El haz que sube al camión sale de una pila y el que baja entra en otra, así que
+  // la carga no aparece ni se esfuma: cambia de sitio y el muelle sube y baja con ella.
   const rutas = [
-    {x0:PLANTA.x0 + 8,   x1:PUERTO.x0 + 18},                       // planta → muelle de origen
-    {x0:DESCARGA.x0 + 8, x1:ACOPIO.x1 - 6},                        // descarga → centro de acopio
+    { x0:PLANTA.x0 + 8, x1:PUERTO.x0 + 18,                         // planta → muelle de origen
+      tomar: ()=> true,                                            // la planta siempre tiene qué cargar
+      dejar: i => { muelles.origen[i % 2].n++; } },
+    { x0:DESCARGA.x0 + 8, x1:ACOPIO.x1 - 6,                        // descarga → centro de acopio
+      tomar: i => { const p = muelles.destino[i % 2]; if (!p.n) return false; p.n--; return true; },
+      dejar: i => { muelles.acopio[i % 2].n++; } },
   ];
   rutas.forEach((r,i)=>{
-    for (let n=0;n<3;n++){
+    for (let n=0;n<2;n++){
       const c = camion();
-      c.userData.r = r; c.userData.t = (n/3 + i*0.17) % 1;
+      c.userData.r = r; c.userData.i = n; c.userData.lleva = false;
+      c.userData.t = (n/2 + i*0.21) % 1;
       camiones.push(c);
     }
   });
   animadores.push((t, dt)=>{
     camiones.forEach(c=>{
       const u = c.userData, r = u.r;
-      u.t = (u.t + dt*0.045) % 1;
+      const antes = u.t;
+      u.t = (u.t + dt/CICLO_CAMION) % 1;
       const k = u.t;
-      let x, z, giro, lleva;
-      if (k < 0.12){        x = r.x0; z = CAMINO_Z - 1.4; giro = 0;       lleva = k > 0.07; }
-      else if (k < 0.46){   x = lerp(r.x0, r.x1, (k - 0.12)/0.34); z = CAMINO_Z - 1.4; giro = 0; lleva = true; }
-      else if (k < 0.58){   x = r.x1; z = CAMINO_Z - 1.4; giro = 0;       lleva = k < 0.51; }
-      else {                x = lerp(r.x1, r.x0, (k - 0.58)/0.42); z = CAMINO_Z + 1.4; giro = Math.PI; lleva = false; }
+      const paso = v => antes < v && (k >= v || k < antes);
+      if (paso(0.10)) u.lleva = r.tomar(u.i);                      // sale cargado solo si había qué llevar
+      if (paso(0.52) && u.lleva){ r.dejar(u.i); u.lleva = false; }  // lo deja en la pila de destino
+      let x, z, giro;
+      if (k < 0.12){        x = r.x0; z = CAMINO_Z - 1.4; giro = 0; }
+      else if (k < 0.46){   x = lerp(r.x0, r.x1, suave((k - 0.12)/0.34)); z = CAMINO_Z - 1.4; giro = 0; }
+      else if (k < 0.58){   x = r.x1; z = CAMINO_Z - 1.4; giro = 0; }
+      else {                x = lerp(r.x1, r.x0, suave((k - 0.58)/0.42)); z = CAMINO_Z + 1.4; giro = Math.PI; }
       c.position.set(x, 0, z);
       c.rotation.y = giro;
-      u.carga.visible = lleva;
+      u.carga.visible = u.lleva;
+    });
+  });
+
+  /* ---------- trenes: uno por continente, de la planta al muelle y del muelle al acopio ---------- */
+  const trenes = [
+    {t:tren(3), x0:PLANTA.x0 + 32, x1:PUERTO.x0 + 28, d:0},        // China: planta → muelle
+    {t:tren(3), x0:DESCARGA.x0 + 28, x1:ACOPIO.x1,    d:0.5},      // México: descarga → acopio
+  ];
+  animadores.push((t, dt)=>{
+    trenes.forEach(r=>{
+      r.d = (r.d + dt/CICLO_TREN) % 1;
+      const k = r.d;
+      let x, cargado;
+      if (k < 0.14){      x = r.x0; cargado = k > 0.08; }           // cargando en el patio
+      else if (k < 0.46){ x = lerp(r.x0, r.x1, suave((k - 0.14)/0.32)); cargado = true; }
+      else if (k < 0.60){ x = r.x1; cargado = k < 0.54; }           // descargando
+      else                { x = lerp(r.x1, r.x0, suave((k - 0.60)/0.40)); cargado = false; }
+      r.t.obj.position.set(x, 0, VIA_Z);
+      r.t.cargas.forEach(c=> c.visible = cargado);
     });
   });
 
@@ -821,7 +930,7 @@ const FORMA = {   // cuántas filas y cuántos haces por fila caben en cada pati
   produccion: {f:2, p:2},
   puerto:     {f:2, p:2},
   descarga:   {f:2, p:2},
-  acopio:     {f:4, p:2},
+  acopio:     {f:3, p:2},
 };
 const TOPE = 42000;                                 // tonelaje con el que un patio se llena
 
@@ -1112,11 +1221,18 @@ function armarControles(){
   raiz.addEventListener('click', e=>{ if (!site.contains(e.target)) cerrarPop(); });
   marcarProyecto();
 
+  const vel = $('#r3Vel');
+  vel.querySelectorAll('[data-v]').forEach(b=>{
+    b.onclick = ()=>{
+      VEL = +b.dataset.v;
+      vel.querySelectorAll('[data-v]').forEach(o=> o.classList.toggle('on', o === b));
+    };
+  });
   raiz.querySelectorAll('[data-rot]').forEach(b=>{
     b.onclick = ()=>{ vista.azT += (+b.dataset.rot) * Math.PI/12; ocultarPista(); };
   });
   raiz.querySelectorAll('[data-zoom]').forEach(b=>{
-    b.onclick = ()=>{ vista.zoomT = clamp(vista.zoomT * (+b.dataset.zoom > 0 ? 1.3 : 1/1.3), 0.5, 5); ocultarPista(); };
+    b.onclick = ()=>{ vista.zoomT = clamp(vista.zoomT * (+b.dataset.zoom > 0 ? 1.3 : 1/1.3), 0.3, 8); ocultarPista(); };
   });
   $('#r3Fit').onclick = ()=>{ vista.azT = AZ_BASE; encuadrar(true);
     $('#r3Chain').querySelectorAll('[data-est]').forEach(o=>o.setAttribute('aria-current', 'false')); };
@@ -1158,7 +1274,7 @@ function armarRaton(){
     if (dedos.has(e.pointerId)) dedos.set(e.pointerId, {x:e.clientX, y:e.clientY});
     if (pinza && dedos.size === 2){
       const v = [...dedos.values()];
-      vista.zoomT = clamp(pinza.z * Math.hypot(v[0].x - v[1].x, v[0].y - v[1].y)/pinza.d, 0.5, 5);
+      vista.zoomT = clamp(pinza.z * Math.hypot(v[0].x - v[1].x, v[0].y - v[1].y)/pinza.d, 0.3, 8);
       return;
     }
     if (!arrastre) return;
@@ -1179,7 +1295,7 @@ function armarRaton(){
   el.addEventListener('pointercancel', suelta);
   el.addEventListener('wheel', e=>{
     e.preventDefault();
-    vista.zoomT = clamp(vista.zoomT * Math.pow(0.9988, e.deltaY), 0.5, 5);
+    vista.zoomT = clamp(vista.zoomT * Math.pow(0.9988, e.deltaY), 0.3, 8);
     ocultarPista();
   }, {passive:false});
   addEventListener('keydown', atajos);
@@ -1189,8 +1305,8 @@ function atajos(e){
   if (e.key === 'Escape'){ cerrar(); return; }
   if (e.key === 'q' || e.key === 'Q') vista.azT -= Math.PI/12;
   if (e.key === 'e' || e.key === 'E') vista.azT += Math.PI/12;
-  if (e.key === '+' || e.key === '=') vista.zoomT = clamp(vista.zoomT*1.3, 0.5, 5);
-  if (e.key === '-') vista.zoomT = clamp(vista.zoomT/1.3, 0.5, 5);
+  if (e.key === '+' || e.key === '=') vista.zoomT = clamp(vista.zoomT*1.3, 0.3, 8);
+  if (e.key === '-') vista.zoomT = clamp(vista.zoomT/1.3, 0.3, 8);
   if (e.key === 'f' || e.key === 'F'){ vista.azT = AZ_BASE; encuadrar(true); }
 }
 
@@ -1212,7 +1328,7 @@ function iniciar(){
   scene.add(new THREE.HemisphereLight('#ffffff', '#aebfd6', 0.50));
   sun = new THREE.DirectionalLight('#fffaf0', 0.62);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.mapSize.set(1536, 1536);
   Object.assign(sun.shadow.camera, {left:-120, right:120, top:120, bottom:-120, near:1, far:340});
   sun.shadow.bias = -0.0006;
   sun.shadow.normalBias = 0.02;
@@ -1238,12 +1354,14 @@ let t0 = performance.now(), reloj = 0;
 function ciclo(now){
   if (!corriendo) return;
   const dt = Math.min(0.05, (now - t0)/1000);
-  t0 = now; reloj += dt;
-  // la cámara persigue su objetivo, nunca salta
+  t0 = now;
+  // la cámara persigue su objetivo al margen de la velocidad: en pausa se sigue pudiendo mirar
   vista.t.lerp(vista.tT, 1 - Math.pow(0.001, dt));
   vista.zoom += (vista.zoomT - vista.zoom) * (1 - Math.pow(0.001, dt));
   vista.az += (vista.azT - vista.az) * (1 - Math.pow(0.001, dt));
-  if (!REDUCE) animadores.forEach(f=>f(reloj, dt));
+  const dtA = dt*VEL;
+  reloj += dtA;
+  if (!REDUCE && dtA > 0) animadores.forEach(f=>f(reloj, dtA));
   colocar();
   renderer.render(scene, cam);
   moverLabs();
