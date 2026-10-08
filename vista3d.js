@@ -53,7 +53,10 @@ const SITIO = {
 };
 const MAR0 = 530, MAR1 = 900;                    // el estrecho: ahí la tierra se corta
 const X_INI = -60, X_FIN = 1480;
-const Z_FONDO = -190, Z_FRENTE = 196;            // el doble de mar y el doble de tierra
+const Z_FONDO = -190, Z_FRENTE = 196;            // hasta donde llega lo construido
+// La cámara ve más allá del recuadro que encuadra, así que el terreno y el mar se
+// extienden bastante más: si no, por los bordes asoma el fondo de la escena.
+const MARGEN = 760;
 
 // Ritmos del proceso, en segundos. Puestos para que se siga con la vista; el
 // control de velocidad de la barra los multiplica.
@@ -770,6 +773,30 @@ function faro(x, z){
   animadores.push(t=>{ luz.material.emissiveIntensity = 0.3 + Math.abs(Math.sin(t*1.6))*1.1; });
   return g;
 }
+// Letrero del puerto, junto a su bandera. Gira con la cámara para que siempre se
+// lea, que es lo que se espera de un rótulo y no de una pieza de la maqueta.
+function letrero(x, z, texto){
+  const c = document.createElement('canvas');
+  c.width = 1024; c.height = 160;
+  const g2 = c.getContext('2d');
+  g2.fillStyle = '#ffffff'; g2.fillRect(0, 0, 1024, 160);
+  g2.strokeStyle = '#2f5be0'; g2.lineWidth = 10; g2.strokeRect(5, 5, 1014, 150);
+  g2.fillStyle = '#1b2638';
+  g2.font = '600 62px "Figtree", "Segoe UI", sans-serif';
+  g2.textAlign = 'center'; g2.textBaseline = 'middle';
+  g2.fillText(texto, 512, 86);
+  const tex = new THREE.CanvasTexture(c);
+  const g = grupo(x, 0, z, world);
+  cil(0.45, 9, C.acero, -6, 0, 0, g, 8);
+  cil(0.45, 9, C.acero,  6, 0, 0, g, 8);
+  const panel = new THREE.Mesh(new THREE.PlaneGeometry(15, 2.35),
+    new THREE.MeshStandardMaterial({map:tex, roughness:.85, side:THREE.DoubleSide}));
+  panel.position.y = 10.2;
+  panel.castShadow = true;
+  g.add(panel);
+  animadores.push(()=>{ g.rotation.y = vista.az; });   // siempre de frente
+  return g;
+}
 function banderaEn(x, z, cual){
   const g = grupo(x, 0, z, world);
   cil(0.34, 20, C.torre, 0, 0, 0, g, 10);
@@ -809,23 +836,28 @@ function construir(){
 
   /* ---------- mar y tierra ---------- */
   const texA = texAgua();
-  const agua = new THREE.Mesh(new THREE.PlaneGeometry(X_FIN - X_INI, Z_FRENTE - Z_FONDO),
+  const AX0 = X_INI - MARGEN, AX1 = X_FIN + MARGEN;
+  const AZ0 = Z_FONDO - MARGEN, AZ1 = Z_FRENTE + MARGEN;
+  const agua = new THREE.Mesh(new THREE.PlaneGeometry(AX1 - AX0, AZ1 - AZ0),
     new THREE.MeshStandardMaterial({map:texA, color:'#ffffff', roughness:.16, metalness:.05}));
   agua.rotation.x = -Math.PI/2;
-  agua.position.set((X_INI + X_FIN)/2, NIVEL_MAR, (Z_FONDO + Z_FRENTE)/2);
+  agua.position.set((AX0 + AX1)/2, NIVEL_MAR, (AZ0 + AZ1)/2);
   agua.receiveShadow = true;
   world.add(agua);
   animadores.push(t=>{ texA.offset.x = t*0.004; texA.offset.y = Math.sin(t*0.08)*0.01; });
 
+  // La costa se corta en el estrecho; hacia los lados y tierra adentro sigue, para
+  // que el encuadre nunca llegue al borde del terreno.
+  const ZT = Z_FRENTE + MARGEN;
   const tierra = (x0,x1)=>{
-    box(x1-x0, 4, Z_FRENTE + 4, C.tierra, (x0+x1)/2, -4, (Z_FRENTE - 4)/2);
-    placa(x0, x1, 0, Z_FRENTE, 0.002, C.pasto);
-    placa(x0, x1, Z_FRENTE - 40, Z_FRENTE, 0.006, C.pasto2);
+    box(x1-x0, 4, ZT + 4, C.tierra, (x0+x1)/2, -4, (ZT - 4)/2);
+    placa(x0, x1, 0, ZT, 0.002, C.pasto);
+    placa(x0, x1, Z_FRENTE + 30, ZT, 0.006, C.pasto2);          // el campo, pasado el predio
     box(x1-x0, 0.5, 3.2, C.muelle, (x0+x1)/2, 0, 1.6);
     for (let x=x0+10; x<x1-5; x+=18) cil(0.6, 1.4, C.gruaOsc, x, 0.5, 0.9);
   };
-  tierra(X_INI, MAR0);
-  tierra(MAR1, X_FIN);
+  tierra(X_INI - MARGEN, MAR0);
+  tierra(MAR1, X_FIN + MARGEN);
 
   const pavimento = (x0,x1)=> placa(x0, x1, 2.6, VIAL_Z + 8, 0.014, C.piso);
   pavimento(SITIO.planta.x0 - 10, SITIO.planta.x1 + 10);
@@ -981,6 +1013,8 @@ function muelleCompleto(S, lado, bandera){
   naveIndustrial(S.x0 + 124, 180, 46, 26, 11, 0);
   oficina(S.x0 + 14, 180, 16, 14, 3);
   banderaEn(esOrigen ? MAR0 - 22 : MAR1 + 22, 40, bandera);
+  letrero(esOrigen ? MAR0 - 54 : MAR1 + 54, 40,
+          esOrigen ? 'Zhangjiagang, P. R. China' : 'Tamaulipas, Altamira');
   faro(esOrigen ? MAR0 - 11 : MAR1 + 11, 8);
 }
 
@@ -1126,12 +1160,16 @@ function flota(){
   buques = [b];
   b.userData.pilas = b.userData.columnas.map(col=> pilaVehiculo({userData:{cargas:col}}, 4.6 + CALADO, 3));
   // Los tres tramos del circuito, con sus curvas: el rumbo los sigue.
+  // Sale y entra casi de costado, que es como se desatraca con remolcadores; el giro
+  // viene después, ya fuera. Si girara pegado al muelle, con 66 de eslora la popa
+  // barrería sobre el malecón.
   const rutas = {
-    cruce:   camino([ {x:xO, z:AMARRE}, {x:xO + 70, z:FUERA}, {x:xD - 120, z:IDA},
-                      {x:xD - 60, z:FUERA}, {x:xD, z:AMARRE} ], 60),
-    regreso: camino([ {x:xD, z:AMARRE}, {x:xD + 80, z:FUERA}, {x:xD + 130, z:VUELTA},
-                      {x:xO - 150, z:VUELTA}, {x:xO - 110, z:FUERA}, {x:xO, z:AMARRE} ], 70),
+    cruce:   camino([ {x:xO, z:AMARRE}, {x:xO + 34, z:FUERA}, {x:xD - 130, z:IDA},
+                      {x:xD - 34, z:FUERA}, {x:xD, z:AMARRE} ], 60),
+    regreso: camino([ {x:xD, z:AMARRE}, {x:xD + 34, z:FUERA}, {x:xD + 140, z:VUELTA},
+                      {x:xO - 160, z:VUELTA}, {x:xO - 34, z:FUERA}, {x:xO, z:AMARRE} ], 70),
   };
+  const PARALELO = -38;                            // mientras esté más cerca que esto, proa al muelle
   const u = b.userData;
   u.estado = 'cargando'; u.u = 0; u.espera = 0; u.ang = 0;
   b.position.set(xO, CALADO, AMARRE);
@@ -1170,7 +1208,9 @@ function flota(){
         if (u.u >= 1){ u.u = 1; u.estado = 'cargando'; u.espera = 0; }
     }
     b.position.set(p.x, CALADO + Math.sin(t*0.6)*0.16, p.z);
-    u.ang = haciaAngulo(u.ang, p.ang, dt*1.1);     // un buque gira despacio
+    // Junto al muelle se mantiene paralelo; mar adentro ya sigue su rumbo.
+    const meta = p.z > PARALELO ? 0 : p.ang;
+    u.ang = haciaAngulo(u.ang, meta, dt*1.1);      // un buque gira despacio
     b.rotation.y = u.ang;
     b.rotation.z = Math.sin(t*0.7)*0.01;
     u.pilas.forEach(q=> q.restante = u.restante);
@@ -1326,6 +1366,15 @@ function camionesDeRuta(){
       const r = u.r;
       const bA = r.bA(), bB = r.bB ? r.bB() : null;
       u.espera += dt;
+      // Dos camiones que salen a la vez y van igual de rápido por el mismo carril
+      // se enciman. Cada uno mira si tiene otro delante y, si lo tiene, no avanza.
+      const fx = Math.cos(u.ang), fz = -Math.sin(u.ang);
+      const libre = !camiones.some(o=>{
+        if (o === c || !o.visible) return false;
+        const dx = o.position.x - c.position.x, dz = o.position.z - c.position.z;
+        if (dx*dx + dz*dz > 26*26) return false;
+        return (dx*fx + dz*fz) > 3;                 // lo tiene por delante, no al lado
+      });
       let p;
       switch (u.estado){
         case 'cargando':                             // parado, hasta que la grúa lo cargue
@@ -1338,7 +1387,7 @@ function camionesDeRuta(){
           }
           break;
         case 'yendo':
-          u.u += dt*VEL_CAMION/r.ida.total;
+          if (libre) u.u += dt*VEL_CAMION/r.ida.total;
           p = r.ida.en(u.u);
           if (u.u >= 1){
             u.u = 1;
@@ -1357,7 +1406,7 @@ function camionesDeRuta(){
           }
           break;
         default:                                     // volviendo
-          u.u += dt*VEL_CAMION/r.vuelta.total;
+          if (libre) u.u += dt*VEL_CAMION/r.vuelta.total;
           p = r.vuelta.en(u.u);
           if (u.u >= 1){ u.u = 1; u.estado = 'cargando'; u.espera = 0; }
       }
@@ -1771,7 +1820,7 @@ function iniciar(){
 
   scene = new THREE.Scene();
   scene.background = new THREE.Color('#e4eaf2');
-  scene.fog = new THREE.Fog('#e4eaf2', 900, 1900);  // solo suaviza las puntas de la cadena
+  scene.fog = new THREE.Fog('#e4eaf2', 1100, 2600);  // solo suaviza las puntas de la cadena
   // Las tres luces suman ≈1 sobre una cara horizontal: más y los colores claros
   // se van todos a blanco, que es justo lo que no queremos en una maqueta pastel.
   scene.add(new THREE.HemisphereLight('#ffffff', '#aebfd6', 0.50));
