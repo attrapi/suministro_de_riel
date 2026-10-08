@@ -62,6 +62,7 @@ const MARGEN = 760;
 // control de velocidad de la barra los multiplica.
 const CICLO_GRUA = 9.5, CICLO_BUQUE = 150, CICLO_CAMION = 85, CICLO_TREN = 110;
 const CICLO_CARGA = 8;                           // las grúas de carretera, algo más vivas
+const CICLO_LAMINADO = 55;                       // cada cuánto sale un haz del laminador
 let VEL = 1;                                     // 0 = pausa · 0.5 · 1 · 2
 
 const NIVEL_MAR = -1.4;                          // el agua va bajo la tierra: el corte del muelle se ve
@@ -72,13 +73,16 @@ const NIVEL_MAR = -1.4;                          // el agua va bajo la tierra: e
 const VIA_Z = 8;                                 // línea principal, pegada a la costa
 const CAMINO_Z = 128;                            // carretera principal, al fondo del predio
 const VIAL_Z = 66;                               // vialidad interna del recinto
+// Con sus dos carriles, uno por sentido: el que va al este por el lado de las
+// bahías y el que vuelve por el otro.
+const VIAL_E = VIAL_Z - 3, VIAL_O = VIAL_Z + 3;
 // Las bahías dan a la vialidad interna, no al campo: el camión llega por calle.
 const ACCESO = {};                               // por donde cada recinto sale a la carretera
 // Las bahías de carga, todas bien apartadas del carril: así la entrada es una
 // vuelta que se ve, y no un empujón de costado.
 // Van bien adentro del predio: pegadas a la carretera, un camión de paso rozaba
 // al que estaba cargando.
-const BAHIA_PLANTA = 54, BAHIA_MUELLE = 44, BAHIA_ACOPIO = 54, BAHIA_SALIDA = 14, BAHIA_MINERAL = 60;
+const BAHIA_PLANTA = 54, BAHIA_MUELLE = 44, BAHIA_ACOPIO = 54, BAHIA_SALIDA = 14, BAHIA_MINERAL = 54;
 // El haz del camión va 4.4 por detrás de su morro: la bahía se corre otro tanto
 // para que quede justo bajo la grúa y el traspaso no dé un brinco de costado.
 const OFS_CAMION = 4.4;
@@ -87,8 +91,9 @@ const PILA_MUELLE = 30;                          // la pila donde se encuentran 
 
 // Las cinco estaciones. 'enc' es el recuadro que la cámara encuadra al visitarlas.
 const EST = [
-  {k:'produccion', n:'Por fabricar',      x: 85, z: 36, y:26,
-   enc:{x0:-40, x1:210, z0:-30, z1:200}},
+  {k:'produccion', n:'Por fabricar',      x: 72, z: 36, y:26,
+   // el encuadre llega hasta el acceso del mineral: por ahí entran las tolvas
+   enc:{x0:-88, x1:210, z0:-30, z1:200}},
   {k:'puerto',     n:'Origen · puerto',   x:445, z: 22, y:32,
    enc:{x0:330, x1:570, z0:-70, z1:200}},
   {k:'traslado',   n:'Traslado marítimo', x:715, z:-95, y:18,
@@ -562,19 +567,21 @@ function gruaPortico(x, zPata0, zPata1, alto, opc){
     if ((o.toma && o.toma !== yo) || (d.toma && d.toma !== yo)) return false;
     return Math.min(libre(o), libre(d)) > ciclo*1.15;             // le dará tiempo al vehículo
   }
-  let faena = null, tomados = [];                                 // lo que esta grúa tiene apartado
+  let faena = null, tomados = [], o = null, d = null;             // lo que esta grúa tiene apartado
   const yo = {};
   return {
     update(dt){
       if (!faena){                                                // entre maniobra y maniobra, decide
         faena = (opc.trabajos || []).find(viable) || null;
         if (!faena){ poner(zReposo, ALTO, false); return; }
-        const o0 = faena.o(), d0 = faena.d();
-        tomados = [o0, d0].filter(Boolean);                       // se guarda qué apartó,
+        o = faena.o(); d = faena.d();
+        tomados = [o, d].filter(Boolean);                         // se guarda qué apartó,
         tomados.forEach(q=> q.toma = yo);                         // para poder soltarlo luego
         t = 0;
       }
-      const o = faena.o(), d = faena.d();
+      // Se trabaja con las pilas que apartó al empezar, no con las que haya ahora:
+      // el camión se va de la bahía en cuanto la grúa le quita el haz, y entonces
+      // su pila deja de existir en mitad de la maniobra.
       const bajoO = cuelgaHasta(yTomar(o)), bajoD = cuelgaHasta(yDejar(d));
       const antes = t;
       t += dt/ciclo;
@@ -691,7 +698,7 @@ function buque(){
   // carga quedaba montada sobre las amuras.
   const columnas = [0].map(lx=>{
     const col = [];
-    for (let k=0;k<3;k++) col.push(hazRiel(lx, 4.6 + k*PASO_PILA, 0, 11, 2, g));
+    for (let k=0;k<5;k++) col.push(hazRiel(lx, 4.6 + k*PASO_PILA, 0, 11, 2, g));
     return col;
   });
   g.userData = {cargas: columnas[0].concat(columnas[1]), columnas};
@@ -995,7 +1002,10 @@ function planta(){
   animadores.push((t, dt)=>{
     const q = muelles.planta;
     q._c = (q._c || 0) + dt;
-    if (q._c > 26 && muelles.mineral.n > 0 && q.n < q.max){
+    // Un haz cada 55 s: es lo que los camiones y el buque son capaces de sacar.
+    // Laminando más aprisa el patio se llenaba, la fábrica se paraba, el mineral
+    // no se descargaba y las tolvas se quedaban en fila en el camino.
+    if (q._c > CICLO_LAMINADO && muelles.mineral.n > 0 && q.n < q.max){
       q._c = 0; q.n++; muelles.mineral.n--;                       // un montón de mineral, un haz de riel
     }
   });
@@ -1161,13 +1171,27 @@ function estacionamiento(x0, z0, filas, porFila){
 // entre los postes. Ahora hay calle interna y un acceso a la carretera.
 function vialidades(){
   const tramos = [
-    {s:SITIO.planta,   a:ACCESO.planta},
+    // la planta arranca más al oeste: por ahí entran y salen las tolvas de mineral
+    {s:SITIO.planta,   a:ACCESO.planta, desde:SITIO.planta.x0 - 50},
     {s:SITIO.origen,   a:ACCESO.origen},
     {s:SITIO.descarga, a:ACCESO.destino},
     {s:SITIO.acopio,   a:ACCESO.acopio},
   ];
+  // Acceso del mineral: sin él las tolvas bajaban de la carretera campo a través.
+  // Es un acceso de dos carriles: baja la tolva cargada por uno y sube vacía por
+  // el otro, cada uno con su raya.
+  const am = SITIO.planta.x0 - 33;
+  placa(am - 14, am + 14, VIAL_Z, CAMINO_Z + 2, 0.02, C.asfalto);
+  [am - 7, am + 7].forEach(x=>{
+    for (let z = VIAL_Z + 12; z < CAMINO_Z - 8; z += 14){
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(0.26, 5), mat(C.raya, {roughness:.7}));
+      m.rotation.x = -Math.PI/2; m.position.set(x, 0.05, z);
+      world.add(m);
+    }
+  });
+  placa(SITIO.planta.x0 - 50, SITIO.planta.x0 + 10, BAHIA_MINERAL - 9, VIAL_Z + 6, 0.016, C.piso);
   tramos.forEach(t=>{
-    carretera(t.s.x0 + 6, Math.min(t.s.x1 - 6, t.a.s + 14), VIAL_Z, 10, world);
+    carretera(t.desde != null ? t.desde : t.s.x0 + 6, Math.min(t.s.x1 - 6, t.a.s + 14), VIAL_Z, 10, world);
     [t.a.e, t.a.s].forEach(x=>{                                            // uno de entrada y otro de salida
       placa(x - 5.5, x + 5.5, VIAL_Z, CAMINO_Z + 2, 0.02, C.asfalto);
       for (let z = VIAL_Z + 12; z < CAMINO_Z - 8; z += 14){
@@ -1218,6 +1242,8 @@ function relleno(){
         if (rnd() > 0.5) continue;
         // la carretera cruza también los claros: el monte le deja su franja libre
         const z = rnd() < 0.3 ? 98 + rnd()*12 : 146 + rnd()*46;
+        // y las rampas del mineral bajan por aquí: tampoco se plantan encima
+        if (z < 142 && x > SITIO.planta.x0 - 52 && x < SITIO.planta.x0 - 14) continue;
         arboles.push({x:x + rnd()*7, z, r:1.8 + rnd()*2});
       }
     }
@@ -1232,15 +1258,15 @@ function relleno(){
 // con el riel a la vista y nada aparece de golpe. El rumbo sale del camino, de modo
 // que no se va de costado al salir.
 const CALADO = -1.6;                               // cuánto se hunde el casco
-const PACIENCIA = 115;                             // si el muelle no surte, zarpa con lo que haya
-const VEL_BUQUE = 7;                               // unidades por segundo
+const PACIENCIA = 130;                             // si el muelle no surte, zarpa con lo que haya
+const VEL_BUQUE = 9;                               // unidades por segundo
 
 function flota(){
   const AMARRE = -9, FUERA = -52, IDA = -96, VUELTA = -152;
   const xO = SITIO.origen.x0 + 82, xD = SITIO.descarga.x0 + 82;
   const b = buque();
   buques = [b];
-  b.userData.pilas = b.userData.columnas.map(col=> pilaVehiculo({userData:{cargas:col}}, 4.6 + CALADO, 3));
+  b.userData.pilas = b.userData.columnas.map(col=> pilaVehiculo({userData:{cargas:col}}, 4.6 + CALADO, 5));
   // Los tres tramos del circuito, con sus curvas: el rumbo los sigue.
   // Sale y entra casi de costado, que es como se desatraca con remolcadores; el giro
   // viene después, ya fuera. Si girara pegado al muelle, con 66 de eslora la popa
@@ -1369,6 +1395,9 @@ function haciaAngulo(actual, meta, k){
 }
 
 const VEL_CAMION = 16;                             // unidades por segundo
+const HUECO = 15;                                  // el hueco que se guarda con el de delante
+const ESPERA_CARGA = 55;                           // lo que espera en la bahía a completar carga
+const ESPERA_MINA = 24;                            // lo que tarda la mina en llenar una tolva
 const ESPERA_MIN = 3;                              // lo que tarda en maniobrar y arrancar
 
 function camionesDeRuta(){
@@ -1386,14 +1415,17 @@ function camionesDeRuta(){
       bA:null, bB:null,                                          // los pone quien arma la ruta
       // Entra y sale siempre de frente: antes volvía a la bahía marcha atrás y los
       // dos camiones acababan encarados, parados uno frente al otro.
-      ida: camino([ {x:xA + OFS_CAMION, z:zA}, {x:dA, z:zA}, {x:dA, z:VIAL_Z},
-                    {x:aA.s, z:VIAL_Z}, {x:aA.s, z:CARRIL_IDA},
-                    {x:aB.e, z:CARRIL_IDA}, {x:aB.e, z:VIAL_Z},
-                    {x:eB, z:VIAL_Z}, {x:eB, z:zB}, {x:xB + OFS_CAMION, z:zB} ]),
-      vuelta: camino([ {x:xB + OFS_CAMION, z:zB}, {x:dB, z:zB}, {x:dB, z:VIAL_Z},
-                       {x:aB.s, z:VIAL_Z}, {x:aB.s, z:CARRIL_VUELTA},
-                       {x:aA.e, z:CARRIL_VUELTA}, {x:aA.e, z:VIAL_Z},
-                       {x:eA, z:VIAL_Z}, {x:eA, z:zA}, {x:xA + OFS_CAMION, z:zA} ]),
+      // Y la vialidad interna lleva sus dos carriles, como la carretera: con uno
+      // solo, el que salía del recinto y el que entraba se iban de frente el uno
+      // contra el otro y acababan pisándose en mitad del patio.
+      ida: camino([ {x:xA + OFS_CAMION, z:zA}, {x:dA, z:zA}, {x:dA, z:VIAL_E},
+                    {x:aA.s, z:VIAL_E}, {x:aA.s, z:CARRIL_IDA},
+                    {x:aB.e, z:CARRIL_IDA}, {x:aB.e, z:VIAL_O},
+                    {x:eB, z:VIAL_O}, {x:eB, z:zB}, {x:xB + OFS_CAMION, z:zB} ]),
+      vuelta: camino([ {x:xB + OFS_CAMION, z:zB}, {x:dB, z:zB}, {x:dB, z:VIAL_E},
+                       {x:aB.s, z:VIAL_E}, {x:aB.s, z:CARRIL_VUELTA},
+                       {x:aA.e, z:CARRIL_VUELTA}, {x:aA.e, z:VIAL_O},
+                       {x:eA, z:VIAL_O}, {x:eA, z:zA}, {x:xA + OFS_CAMION, z:zA} ]),
     };
   };
 
@@ -1416,27 +1448,32 @@ function camionesDeRuta(){
     rutas.push(r);
   });
 
+  // Un camión por ruta, y no dos: la bahía del muelle es una sola —un izaje, un
+  // sitio donde cae el riel— y el segundo se pasaba la vida parado en el carril
+  // esperando a que su compañero saliera. El movimiento lo dan las tolvas y los
+  // camiones de paso, no un camión clavado.
   rutas.forEach((r, i)=>{
-    for (let n=0;n<2;n++){                                        // dos por ruta: siempre hay uno rodando
-      const c = camion();
-      c.userData.r = r;
-      c.userData.pila = pilaVehiculo(c, 2.3, 1);
-      c.userData.estado = n ? 'volviendo' : 'cargando';
-      c.userData.u = n ? 0.45 : 0; c.userData.espera = 0; c.userData.ang = 0;
-      camiones.push(c);
-    }
+    const c = camion();
+    c.userData.r = r;
+    c.userData.pila = pilaVehiculo(c, 2.3, 2);                     // dos haces por viaje
+    c.userData.estado = i ? 'volviendo' : 'cargando';
+    c.userData.u = i ? 0.45 : 0; c.userData.espera = 0; c.userData.ang = 0;
+    camiones.push(c);
   });
 
   // Mineral: entran cargadas por el oeste, las vacía la grúa y se van vacías.
   const mineral = {
     bA: ()=> muelles.mineralBahia,
     bB: ()=> null,
-    ida: camino([ {x:X_INI - 34, z:BORDE_VUELTA}, {x:P.x0 - 26, z:BORDE_VUELTA},
-                  {x:P.x0 - 26, z:VIAL_Z}, {x:P.x0 + 2, z:VIAL_Z},
+    // Entra por el carril que va al este y baja por su propia rampa; sale por la
+    // de al lado y se incorpora al carril que va al oeste. Con una sola rampa los
+    // dos sentidos se encontraban de frente.
+    ida: camino([ {x:X_INI - 34, z:BORDE_IDA}, {x:P.x0 - 40, z:BORDE_IDA},
+                  {x:P.x0 - 40, z:VIAL_E}, {x:P.x0 + 2, z:VIAL_E},
                   {x:P.x0 + 2, z:BAHIA_MINERAL}, {x:P.x0 + 22 + OFS_CAMION, z:BAHIA_MINERAL} ]),
     vuelta: camino([ {x:P.x0 + 22 + OFS_CAMION, z:BAHIA_MINERAL}, {x:P.x0 + 46, z:BAHIA_MINERAL},
-                     {x:P.x0 + 46, z:VIAL_Z}, {x:P.x0 - 40, z:VIAL_Z},
-                     {x:P.x0 - 40, z:BORDE_IDA}, {x:X_INI - 34, z:BORDE_IDA} ]),
+                     {x:P.x0 + 46, z:VIAL_O}, {x:P.x0 - 26, z:VIAL_O},
+                     {x:P.x0 - 26, z:BORDE_VUELTA}, {x:X_INI - 34, z:BORDE_VUELTA} ]),
     esMineral: true,
   };
   for (let n=0;n<3;n++){                                           // tres tolvas: el laminador no se queda sin mineral
@@ -1444,7 +1481,7 @@ function camionesDeRuta(){
     c.userData.r = mineral;
     c.userData.pila = pilaVehiculo(c, 2.3, 1);
     c.userData.pila.n = 1;                                        // llega cargada de mina
-    c.userData.estado = n ? 'yendo' : 'volviendo';
+    c.userData.estado = n === 0 ? 'volviendo' : n === 1 ? 'yendo' : 'enMina';
     c.userData.u = n*0.33; c.userData.espera = 0; c.userData.ang = 0;
     camiones.push(c);
   }
@@ -1455,42 +1492,117 @@ function camionesDeRuta(){
     bA: ()=> muelles.salidaBahia,
     bB: ()=> null,
     ida: camino([ {x:A.x0 + 76 + OFS_CAMION, z:BAHIA_SALIDA}, {x:A.x0 + 108, z:BAHIA_SALIDA},
-                  {x:A.x0 + 108, z:VIAL_Z}, {x:ACCESO.acopio.s, z:VIAL_Z},
+                  {x:A.x0 + 108, z:VIAL_E}, {x:ACCESO.acopio.s, z:VIAL_E},
                   {x:ACCESO.acopio.s, z:BORDE_IDA}, {x:X_FIN + 40, z:BORDE_IDA} ]),
     vuelta: camino([ {x:X_FIN + 40, z:BORDE_VUELTA}, {x:ACCESO.acopio.e, z:BORDE_VUELTA},
-                     {x:ACCESO.acopio.e, z:VIAL_Z}, {x:A.x0 + 44, z:VIAL_Z},
+                     {x:ACCESO.acopio.e, z:VIAL_O}, {x:A.x0 + 44, z:VIAL_O},
                      {x:A.x0 + 44, z:BAHIA_SALIDA}, {x:A.x0 + 76 + OFS_CAMION, z:BAHIA_SALIDA} ]),
     esSalida: true,
   };
   const cs = camion();
   cs.userData.r = salida;
-  cs.userData.pila = pilaVehiculo(cs, 2.3, 1);
+  cs.userData.pila = pilaVehiculo(cs, 2.3, 2);
   cs.userData.estado = 'cargando';
   cs.userData.u = 0; cs.userData.espera = 0; cs.userData.ang = 0;
   camiones.push(cs);
 
+  // Cuántos montones de mineral vienen ya por el camino: el despachador de la
+  // mina los cuenta para no mandar más de los que caben en el patio.
+  const enCamino = ()=> camiones.reduce((n,c)=>
+    n + ((c.userData.r.esMineral && c.userData.estado !== 'enMina') ? c.userData.pila.n : 0), 0);
+
+  // Camiones de paso: no cargan nada ni entran a ningún recinto, sólo recorren la
+  // carretera de su continente. Van en la misma lista que los demás para que les
+  // valgan las mismas reglas de paso y no se encimen con nadie.
+  [[X_INI + 24, MAR0 - 44], [MAR1 + 44, X_FIN - 24]].forEach(tramo=>{
+    // El recorrido es un anillo cerrado, con su media vuelta en cada punta: si la
+    // ida y la vuelta fueran dos tramos sueltos, al acabar uno el camión saltaría
+    // de un carril al otro a la vista de todos.
+    const aro = camino([ {x:tramo[0], z:BORDE_IDA}, {x:tramo[1], z:BORDE_IDA},
+                         {x:tramo[1] + 15, z:CAMINO_Z}, {x:tramo[1], z:BORDE_VUELTA},
+                         {x:tramo[0], z:BORDE_VUELTA}, {x:tramo[0] - 15, z:CAMINO_Z},
+                         {x:tramo[0], z:BORDE_IDA} ], 20);
+    const paseo = { bA: ()=> null, bB: ()=> null, esPaseo: true, ida: aro, vuelta: aro };
+    for (let n=0;n<2;n++){
+      const c = camion();
+      c.userData.r = paseo;
+      c.userData.pila = pilaVehiculo(c, 2.3, 1);                   // vacío: no lleva riel
+      c.userData.estado = n ? 'volviendo' : 'yendo';
+      c.userData.u = n*0.5 + 0.15; c.userData.espera = 0; c.userData.ang = 0;
+      camiones.push(c);
+    }
+  });
+
   animadores.push((t, dt)=>{
-    camiones.forEach(c=>{
+    camiones.forEach((c, i)=>{
       const u = c.userData;
       const r = u.r;
       const bA = r.bA(), bB = r.bB ? r.bB() : null;
       u.espera += dt;
-      // Dos camiones que salen a la vez y van igual de rápido por el mismo carril
-      // se enciman. Cada uno mira si tiene otro delante y, si lo tiene, no avanza.
-      const fx = Math.cos(u.ang), fz = -Math.sin(u.ang);
-      const libre = !camiones.some(o=>{
-        if (o === c || !o.visible) return false;
-        const dx = o.position.x - c.position.x, dz = o.position.z - c.position.z;
-        if (dx*dx + dz*dz > 26*26) return false;
-        return (dx*fx + dz*fz) > 3;                 // lo tiene por delante, no al lado
-      });
+      // Quién cede el paso a quién. Medir sólo la distancia y el rumbo no bastaba:
+      // en las curvas el de delante queda de costado y dejaban de verse, y dos que
+      // se cedían el paso a la vez se quedaban clavados los dos para siempre.
+      // Así que van dos reglas distintas, y ninguna puede trabarse:
+      const libre = (()=>{
+        // 1 · Con los de su misma ruta, el hueco se mide sobre el propio camino,
+        //     que es lo único que no engaña en las curvas. Y el que está parado en
+        //     la bahía cuenta como el final del tramo: si no, el que llegaba se le
+        //     metía dentro.
+        const yendo = u.estado === 'yendo';
+        const largo = (yendo ? r.ida : r.vuelta).total;
+        const hueco = HUECO/largo;
+        for (const o of camiones){
+          const v = o.userData;
+          if (o === c || v.r !== r) continue;
+          const d = v.estado === u.estado ? v.u
+                  : yendo  ? ((v.estado === 'descargando' || v.estado === 'vaciando') ? 1 : -1)
+                  : (v.estado === 'cargando' ? 1 : -1);
+          if (d > u.u && d - u.u < hueco) return false;
+        }
+        // 2 · Con todos los demás —y con el de su propia ruta que viene de vuelta,
+        //     que se cruza con él justo en la bahía— se mira un rectángulo por
+        //     delante del morro, no un círculo: así no se frena por el que está
+        //     parado en una bahía a un lado del carril. Y si los dos se ven delante
+        //     el uno al otro (se cruzan, o van costado con costado) cede siempre el
+        //     mismo de los dos, por orden: si no, se paraban los dos y ahí se
+        //     quedaban.
+        const fx = Math.cos(u.ang), fz = -Math.sin(u.ang);
+        for (let j=0;j<camiones.length;j++){
+          const o = camiones[j], v = o.userData;
+          if (o === c || !o.visible) continue;
+          const dx = o.position.x - c.position.x, dz = o.position.z - c.position.z;
+          const adelante = dx*fx + dz*fz;
+          if (adelante <= 0 || adelante > HUECO) continue;
+          if (Math.abs(dx*(-fz) + dz*fx) > 5) continue;            // va por otro carril
+          const rueda = v.estado === 'yendo' || v.estado === 'volviendo';
+          if (!rueda) return false;                                // parado y en medio: se espera
+          const ox = Math.cos(v.ang), oz = -Math.sin(v.ang);
+          const meVe = (-dx*ox - dz*oz) > 0;                       // y él, ¿me tiene delante?
+          if (!meVe || j < i) return false;
+        }
+        // 3 · Y en los cruces —la salida de un recinto a la carretera— no vale
+        //     mirar sólo al frente: el otro llega de costado. Se mira dónde
+        //     estarán los dos dentro de un segundo y cede el de menos prioridad.
+        for (let j=0;j<i;j++){
+          const o = camiones[j], v = o.userData;
+          if (!o.visible || (v.estado !== 'yendo' && v.estado !== 'volviendo')) continue;
+          const ox = Math.cos(v.ang), oz = -Math.sin(v.ang);
+          const ex = (o.position.x + ox*VEL_CAMION) - (c.position.x + fx*VEL_CAMION);
+          const ez = (o.position.z + oz*VEL_CAMION) - (c.position.z + fz*VEL_CAMION);
+          if (ex*ex + ez*ez < 12*12) return false;
+        }
+        return true;
+      })();
       let p;
       switch (u.estado){
         case 'cargando':                             // parado, hasta que la grúa lo cargue
           if (bA) bA.pila = u.pila;
           u.pila.restante = Infinity;                // espera lo que haga falta
           p = r.ida.en(0);
-          if (u.pila.n > 0 && u.espera > ESPERA_MIN){
+          // No sale a medio cargar: espera a que la grúa le complete el viaje, y
+          // si el patio no da para más, se va con lo que lleve.
+          const cargado = u.pila.n >= u.pila.max || u.espera > ESPERA_CARGA;
+          if (u.pila.n > 0 && cargado && u.espera > ESPERA_MIN){
             if (bA) bA.pila = false;
             u.estado = 'yendo'; u.u = 0; u.espera = 0;
           }
@@ -1500,7 +1612,7 @@ function camionesDeRuta(){
           p = r.ida.en(u.u);
           if (u.u >= 1){
             u.u = 1;
-            if (r.esSalida){ u.pila.n = 0; u.estado = 'volviendo'; u.u = 0; }
+            if (r.esPaseo || r.esSalida){ u.pila.n = 0; u.estado = 'volviendo'; u.u = 0; }
             else if (r.esMineral){ u.estado = 'vaciando'; }
             else { u.estado = 'descargando'; }
             u.espera = 0;
@@ -1524,12 +1636,27 @@ function camionesDeRuta(){
             u.estado = 'volviendo'; u.u = 0; u.espera = 0;
           }
           break;
+        case 'enMina':                               // cargando en la mina, fuera del mapa
+          p = r.vuelta.en(1);
+          // Sólo sale cuando el patio de la planta tiene sitio para lo que lleva,
+          // contando lo que ya viene por el camino. Antes salían las tres a la vez
+          // y se quedaban las tres paradas en fila esperando la grúa.
+          // y sale la que lleva más tiempo esperando, para que roden todas por turno
+          const antes = camiones.some(o=> o !== c && o.userData.r.esMineral
+                                       && o.userData.estado === 'enMina'
+                                       && o.userData.espera > u.espera);
+          if (!antes && u.espera > ESPERA_MINA
+              && muelles.mineral.n + enCamino() < muelles.mineral.max){
+            u.pila.n = 1; u.estado = 'yendo'; u.u = 0; u.espera = 0;
+          }
+          break;
         default:                                     // volviendo
           if (libre) u.u += dt*VEL_CAMION/r.vuelta.total;
           p = r.vuelta.en(u.u);
           if (u.u >= 1){
             u.u = 1; u.espera = 0;
-            if (r.esMineral){ u.pila.n = 1; u.estado = 'yendo'; u.u = 0; }  // vuelve a cargar en la mina
+            if (r.esMineral) u.estado = 'enMina';    // a esperar turno en la mina
+            else if (r.esPaseo){ u.estado = 'yendo'; u.u = 0; }
             else u.estado = 'cargando';
           }
       }
