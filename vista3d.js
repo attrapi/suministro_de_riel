@@ -777,21 +777,22 @@ function faro(x, z){
 // lea, que es lo que se espera de un rótulo y no de una pieza de la maqueta.
 function letrero(x, z, texto){
   const c = document.createElement('canvas');
-  c.width = 1024; c.height = 160;
+  c.width = 1400; c.height = 220;
   const g2 = c.getContext('2d');
-  g2.fillStyle = '#ffffff'; g2.fillRect(0, 0, 1024, 160);
-  g2.strokeStyle = '#2f5be0'; g2.lineWidth = 10; g2.strokeRect(5, 5, 1014, 150);
+  g2.fillStyle = '#ffffff'; g2.fillRect(0, 0, 1400, 220);
+  g2.fillStyle = '#2f5be0'; g2.fillRect(0, 0, 1400, 22);              // franja de color arriba
+  g2.strokeStyle = '#2f5be0'; g2.lineWidth = 10; g2.strokeRect(5, 5, 1390, 210);
   g2.fillStyle = '#1b2638';
-  g2.font = '600 62px "Figtree", "Segoe UI", sans-serif';
+  g2.font = '700 104px "Figtree", "Segoe UI", sans-serif';
   g2.textAlign = 'center'; g2.textBaseline = 'middle';
-  g2.fillText(texto, 512, 86);
+  g2.fillText(texto, 700, 128);
   const tex = new THREE.CanvasTexture(c);
   const g = grupo(x, 0, z, world);
-  cil(0.45, 9, C.acero, -6, 0, 0, g, 8);
-  cil(0.45, 9, C.acero,  6, 0, 0, g, 8);
-  const panel = new THREE.Mesh(new THREE.PlaneGeometry(15, 2.35),
+  cil(0.8, 14, C.acero, -18, 0, 0, g, 8);
+  cil(0.8, 14, C.acero,  18, 0, 0, g, 8);
+  const panel = new THREE.Mesh(new THREE.PlaneGeometry(45, 7.1),
     new THREE.MeshStandardMaterial({map:tex, roughness:.85, side:THREE.DoubleSide}));
-  panel.position.y = 10.2;
+  panel.position.y = 17.4;
   panel.castShadow = true;
   g.add(panel);
   animadores.push(()=>{ g.rotation.y = vista.az; });   // siempre de frente
@@ -1012,8 +1013,10 @@ function muelleCompleto(S, lado, bandera){
   naveIndustrial(S.x0 + 40, 180, 54, 26, 12, 0);                 // naves, pasada la carretera
   naveIndustrial(S.x0 + 124, 180, 46, 26, 11, 0);
   oficina(S.x0 + 14, 180, 16, 14, 3);
-  banderaEn(esOrigen ? MAR0 - 22 : MAR1 + 22, 40, bandera);
-  letrero(esOrigen ? MAR0 - 54 : MAR1 + 54, 40,
+  // Bandera y letrero, juntos y en el hueco que dejan los pórticos: con el letrero
+  // a 45 de ancho, una pata se le atravesaba por delante y tapaba el texto.
+  banderaEn(esOrigen ? MAR0 - 5 : MAR1 + 5, 40, bandera);
+  letrero(esOrigen ? MAR0 - 33 : MAR1 + 33, 40,
           esOrigen ? 'Zhangjiagang, P. R. China' : 'Tamaulipas, Altamira');
   faro(esOrigen ? MAR0 - 11 : MAR1 + 11, 8);
 }
