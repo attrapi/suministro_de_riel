@@ -38,13 +38,21 @@ const C = {
   cubierta:'#dde4ee', torre:'#fbfcfe', chimenea:'#d24b42',
   camion:'#fbfcfe', caja:'#e3e9f2', llanta:'#2a2f38', cobalto:'#2f5be0',
   fleje:'#d9743a', mineral:'#6b5a4e', mineral2:'#584a40',
+  // La mina y el horno: los dos extremos que faltaban, tierra y fuego.
+  roca:'#9b9284', roca2:'#857c6e', roca3:'#6d6558', grava:'#bcb19b', mena:'#6e4b3a',
+  refractario:'#b04a33', colada:'#ffb347',
 };
+// Contenedores de los buques amarrados: ninguna naviera pinta dos cajas iguales.
+const CONT = ['#c8553d', '#2f7fb8', '#3f9a6a', '#d9a43a', '#7b6aa8', '#b8632f'];
 
 /* ------------------------------------------------------- traza del mundo ---- */
 // El sitio es grande a propósito y la cámara se mueve por él, en vez de verse
 // entero y diminuto: cada estación es un recinto completo, no una fila de piezas.
 // Eje X: el largo de la cadena. Eje Z: la profundidad, mar negativo y tierra positiva.
 const SITIO = {
+  // La mina va aparte y bien al oeste. El mineral tiene que venir de un sitio que
+  // se vea: antes la tolva aparecía por el borde del mundo y nadie sabía de dónde.
+  mina:     {x0:-186, x1: -54},
   planta:   {x0:   0, x1: 170},
   origen:   {x0: 360, x1: 530},
   mar:      {x0: 530, x1: 900},
@@ -52,7 +60,7 @@ const SITIO = {
   acopio:   {x0:1230, x1:1420},
 };
 const MAR0 = 530, MAR1 = 900;                    // el estrecho: ahí la tierra se corta
-const X_INI = -60, X_FIN = 1480;
+const X_INI = -216, X_FIN = 1480;
 const Z_FONDO = -190, Z_FRENTE = 196;            // hasta donde llega lo construido
 // La cámara ve más allá del recuadro que encuadra, así que el terreno y el mar se
 // extienden bastante más: si no, por los bordes asoma el fondo de la escena.
@@ -83,6 +91,12 @@ const ACCESO = {};                               // por donde cada recinto sale 
 // Van bien adentro del predio: pegadas a la carretera, un camión de paso rozaba
 // al que estaba cargando.
 const BAHIA_PLANTA = 54, BAHIA_MUELLE = 44, BAHIA_ACOPIO = 54, BAHIA_SALIDA = 14, BAHIA_MINERAL = 54;
+// La mina tiene su propio camino al pie del cerro y su bahía bajo el silo: ahí se
+// para la tolva a que la llenen, a la vista. La cargada sale de la bahía derecha
+// a la rampa, que le cae enfrente; la vacía sí recorre el camino, por el carril
+// que vuelve al oeste.
+const MINA_Z = 98, MINA_O = MINA_Z + 3;
+const BAHIA_SILO = 84;
 // El haz del camión va 4.4 por detrás de su morro: la bahía se corre otro tanto
 // para que quede justo bajo la grúa y el traspaso no dé un brinco de costado.
 const OFS_CAMION = 4.4;
@@ -92,8 +106,9 @@ const PILA_MUELLE = 30;                          // la pila donde se encuentran 
 // Las cinco estaciones. 'enc' es el recuadro que la cámara encuadra al visitarlas.
 const EST = [
   {k:'produccion', n:'Por fabricar',      x: 72, z: 36, y:26,
-   // el encuadre llega hasta el acceso del mineral: por ahí entran las tolvas
-   enc:{x0:-88, x1:210, z0:-30, z1:200}},
+   // el encuadre abarca la mina: de ahí baja el mineral, y sin el cerro a la vista
+   // las tolvas volvían a parecer salidas de la nada
+   enc:{x0:-204, x1:210, z0:-30, z1:200}},
   {k:'puerto',     n:'Origen · puerto',   x:445, z: 22, y:32,
    enc:{x0:330, x1:570, z0:-70, z1:200}},
   {k:'traslado',   n:'Traslado marítimo', x:715, z:-95, y:18,
@@ -501,6 +516,77 @@ function carretera(x0, x1, z, ancho, parent){
   }
 }
 
+// Rampa de acceso: el trozo de asfalto, con su raya discontinua, que une una
+// vialidad con la carretera. Antes cada acceso se dibujaba a mano en su sitio.
+function rampa(x, z0, z1, ancho){
+  const a = ancho || 5.5;
+  placa(x - a, x + a, z0, z1, 0.02, C.asfalto);
+  for (let z = z0 + 6; z < z1 - 8; z += 14){
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.26, 5), mat(C.raya, {roughness:.7}));
+    m.rotation.x = -Math.PI/2; m.position.set(x, 0.05, z);
+    world.add(m);
+    detalles.push(m);
+  }
+}
+
+/* ---------------------------------------------- la bahía, ahora se ve ---- */
+// La bahía era sólo una coordenada: el camión se paraba en mitad del patio y no
+// se entendía que ése fuera su sitio. Ahora es un cajón de verdad, apartado del
+// carril, con su cuello de entrada, sus cantos pintados, la zona de izaje rayada,
+// la línea de alto y sus topes. Todas se entran por el oeste y se salen por el
+// este, que es el sentido en que van las rutas.
+function bahiaVisible(x, z, o){
+  o = o || {};
+  const calle = o.calle != null ? o.calle : VIAL_Z;
+  const x0 = x - 15, x1 = x + 21, zi = z - 7, zf = z + 7;
+  placa(x0, x1, zi, zf, 0.022, C.asfalto);
+  // El cuello que la une al carril. Si la calle queda lejos, en vez de una
+  // explanada van dos ramales, el de entrada y el de salida.
+  const borde = z + (calle > z ? 6.6 : -6.6);
+  const za = Math.min(borde, calle), zb = Math.max(borde, calle);
+  if (zb - za > 1){
+    if (o.xe == null) placa(x - 12, x + 18, za, zb, 0.02, C.asfalto);
+    else [o.xe, o.xs].forEach(cx=> placa(cx - 6, cx + 6, za, zb, 0.02, C.asfalto));
+  }
+  const raya = (cx, cz, w, d)=>{
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), mat(C.raya, {roughness:.7}));
+    m.rotation.x = -Math.PI/2;
+    m.position.set(cx, 0.056, cz);
+    world.add(m);
+    detalles.push(m);
+  };
+  raya((x0 + x1)/2, zi + 0.8, x1 - x0 - 2, 0.3);            // los dos cantos
+  raya((x0 + x1)/2, zf - 0.8, x1 - x0 - 2, 0.3);
+  raya(x + 13, z, 0.45, 12.4);                              // línea de alto
+  for (let i=0;i<5;i++) raya(x - 6 + i*3, z, 0.34, 11);     // zona de izaje
+  // Topes de concreto contra el canto ciego y un poste con su placa reflejante:
+  // es lo que remata una bahía y lo que la hace reconocible de lejos.
+  for (let i=0;i<3;i++) box(2.6, 0.5, 0.5, C.muro2, x - 8 + i*9, 0, zi + 1.7, world);
+  const poste = grupo(x1 - 2.5, 0, zi + 1.9, world);
+  cil(0.3, 4.4, C.acero, 0, 0, 0, poste, 6);
+  box(0.2, 1.6, 3.2, C.cobalto, 0, 3.2, 0, poste, true);
+  detalles.push(poste);
+}
+
+/* ------------------------------------ cinta transportadora, en diagonal ---- */
+// Se gira el grupo entero y dentro la banda va recta: así una cinta puede ir en
+// diagonal y en pendiente sin pelearse con los ejes del mundo.
+function cinta(x0, z0, y0, x1, z1, y1, ancho){
+  const dx = x1 - x0, dz = z1 - z0, dy = y1 - y0;
+  const plano = Math.hypot(dx, dz), largo = Math.hypot(plano, dy), w = ancho || 3.4;
+  const g = grupo(x0, 0, z0, world);
+  g.rotation.y = Math.atan2(-dz, dx);
+  const t = grupo(0, y0, 0, g);
+  t.rotation.z = Math.atan2(dy, plano);
+  box(largo, 1.1, w, C.acero2, largo/2, -1.1, 0, t);
+  box(largo, 1.5, w + 1.4, C.muro2, largo/2, 0, 0, t, true);        // la galería
+  for (let d = 9; d < plano - 4; d += 11){                          // caballetes a plomo
+    const u = d/plano;
+    box(1.0, y0 + dy*u, 1.0, C.acero, x0 + dx*u, 0, z0 + dz*u, world);
+  }
+  return g;
+}
+
 /* ============================================================================
    GRÚA DE PÓRTICO — la máquina que hace todos los traspasos.
    Tiene dos paradas, A y B. En cada una hay una pila (o la cubierta de un buque,
@@ -705,6 +791,50 @@ function buque(){
   return g;
 }
 
+/* ---------------------------------------------------------------- volquete ---- */
+// El camión de obra de la mina: caja de volteo y mena encima. Nada que ver con
+// el tractocamión del riel, y así no se confunden las dos cargas.
+function volquete(){
+  const g = grupo(0,0,0,world);
+  box(5.0, 3.6, 4.4, C.grua, 3.6, 1.4, 0, g);                    // cabina, alta
+  box(4.4, 1.0, 4.2, C.vidrio, 3.7, 4.0, 0, g, true);
+  box(12, 1.2, 5.0, C.gruaOsc, -2.4, 1.4, 0, g);                 // chasis
+  box(10.6, 3.4, 5.4, C.acero2, -2.6, 2.6, 0, g);                // caja de volteo
+  const carga = grupo(-2.6, 6.0, 0, g);
+  box(9.4, 1.5, 4.6, C.mena, 0, 0, 0, carga);
+  box(7.0, 1.0, 3.2, C.roca3, 0, 1.5, 0, carga);
+  const rueda = (x,z)=>{ const r = cil(1.5, 1.2, C.llanta, x, 0, z, g, 8);
+                         r.rotation.x = Math.PI/2; r.position.y = 1.5; r.castShadow = false; };
+  [3.4, -5.0, -7.6].forEach(x=>{ rueda(x, -2.4); rueda(x, 2.4); });
+  g.userData = {carga};
+  return g;
+}
+
+// Contenedores en cubierta. Los buques amarrados en la costa son de adorno: con
+// riel a bordo parecían flota del proyecto, y uno que iba y venía cargado daba a
+// entender que el riel volvía de México a China. Con cajas son lo que deben ser:
+// tráfico ajeno. Van en una sola malla instanciada, con su color por caja.
+function contenedoresEn(g){
+  const cajas = [];
+  for (let f=0; f<5; f++)
+    for (let c=0; c<4; c++)
+      for (let p=0; p<3; p++){
+        if ((f*3 + c*2 + p) % 7 === 3) continue;                  // la estiba nunca es un bloque
+        cajas.push({x:-17 + f*8.6, y:5.1 + p*2.3, z:-4.05 + c*2.7, k:(f*5 + c*3 + p)});
+      }
+  const im = new THREE.InstancedMesh(new THREE.BoxGeometry(7.8, 2.2, 2.4),
+    new THREE.MeshStandardMaterial({color:'#ffffff', roughness:.78}), cajas.length);
+  im.castShadow = im.receiveShadow = true;
+  const m = new THREE.Matrix4(), col = new THREE.Color();
+  cajas.forEach((b,i)=>{
+    m.makeTranslation(b.x, b.y + 1.1, b.z); im.setMatrixAt(i, m);
+    im.setColorAt(i, col.set(CONT[b.k % CONT.length]));
+  });
+  g.add(im);
+  detalles.push(im);
+  return im;
+}
+
 /* ------------------------------------------------------------------ camión ---- */
 function camion(){
   const g = grupo(0,0,0,world);
@@ -759,6 +889,81 @@ function tanque(x, z, r, h){
   cil(r*0.22, h + 2, C.acero, r + 1.4, 0, 0, g, 8);
   return g;
 }
+/* ------------------------------------------------------- el alto horno ---- */
+// La planta tenía naves y chimeneas, pero el mineral entraba al predio y se
+// perdía de vista. El horno es el eslabón que faltaba: la cinta le sube el
+// mineral del patio, late mientras hay con qué, cuela cuando el laminador se
+// come un montón y se apaga si el patio de mineral queda en cero. Así se ve de
+// un vistazo por qué sin mineral no sale riel.
+function horno(x, z){
+  const g = grupo(x, 0, z, world);
+  placa(x - 18, x + 16, z - 12, z + 16, 0.014, C.piso);
+  cil(7.4, 1.4, C.muelle,      0,  0,   0, g, 20);                 // basamento
+  for (let i=0;i<4;i++){                                            // los cuatro machones
+    const a = Math.PI/4 + i*Math.PI/2;
+    box(1.5, 10, 1.5, C.acero2, Math.cos(a)*6.3, 1.4, Math.sin(a)*6.3, g);
+  }
+  cil(5.9, 9.2, C.refractario, 0,  1.4, 0, g, 20);                 // cuba
+  cil(6.7, 7.0, C.acero2,      0, 10.6, 0, g, 20);                 // vientre, blindado
+  cil(4.7, 6.0, C.acero,       0, 17.6, 0, g, 18);
+  cil(2.1, 4.6, C.muro2,       0, 23.6, 0, g, 12);                 // tragante
+  cil(2.9, 0.9, C.gruaOsc,     0, 28.2, 0, g, 12);
+  box(1.0, 1.0, 10, C.acero, 0, 23.2, 5, g);                       // pasarela del tragante
+  // Estufas de aire caliente con su colector: es lo que hace que un alto horno
+  // se reconozca como tal aunque no se le vea el fuego.
+  [-5, 3].forEach(dz=>{
+    cil(2.9, 17, C.muro2, -13, 0, dz, g, 14);
+    box(13, 1.3, 1.3, C.acero, -6.5, 17.6, dz, g);
+  });
+  box(1.3, 1.3, 9, C.acero, -13, 17.6, -1, g);
+  // La colada: la canal por la que sale el metal hacia el frente, el pozo y el
+  // carro torpedo que se lo lleva. Es la pieza que irradia.
+  const fuego = new THREE.MeshStandardMaterial({color:C.colada, emissive:'#ff5a1f',
+                                                emissiveIntensity:.8, roughness:.45});
+  box(2.6, 0.6, 9, fuego, 0, 1.2, 8.5, g, true);                 // canal de colada
+  box(7, 0.7, 6, fuego, 0, 1.0, 14, g, true);                      // pozo de colada
+  [15.4, 18.6].forEach(dz=> box(14, 0.4, 0.4, C.acero, 6, 0.9, dz, g));   // vía del torpedo
+  const torpedo = grupo(9, 0, 17, g);
+  box(9, 1.2, 4.4, C.gruaOsc, 0, 0.9, 0, torpedo);
+  const cuba = cil(2.2, 7.4, C.refractario, 0, 0, 0, torpedo, 14);
+  cuba.rotation.z = Math.PI/2; cuba.position.set(0, 4.2, 0);
+  [-3, 3].forEach(dx=>{ const r = cil(0.7, 0.5, C.llanta, dx, 0, 0, torpedo, 8);
+                        r.rotation.x = Math.PI/2; r.position.y = 0.7; });
+  // Irradiación: un farol naranja que late con el horno y unas mantas de calor
+  // que suben y se deshacen. Sin esto el horno era una torre más de la maqueta.
+  const luz = new THREE.PointLight('#ff7b2e', 1.2, 62, 2);
+  luz.position.set(0, 5, 10);
+  g.add(luz);
+  const mantas = [];
+  for (let i=0;i<6;i++){
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(15, 13),
+      new THREE.MeshBasicMaterial({color:'#ff8a3d', transparent:true, opacity:.12,
+                                   depthWrite:false, blending:THREE.AdditiveBlending}));
+    m.position.set(0, 4, 11);
+    g.add(m);
+    mantas.push(m);
+  }
+  const F = muelles.fuego;
+  animadores.push((t, dt)=>{
+    if (F.colada > 0) F.colada = Math.max(0, F.colada - dt);
+    // El calor sube y baja despacio: un horno no se enciende de golpe.
+    const meta = F.vivo() ? (F.colada > 0 ? 1 : 0.52) : 0.12;
+    F.calor += (meta - F.calor)*Math.min(1, dt*0.7);
+    const f = F.calor*(0.84 + Math.abs(Math.sin(t*2.3))*0.16 + Math.sin(t*9.1)*0.04);
+    fuego.emissiveIntensity = 0.14 + f*1.6;
+    luz.intensity = 0.3 + f*2.3;
+    torpedo.position.x = 9 + Math.sin(t*0.09)*7;
+    mantas.forEach((m,i)=>{
+      const u = (t*0.3 + i/6) % 1;
+      m.position.set(Math.sin(t*0.5 + i*2)*2.4, 3 + u*20, 11 - u*2);
+      m.scale.set(0.42 + u*1.5, 0.42 + u*1.35, 1);
+      m.material.opacity = 0.17*(1 - u)*f;
+      m.rotation.y = vista.az;                                     // siempre de cara
+    });
+  });
+  return g;
+}
+
 /* ---------- relleno instanciado: cientos de piezas en pocas llamadas ---------- */
 const detalles = [];                              // se apagan al mirar todo de lejos
 function arbolesEn(puntos){
@@ -917,6 +1122,7 @@ function construir(){
   carretera(X_INI + 8, MAR0 - 5, CAMINO_Z, 26, world);
   carretera(MAR1 + 5, X_FIN - 8, CAMINO_Z, 26, world);
 
+  mina();
   planta();
   muelleCompleto(SITIO.origen, 'origen', 'cn');
   travesia();
@@ -964,6 +1170,161 @@ function chimenea(x, z, h){
   }
 }
 
+/* =================== 0 · LA MINA =================== */
+// El principio de la cadena, que antes no existía: el mineral salía de la nada y
+// una tolva aparecía por el borde del mapa. Aquí está de dónde viene. El cerro con
+// sus bancos, el frente de corte con su excavadora, los volquetes que acarrean al
+// tolvar, la trituradora, la cinta y el silo que llena la tolva en su bahía. De
+// aquí arranca todo lo demás, y queda lejos de la planta: es otro sitio, no un
+// rincón del predio.
+function mina(){
+  const M = SITIO.mina;
+  placa(M.x0 - 16, M.x1 + 8, 2.6, MINA_Z + 9, 0.012, C.grava);     // terracería
+  carretera(M.x0 + 56, M.x1 + 8, MINA_Z, 10, world);               // camino interior
+  ACCESO.mina = {e:M.x1 - 16, s:M.x1 - 1};        // uno para entrar y otro para salir
+  rampa(ACCESO.mina.e, MINA_Z + 5, CAMINO_Z + 2);
+  rampa(ACCESO.mina.s, MINA_Z + 5, CAMINO_Z + 2);
+
+  // El cerro, en bancos: un tajo a cielo abierto visto por fuera. Así se reconoce
+  // de lejos sin tener que agujerear el terreno de la maqueta.
+  const cerro = grupo(M.x0 + 34, 0, 30, world);
+  // Bancos anchos y bajos, y descentrados hacia atrás: por delante quedan las
+  // terrazas del tajo con su camino, y por detrás el talud entero. Concéntricos y
+  // empinados, el cerro era un cono de anillos y parecía un montón de tierra.
+  const banco = [[31, 0], [24.5, 4.5], [18.5, 8.5], [13, 12], [8, 15], [4, 17.5]];
+  banco.forEach((b, i)=>{
+    const dx = -i*1.9, dz = -i*3.0;
+    const alto = (banco[i+1] ? banco[i+1][1] : 19.4) - b[1];
+    cil(b[0], alto + 0.4, i % 2 ? C.roca2 : C.roca, dx, b[1], dz, cerro, 22);
+    // Veta de mena asomando en la cara del banco: es hierro, y tiene que verse.
+    // Va como faja alrededor del banco, no como caja pegada al frente: una caja
+    // recta sobre una cara curva le salía por los costados como un travesaño.
+    if (i < 4)
+      cil(b[0] + 0.2, alto*0.5, C.mena, dx, b[1] + alto*0.22, dz, cerro, 22);
+    // Y el camino de la terraza, que es lo que delata un tajo y no un cerro.
+    if (i > 0){
+      const q = banco[i-1];
+      const anillo = new THREE.Mesh(new THREE.RingGeometry(b[0]*0.72, q[0] - 0.5, 26),
+                                    mat(C.grava, {roughness:.95}));
+      anillo.rotation.x = -Math.PI/2;
+      anillo.position.set(-(i-1)*1.9, b[1] + 0.05, -(i-1)*3.0);
+      anillo.receiveShadow = true;
+      cerro.add(anillo);
+    }
+  });
+  box(8, 1.0, 30, C.grava, 19, 0.2, 8, cerro);                     // rampa de entrada al tajo
+
+  // Excavadora en el frente: el brazo sube y baja, y eso delata que la mina
+  // trabaja y no es un cerro pintado.
+  const exc = grupo(M.x0 + 8, 0, 50, world);
+  box(7.4, 1.4, 5.0, C.gruaOsc, 0, 0, 0, exc);
+  const torre = grupo(0, 1.4, 0, exc);
+  box(5.6, 3.6, 4.4, C.grua, -0.6, 0, 0, torre);
+  box(3.0, 1.0, 3.6, C.vidrio, 1.2, 3.6, 0, torre, true);
+  const pluma = grupo(2.0, 2.8, 0, torre);
+  box(9.0, 1.1, 1.4, C.grua, 4.5, -0.55, 0, pluma);
+  const balde = grupo(9.0, 0, 0, pluma);
+  box(2.8, 2.4, 3.4, C.acero2, 1.2, -1.2, 0, balde);
+  animadores.push(t=>{
+    const u = (Math.sin(t*0.55) + 1)/2;
+    pluma.rotation.z = -0.60 + u*0.48;
+    balde.rotation.z = 0.50 - u*0.90;
+    torre.rotation.y = Math.sin(t*0.27)*0.5;
+  });
+
+  // Camino de acarreo: el frente de corte a un extremo, el tolvar al otro.
+  placa(M.x0 - 2, M.x0 + 86, 56, 74, 0.016, C.roca2);
+  const trit = grupo(M.x0 + 90, 0, 66, world);                     // trituradora y cribas
+  box(16, 11, 20, C.muro2, 0, 0, 0, trit);
+  box(17, 1.3, 21, C.techo, 0, 11, 0, trit);
+  box(9, 20, 9, C.muro, -1, 0, -6, trit);
+  box(10, 1.2, 10, C.cobalto, -1, 20, -6, trit);
+  box(7, 5.0, 10, C.gruaOsc, -11, 6, 2, trit);                     // tolvar: ahí vuelcan
+  box(11, 0.9, 12, C.acero2, -13, 6.6, 2, trit);
+  // Polvo sobre las cribas: ahí se rompe piedra.
+  const polvo = [];
+  for (let k=0;k<5;k++){
+    const e = new THREE.Mesh(new THREE.SphereGeometry(2 + k*0.8, 8, 6),
+      new THREE.MeshStandardMaterial({color:'#cdbfa6', roughness:1, transparent:true,
+                                      opacity:.24, depthWrite:false}));
+    world.add(e);
+    polvo.push({m:e, k});
+  }
+  animadores.push(t=> polvo.forEach(v=>{
+    const u = (t*0.19 + v.k*0.2) % 1;
+    v.m.position.set(M.x0 + 89 + u*4, 21 + u*12, 60 - u*3);
+    v.m.material.opacity = 0.22*(1 - u);
+    v.m.scale.setScalar(0.5 + u*1.5);
+  }));
+
+  // De la trituradora al silo, y del silo a la tolva por su manga.
+  cinta(M.x0 + 100, 68, 10, M.x0 + 118, 73, 21.5);
+  const silo = grupo(M.x0 + 118, 0, 73, world);
+  cil(5.5, 21, C.muro, 0, 0, 0, silo, 16);
+  cil(5.9, 1.0, C.cobalto, 0, 21, 0, silo, 16);
+  cil(3.4, 3.0, C.acero2, 0, -0.2, 0, silo, 14);
+  cinta(M.x0 + 118, 78, 10.6, M.x0 + 118, 85, 8.6, 2.4);
+  box(3.0, 2.8, 3.0, C.acero2, M.x0 + 118, 6.0, 85, world);        // boca de carga
+  // El chorro de mineral: sólo se ve mientras una tolva se está llenando.
+  const chorro = box(2.0, 4.6, 2.0, C.mineral, M.x0 + 118, 1.4, 85, world, true);
+  chorro.material = mat(C.mineral, {transparent:true, opacity:.9});
+  animadores.push(()=>{
+    chorro.visible = camiones.some(c=> c.userData.r.esMineral
+                                    && c.userData.estado === 'enMina'
+                                    && c.userData.pila.n === 0);
+  });
+  bahiaVisible(M.x0 + 118, BAHIA_SILO, {calle:MINA_Z});
+
+  // Dos volquetes en el acarreo. Cargan en el frente, vuelcan en el tolvar y
+  // vuelven en vacío: hacen algo, a diferencia del camión que antes se pasaba el
+  // día dando vueltas por la carretera sin recoger ni dejar nada.
+  const acarreo = camino([ {x:M.x0 + 14, z:60}, {x:M.x0 + 64, z:60}, {x:M.x0 + 72, z:65},
+                           {x:M.x0 + 64, z:70}, {x:M.x0 + 14, z:70}, {x:M.x0 + 6, z:65},
+                           {x:M.x0 + 14, z:60} ], 7);
+  const VEL_VOLQUETE = 11, TOPE_ACARREO = 0.42;
+  [0, 0.52].forEach((u0, i)=>{
+    const v = volquete();
+    const d = {u:u0, espera:0, ang:0, estado:i ? 'bajando' : 'cargando'};
+    v.userData.carga.visible = false;
+    animadores.push((t, dt)=>{
+      d.espera += dt;
+      switch (d.estado){
+        case 'cargando':                                           // bajo la excavadora
+          d.u = 0;
+          if (d.espera > 5){ v.userData.carga.visible = true; }
+          if (d.espera > 9){ d.estado = 'subiendo'; d.espera = 0; }
+          break;
+        case 'subiendo':
+          d.u += dt*VEL_VOLQUETE/acarreo.total;
+          if (d.u >= TOPE_ACARREO){ d.u = TOPE_ACARREO; d.estado = 'volcando'; d.espera = 0; }
+          break;
+        case 'volcando':                                           // de espaldas al tolvar
+          if (d.espera > 3) v.userData.carga.visible = false;
+          if (d.espera > 6){ d.estado = 'bajando'; d.espera = 0; }
+          break;
+        default:
+          d.u += dt*VEL_VOLQUETE/acarreo.total;
+          if (d.u >= 1){ d.u = 0; d.estado = 'cargando'; d.espera = 0; }
+      }
+      const q = acarreo.en(d.u);
+      v.position.set(q.x, 0, q.z);
+      d.ang = haciaAngulo(d.ang, q.ang, dt*3);
+      v.rotation.y = d.ang;
+    });
+  });
+
+  // Montones de mena cribada esperando turno, y lo que hace falta para que esto
+  // sea un centro de trabajo y no una maqueta de maquinaria.
+  [[76, 86], [94, 86]].forEach(([dx, mz])=>{
+    box(14, 2.0, 8, C.mena, M.x0 + dx, 0, mz, world);
+    box(10, 1.4, 5.4, C.roca3, M.x0 + dx, 2.0, mz, world);
+  });
+  tanque(M.x0 + 10, 84, 4, 9);
+  estacionamiento(M.x0 + 20, 84, 1, 5);
+  oficina(M.x0 + 58, 86, 14, 12, 2);
+  letrero(M.x0 + 20, 108, 'Mina de hierro');
+}
+
 /* =================== 1 · PLANTA SIDERÚRGICA =================== */
 function planta(){
   const P = SITIO.planta;
@@ -995,6 +1356,15 @@ function planta(){
   muelles.mineral = pilaMineral(P.x0 + 22, 46, 6);
   muelles.mineral.n = 5;
   muelles.mineralBahia = bahia();
+  bahiaVisible(P.x0 + 22, BAHIA_MINERAL);
+  // Y de ahí al horno: el mineral del patio sube por la cinta al tragante. El
+  // horno late mientras el patio tenga mineral y cuela cada vez que el laminador
+  // consume un montón, que es el instante en que nace un haz de riel.
+  muelles.fuego = {colada:0, calor:0.2, vivo:()=> muelles.mineral.n > 0};
+  box(9, 9, 9, C.muro2, P.x0 + 10, 0, 43, world);                 // casa de transferencia
+  box(10, 1.2, 10, C.cobalto, P.x0 + 10, 9, 43, world);
+  cinta(P.x0 + 11, 43, 6, P.x0 - 14.5, 39, 22);
+  horno(P.x0 - 20, 38);
   gruas.push(gruaPortico(P.x0 + 22, 40, 72, 15, {
     desfase: 0.35, ciclo: CICLO_CARGA, reposo: 46,
     trabajos: [ {zo:BAHIA_MINERAL, zd:46, o:()=> muelles.mineralBahia.pila, d:()=> muelles.mineral} ],
@@ -1007,12 +1377,14 @@ function planta(){
     // no se descargaba y las tolvas se quedaban en fila en el camino.
     if (q._c > CICLO_LAMINADO && muelles.mineral.n > 0 && q.n < q.max){
       q._c = 0; q.n++; muelles.mineral.n--;                       // un montón de mineral, un haz de riel
+      muelles.fuego.colada = 9;                                   // y el horno cuela, a la vista
     }
   });
   // una pila por carril, surtida desde la del laminador
   const pilasCarril = muelles.plantaX.map(x=> pilaMuelle(x, 38, 5));
   pilasCarril.forEach(q=> q.n = 3);
   muelles.plantaX.forEach((x, i)=>{
+    bahiaVisible(x, BAHIA_PLANTA);
     gruas.push(gruaPortico(x, 32, 60, 14, {
       desfase: 0.2 + i*0.5, ciclo: CICLO_CARGA, reposo: 38,
       trabajos: [ {zo:38, zd:BAHIA_PLANTA, o:()=> pilasCarril[i], d:()=> muelles.plantaBahias[i].pila} ],
@@ -1046,6 +1418,7 @@ function muelleCompleto(S, lado, bandera){
     const pila = pilaMuelle(x, PILA_MUELLE, 5);
     pila.n = esOrigen ? 3 : 0;
     const bah = bahia();
+    bahiaVisible(x, BAHIA_MUELLE);
     muelles[lado].push(pila);
     muelles[lado + 'Bahias'].push(bah);
     const cubierta = ()=>{
@@ -1080,13 +1453,16 @@ function muelleCompleto(S, lado, bandera){
   // Buques amarrados a lo largo de la costa, fuera del tramo de operación: con uno
   // de 66 de eslora cada 70 quedaban pegados unos a otros, como un muro. Van más
   // separados y de otro porte, que es lo que se ve en un puerto.
-  const amarrados = esOrigen ? [[S.x0 - 78, 0.72, 2], [S.x0 - 168, 0.58, 0]]
-                             : [[S.x0 + 212, 0.72, 0], [S.x0 + 300, 0.58, 1]];
-  amarrados.forEach(([bx, esc, carga], i)=>{
+  // Y van cargados de contenedores, no de riel: son tráfico ajeno al proyecto, y
+  // con haces a bordo parecían flota propia llevando riel en los dos sentidos.
+  const amarrados = esOrigen ? [[S.x0 - 78, 0.72], [S.x0 - 168, 0.58]]
+                             : [[S.x0 + 212, 0.72], [S.x0 + 300, 0.58]];
+  amarrados.forEach(([bx, esc], i)=>{
     const q = buque();
     q.scale.setScalar(esc);
     q.position.set(bx, CALADO*esc, -7);
-    q.userData.columnas[0].forEach((h,k)=> h.visible = k < carga);
+    q.userData.columnas[0].forEach(h=> h.visible = false);
+    contenedoresEn(q);
     animadores.push(t=>{ q.position.y = CALADO*esc + Math.sin(t*0.5 + i*2)*0.12;
                          q.rotation.z = Math.sin(t*0.6 + i)*0.008; });
   });
@@ -1123,6 +1499,7 @@ function acopio(){
   muelles.acopio = pilaMuelle(A.x0 + 82, 44, 6);
   muelles.acopio.n = 2;
   muelles.acopioX.forEach((x, i)=>{
+    bahiaVisible(x, BAHIA_ACOPIO);
     const q = pilaMuelle(x, 40, 5);
     gruas.push(gruaPortico(x, 34, 62, 14, {
       desfase: 0.15 + i*0.5, reposo: 40, ciclo: CICLO_CARGA,
@@ -1134,6 +1511,9 @@ function acopio(){
       if (q._c > 14 && q.n > 0 && muelles.acopio.n < muelles.acopio.max){ q._c = 0; q.n--; muelles.acopio.n++; }
     });
   });
+  // La bahía de salida cuelga de la vialidad por dos ramales, uno de entrada y
+  // otro de salida: está lejos del carril y una explanada de 50 no es una calle.
+  bahiaVisible(A.x0 + 82, BAHIA_SALIDA, {xe:A.x0 + 44, xs:A.x0 + 108});
   gruas.push(gruaPortico(A.x0 + 82, 10, 50, 16, {
     desfase: 0.6, reposo: 44, ciclo: CICLO_CARGA,
     trabajos: [
@@ -1212,7 +1592,8 @@ function relleno(){
       // en la franja libre de en medio, nunca sobre el camino.
       if (rnd() < 0.45) arboles.push({x:x + rnd()*7, z:Z_FRENTE - 2, r:2 + rnd()*1.6});
     }
-    const accesos = Object.keys(ACCESO).reduce((a,k)=> a.concat([ACCESO[k].e, ACCESO[k].s]), []);
+    const accesos = Object.keys(ACCESO).reduce((a,k)=> a.concat([ACCESO[k].e, ACCESO[k].s]), [])
+      .concat([SITIO.planta.x0 - 40, SITIO.planta.x0 - 26]);     // y la rampa del mineral
     for (let x=b[0]; x<b[1]; x+=30){
       if (accesos.some(a=> Math.abs(a - x) < 14)) continue;      // no en mitad del acceso
       faroles.push({x, z:CAMINO_Z - 14, lado:1});
@@ -1234,7 +1615,8 @@ function relleno(){
     }
   }
   // Y en los claros entre recintos el monte es tupido.
-  const claros = [[X_INI + 10, SITIO.planta.x0 - 14], [SITIO.planta.x1 + 14, SITIO.origen.x0 - 14],
+  const claros = [[X_INI + 10, SITIO.mina.x0 - 16], [SITIO.mina.x1 + 10, SITIO.planta.x0 - 14],
+                  [SITIO.planta.x1 + 14, SITIO.origen.x0 - 14],
                   [SITIO.descarga.x1 + 14, SITIO.acopio.x0 - 14], [SITIO.acopio.x1 + 14, X_FIN - 10]];
   claros.forEach(c=>{
     for (let x=c[0]; x<c[1]; x+=8){
@@ -1324,21 +1706,11 @@ function flota(){
     u.pilas.forEach(q=> q.restante = u.restante);
   });
 
-  // Un segundo buque, de paso: da vida al estrecho y no ocupa muelle.
-  const paso = buque();
-  paso.userData.pilas = [];
-  paso.userData.columnas.forEach(col=> col.forEach(h=> h.visible = true));
-  const vuelta = camino([ {x:MAR0 - 40, z:-176}, {x:MAR1 + 40, z:-176},
-                          {x:MAR1 + 90, z:-196}, {x:MAR0 - 90, z:-196},
-                          {x:MAR0 - 40, z:-176} ], 70);
-  let w = 0, aw = 0;
-  animadores.push((t, dt)=>{
-    w = (w + dt*VEL_BUQUE*0.8/vuelta.total) % 1;
-    const q = vuelta.en(w);
-    paso.position.set(q.x, CALADO + Math.sin(t*0.5)*0.16, q.z);
-    aw = haciaAngulo(aw, q.ang, dt*1.1);
-    paso.rotation.y = aw;
-  });
+  // Aquí daba vueltas un segundo buque, cargado de riel, por dar vida al estrecho.
+  // Pero recorría el anillo entero sin descargar en ningún muelle: de ida llevaba
+  // riel a México y de vuelta se lo traía otra vez a China, que es exactamente lo
+  // que la cadena no hace. Un solo buque de proyecto, y es el que cruza y vuelve
+  // en vacío; lo demás son los amarrados, con sus contenedores.
 }
 
 /* ---------- camiones ---------- */
@@ -1461,26 +1833,32 @@ function camionesDeRuta(){
     camiones.push(c);
   });
 
-  // Mineral: entran cargadas por el oeste, las vacía la grúa y se van vacías.
+  // Mineral: la tolva se llena bajo el silo de la mina, sube al camino real por
+  // la rampa del recinto, corre al este y baja por la rampa del mineral a la
+  // bahía del patio de la planta. De vuelta hace el camino al revés, en vacío.
+  // Antes nacía y moría en el borde del mapa y el mineral no venía de ningún sitio.
+  const SILO_X = SITIO.mina.x0 + 118;
   const mineral = {
     bA: ()=> muelles.mineralBahia,
     bB: ()=> null,
-    // Entra por el carril que va al este y baja por su propia rampa; sale por la
-    // de al lado y se incorpora al carril que va al oeste. Con una sola rampa los
-    // dos sentidos se encontraban de frente.
-    ida: camino([ {x:X_INI - 34, z:BORDE_IDA}, {x:P.x0 - 40, z:BORDE_IDA},
-                  {x:P.x0 - 40, z:VIAL_E}, {x:P.x0 + 2, z:VIAL_E},
+    ida: camino([ {x:SILO_X + OFS_CAMION, z:BAHIA_SILO}, {x:ACCESO.mina.s, z:BAHIA_SILO},
+                  {x:ACCESO.mina.s, z:BORDE_IDA},
+                  {x:P.x0 - 40, z:BORDE_IDA}, {x:P.x0 - 40, z:VIAL_E},
+                  {x:P.x0 + 2, z:VIAL_E},
                   {x:P.x0 + 2, z:BAHIA_MINERAL}, {x:P.x0 + 22 + OFS_CAMION, z:BAHIA_MINERAL} ]),
     vuelta: camino([ {x:P.x0 + 22 + OFS_CAMION, z:BAHIA_MINERAL}, {x:P.x0 + 46, z:BAHIA_MINERAL},
                      {x:P.x0 + 46, z:VIAL_O}, {x:P.x0 - 26, z:VIAL_O},
-                     {x:P.x0 - 26, z:BORDE_VUELTA}, {x:X_INI - 34, z:BORDE_VUELTA} ]),
+                     {x:P.x0 - 26, z:BORDE_VUELTA},
+                     {x:ACCESO.mina.e, z:BORDE_VUELTA}, {x:ACCESO.mina.e, z:MINA_O},
+                     {x:SILO_X - 12, z:MINA_O}, {x:SILO_X - 12, z:BAHIA_SILO},
+                     {x:SILO_X + OFS_CAMION, z:BAHIA_SILO} ]),
     esMineral: true,
   };
   for (let n=0;n<3;n++){                                           // tres tolvas: el laminador no se queda sin mineral
     const c = tolva();
     c.userData.r = mineral;
     c.userData.pila = pilaVehiculo(c, 2.3, 1);
-    c.userData.pila.n = 1;                                        // llega cargada de mina
+    c.userData.pila.n = n === 1 ? 1 : 0;                          // cargada sólo la que va a la planta
     c.userData.estado = n === 0 ? 'volviendo' : n === 1 ? 'yendo' : 'enMina';
     c.userData.u = n*0.33; c.userData.espera = 0; c.userData.ang = 0;
     camiones.push(c);
@@ -1491,12 +1869,14 @@ function camionesDeRuta(){
   const salida = {
     bA: ()=> muelles.salidaBahia,
     bB: ()=> null,
-    ida: camino([ {x:A.x0 + 76 + OFS_CAMION, z:BAHIA_SALIDA}, {x:A.x0 + 108, z:BAHIA_SALIDA},
+    // En el eje de la grúa de salida, no seis unidades a un lado: el haz saltaba
+    // de costado al bajar del patio a la plataforma.
+    ida: camino([ {x:A.x0 + 82 + OFS_CAMION, z:BAHIA_SALIDA}, {x:A.x0 + 108, z:BAHIA_SALIDA},
                   {x:A.x0 + 108, z:VIAL_E}, {x:ACCESO.acopio.s, z:VIAL_E},
                   {x:ACCESO.acopio.s, z:BORDE_IDA}, {x:X_FIN + 40, z:BORDE_IDA} ]),
     vuelta: camino([ {x:X_FIN + 40, z:BORDE_VUELTA}, {x:ACCESO.acopio.e, z:BORDE_VUELTA},
                      {x:ACCESO.acopio.e, z:VIAL_O}, {x:A.x0 + 44, z:VIAL_O},
-                     {x:A.x0 + 44, z:BAHIA_SALIDA}, {x:A.x0 + 76 + OFS_CAMION, z:BAHIA_SALIDA} ]),
+                     {x:A.x0 + 44, z:BAHIA_SALIDA}, {x:A.x0 + 82 + OFS_CAMION, z:BAHIA_SALIDA} ]),
     esSalida: true,
   };
   const cs = camion();
@@ -1511,27 +1891,10 @@ function camionesDeRuta(){
   const enCamino = ()=> camiones.reduce((n,c)=>
     n + ((c.userData.r.esMineral && c.userData.estado !== 'enMina') ? c.userData.pila.n : 0), 0);
 
-  // Camiones de paso: no cargan nada ni entran a ningún recinto, sólo recorren la
-  // carretera de su continente. Van en la misma lista que los demás para que les
-  // valgan las mismas reglas de paso y no se encimen con nadie.
-  [[X_INI + 24, MAR0 - 44], [MAR1 + 44, X_FIN - 24]].forEach(tramo=>{
-    // El recorrido es un anillo cerrado, con su media vuelta en cada punta: si la
-    // ida y la vuelta fueran dos tramos sueltos, al acabar uno el camión saltaría
-    // de un carril al otro a la vista de todos.
-    const aro = camino([ {x:tramo[0], z:BORDE_IDA}, {x:tramo[1], z:BORDE_IDA},
-                         {x:tramo[1] + 15, z:CAMINO_Z}, {x:tramo[1], z:BORDE_VUELTA},
-                         {x:tramo[0], z:BORDE_VUELTA}, {x:tramo[0] - 15, z:CAMINO_Z},
-                         {x:tramo[0], z:BORDE_IDA} ], 20);
-    const paseo = { bA: ()=> null, bB: ()=> null, esPaseo: true, ida: aro, vuelta: aro };
-    for (let n=0;n<2;n++){
-      const c = camion();
-      c.userData.r = paseo;
-      c.userData.pila = pilaVehiculo(c, 2.3, 1);                   // vacío: no lleva riel
-      c.userData.estado = n ? 'volviendo' : 'yendo';
-      c.userData.u = n*0.5 + 0.15; c.userData.espera = 0; c.userData.ang = 0;
-      camiones.push(c);
-    }
-  });
+  // Aquí rodaban cuatro camiones de paso por la carretera, por dar vida. No
+  // cargaban ni dejaban nada: daban media vuelta en mitad del camino y volvían,
+  // y lo único que se leía era un camión perdido. El movimiento lo dan ahora los
+  // volquetes de la mina, que sí acarrean algo de un sitio a otro.
 
   animadores.push((t, dt)=>{
     camiones.forEach((c, i)=>{
@@ -1612,7 +1975,7 @@ function camionesDeRuta(){
           p = r.ida.en(u.u);
           if (u.u >= 1){
             u.u = 1;
-            if (r.esPaseo || r.esSalida){ u.pila.n = 0; u.estado = 'volviendo'; u.u = 0; }
+            if (r.esSalida){ u.pila.n = 0; u.estado = 'volviendo'; u.u = 0; }   // el riel se queda en la obra
             else if (r.esMineral){ u.estado = 'vaciando'; }
             else { u.estado = 'descargando'; }
             u.espera = 0;
@@ -1636,8 +1999,12 @@ function camionesDeRuta(){
             u.estado = 'volviendo'; u.u = 0; u.espera = 0;
           }
           break;
-        case 'enMina':                               // cargando en la mina, fuera del mapa
+        case 'enMina':                               // parada en la bahía del silo
           p = r.vuelta.en(1);
+          // El silo tarda en llenarla y eso se ve: primero entra vacía, luego cae
+          // el mineral, y sólo entonces arranca. Antes la mina quedaba fuera del
+          // mapa y la tolva aparecía ya cargada.
+          if (u.espera > ESPERA_MINA*0.45) u.pila.n = 1;
           // Sólo sale cuando el patio de la planta tiene sitio para lo que lleva,
           // contando lo que ya viene por el camino. Antes salían las tres a la vez
           // y se quedaban las tres paradas en fila esperando la grúa.
@@ -1645,9 +2012,9 @@ function camionesDeRuta(){
           const antes = camiones.some(o=> o !== c && o.userData.r.esMineral
                                        && o.userData.estado === 'enMina'
                                        && o.userData.espera > u.espera);
-          if (!antes && u.espera > ESPERA_MINA
+          if (!antes && u.pila.n > 0 && u.espera > ESPERA_MINA
               && muelles.mineral.n + enCamino() < muelles.mineral.max){
-            u.pila.n = 1; u.estado = 'yendo'; u.u = 0; u.espera = 0;
+            u.estado = 'yendo'; u.u = 0; u.espera = 0;
           }
           break;
         default:                                     // volviendo
@@ -1655,8 +2022,7 @@ function camionesDeRuta(){
           p = r.vuelta.en(u.u);
           if (u.u >= 1){
             u.u = 1; u.espera = 0;
-            if (r.esMineral) u.estado = 'enMina';    // a esperar turno en la mina
-            else if (r.esPaseo){ u.estado = 'yendo'; u.u = 0; }
+            if (r.esMineral) u.estado = 'enMina';    // a que el silo la llene
             else u.estado = 'cargando';
           }
       }
