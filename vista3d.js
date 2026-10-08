@@ -37,7 +37,7 @@ const C = {
   grua:'#f2c230', gruaOsc:'#39404c', casco:'#24487f', cascoBajo:'#16233a',
   cubierta:'#dde4ee', torre:'#fbfcfe', chimenea:'#d24b42',
   camion:'#fbfcfe', caja:'#e3e9f2', llanta:'#2a2f38', cobalto:'#2f5be0',
-  fleje:'#d9743a',
+  fleje:'#d9743a', mineral:'#6b5a4e', mineral2:'#584a40',
 };
 
 /* ------------------------------------------------------- traza del mundo ---- */
@@ -78,7 +78,7 @@ const ACCESO = {};                               // por donde cada recinto sale 
 // vuelta que se ve, y no un empujón de costado.
 // Van bien adentro del predio: pegadas a la carretera, un camión de paso rozaba
 // al que estaba cargando.
-const BAHIA_PLANTA = 54, BAHIA_MUELLE = 44, BAHIA_ACOPIO = 54, BAHIA_SALIDA = 14;
+const BAHIA_PLANTA = 54, BAHIA_MUELLE = 44, BAHIA_ACOPIO = 54, BAHIA_SALIDA = 14, BAHIA_MINERAL = 60;
 // El haz del camión va 4.4 por detrás de su morro: la bahía se corre otro tanto
 // para que quede justo bajo la grúa y el traspaso no dé un brinco de costado.
 const OFS_CAMION = 4.4;
@@ -109,6 +109,7 @@ const CSS = `
   --r3-ground:#e4eaf2; --r3-glass:rgba(255,255,255,.86); --r3-solid:#fff;
   --r3-line:rgba(28,44,74,.10); --r3-ink:#1b2638; --r3-ink2:#56667f; --r3-ink3:#8796ab;
   --r3-cobalto:#2f5be0; --r3-cobalto-s:#e7edfd;
+  --r3-guinda:#691C32;                 /* el institucional: va en los filos de las tarjetas */
   --r3-oro:#f2c230; --r3-oro-s:#fdf4d3; --r3-oro-i:#8a6400;
   --r3-ok:#1f9a63; --r3-ok-s:#e1f4ea; --r3-mal:#d24b42; --r3-mal-s:#fbe4e2;
   --r3-flama:#e8642c; --r3-flama-s:#ffe9dc; --r3-mute:#eef1f6;
@@ -133,7 +134,7 @@ const CSS = `
 #riel3d .r3-hud{position:absolute;inset:0;pointer-events:none}
 #riel3d .r3-hud>*{pointer-events:auto}
 #riel3d .r3-glass{background:var(--r3-glass);backdrop-filter:blur(14px) saturate(1.3);
-  -webkit-backdrop-filter:blur(14px) saturate(1.3);border:1px solid var(--r3-line);
+  -webkit-backdrop-filter:blur(14px) saturate(1.3);border:1.5px solid var(--r3-guinda);
   border-radius:var(--r3-r);box-shadow:var(--r3-sh)}
 #riel3d .r3-mono{font-family:var(--r3-m);font-variant-numeric:tabular-nums}
 
@@ -149,13 +150,13 @@ const CSS = `
   border:1px solid var(--r3-line);border-radius:7px;padding:4px 7px;white-space:nowrap}
 #riel3d .r3-sp{flex:1 1 auto;min-width:8px}
 #riel3d .r3-site{position:relative;display:flex;align-items:center;gap:8px;padding:4px 10px 4px 4px;
-  border:1px solid var(--r3-line);border-radius:10px;background:var(--r3-solid);white-space:nowrap;text-align:left}
+  border:1.5px solid var(--r3-guinda);border-radius:10px;background:var(--r3-solid);white-space:nowrap;text-align:left}
 #riel3d .r3-site .cod{background:var(--r3-cobalto);color:#fff;font-family:var(--r3-m);font-size:10px;
   font-weight:700;border-radius:6px;padding:4px 6px}
 #riel3d .r3-site b{display:block;font-size:12px;font-weight:700}
 #riel3d .r3-site small{display:block;color:var(--r3-ink3);font-size:10.5px}
 #riel3d .r3-site .chev{width:12px;height:12px;color:var(--r3-ink3)}
-#riel3d .r3-pop{position:absolute;top:calc(100% + 6px);right:0;min-width:230px;background:var(--r3-solid);
+#riel3d .r3-pop{position:absolute;top:calc(100% + 6px);left:0;min-width:230px;background:var(--r3-solid);
   border:1px solid var(--r3-line);border-radius:12px;box-shadow:0 12px 32px rgba(20,34,60,.18);
   padding:6px;display:none;z-index:5}
 #riel3d .r3-pop.abierto{display:block}
@@ -215,7 +216,7 @@ const CSS = `
   color:var(--r3-ink3);margin:0 0 3px}
 #riel3d .r3-ph h2{margin:0;font-family:var(--r3-d);font-weight:800;font-size:16px;letter-spacing:-.01em}
 #riel3d .r3-tot{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:10px 14px}
-#riel3d .r3-mini{background:var(--r3-solid);border:1px solid var(--r3-line);border-radius:10px;padding:8px 10px;min-width:0}
+#riel3d .r3-mini{background:var(--r3-solid);border:1.5px solid var(--r3-guinda);border-radius:10px;padding:8px 10px;min-width:0}
 #riel3d .r3-mini label{display:block;font-size:9.5px;color:var(--r3-ink3);font-weight:700;text-transform:uppercase;letter-spacing:.05em}
 #riel3d .r3-mini b{display:block;font-family:var(--r3-m);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #riel3d .r3-rows{flex:1;overflow:auto;padding:4px 10px 12px;scrollbar-width:thin}
@@ -246,7 +247,7 @@ const CSS = `
 #riel3d .r3-paso:hover{background:var(--r3-mute)}
 #riel3d .r3-paso[aria-current="true"]{background:var(--r3-cobalto-s)}
 #riel3d .r3-paso .ic{width:30px;height:30px;border-radius:9px;background:var(--r3-solid);
-  border:1px solid var(--r3-line);color:var(--r3-cobalto);display:grid;place-items:center;flex:none}
+  border:1.5px solid var(--r3-guinda);color:var(--r3-guinda);display:grid;place-items:center;flex:none}
 #riel3d .r3-paso .ic svg{width:17px;height:17px}
 #riel3d .r3-paso .t{min-width:0}
 #riel3d .r3-paso label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;
@@ -260,16 +261,18 @@ const CSS = `
 #riel3d .r3-labs{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 #riel3d .r3-lab{position:absolute;left:0;top:0;display:flex;flex-direction:column;align-items:center;
   will-change:transform}
-#riel3d .r3-lab .caja{background:var(--r3-solid);border:1px solid var(--r3-line);border-radius:10px;
-  box-shadow:var(--r3-sh);padding:5px 10px;text-align:center;white-space:nowrap}
-#riel3d .r3-lab .caja label{display:block;font-size:9.5px;font-weight:700;text-transform:uppercase;
-  letter-spacing:.07em;color:var(--r3-ink3)}
-#riel3d .r3-lab .caja b{font-family:var(--r3-m);font-size:12.5px;font-weight:700}
+#riel3d .r3-lab .caja{background:var(--r3-solid);border:1.5px solid var(--r3-guinda);border-radius:10px;
+  box-shadow:0 2px 10px rgba(20,34,60,.22);padding:7px 14px;text-align:center;white-space:nowrap}
+#riel3d .r3-lab .caja label{display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.07em;color:var(--r3-ink2)}
+#riel3d .r3-lab .caja b{font-family:var(--r3-m);font-size:14px;font-weight:700}
 #riel3d .r3-lab .caja b small{font-family:var(--r3-b);font-size:9.5px;font-weight:600;color:var(--r3-ink3)}
-#riel3d .r3-lab .palo{width:1px;height:28px;background:rgba(28,44,74,.28)}
-#riel3d .r3-lab.apagado{opacity:.45}
+#riel3d .r3-lab .palo{width:2px;height:62px;background:var(--r3-guinda)}
+#riel3d .r3-lab .punta{width:11px;height:11px;margin-top:-6px;border-radius:50%;
+  background:var(--r3-solid);border:2.5px solid var(--r3-guinda);box-shadow:0 1px 3px rgba(20,34,60,.3)}
+#riel3d .r3-lab.apagado .caja b{color:var(--r3-ink3)}
 #riel3d .r3-hint{position:absolute;left:50%;bottom:92px;transform:translateX(-50%);font-size:11.5px;
-  color:var(--r3-ink2);background:var(--r3-glass);border:1px solid var(--r3-line);border-radius:999px;
+  color:var(--r3-ink2);background:var(--r3-glass);border:1.5px solid var(--r3-guinda);border-radius:999px;
   padding:5px 12px;white-space:nowrap;transition:opacity .6s;box-shadow:var(--r3-sh)}
 #riel3d .r3-hint.ido{opacity:0}
 
@@ -329,7 +332,6 @@ raiz.innerHTML = `
     <span class="r3-brand">${ICO.riel} Adquisición de riel <i>3D</i></span>
     <span class="r3-code">ATTRAPI · ARTF / 076-A-P / 2025</span>
     <span class="r3-sp"></span>
-    <div class="r3-seg" id="r3Fases"></div>
     <div style="position:relative">
       <button class="r3-site" id="r3Site" aria-haspopup="true" aria-expanded="false">
         <span class="cod" id="r3SiteCod">P1</span>
@@ -338,6 +340,7 @@ raiz.innerHTML = `
       </button>
       <div class="r3-pop" id="r3Pop" role="menu"></div>
     </div>
+    <div class="r3-seg" id="r3Fases"></div>
     <div class="r3-seg r3-vel" id="r3Vel" role="group" aria-label="Velocidad">
       <button type="button" data-v="0" title="Pausa" aria-label="Pausa">&#10073;&#10073;</button>
       <button type="button" data-v="0.5">&frac12;&times;</button>
@@ -628,6 +631,43 @@ function pilaVehiculo(obj, base, max){
 // lo carguen. Mientras hay alguien, la grúa de al lado tiene con quién trabajar.
 function bahia(){ return {pila:false}; }
 
+/* ---------- mineral: lo que entra a la planta ---------- */
+// Montones de mineral, no haces de riel: lo que llega a la fábrica es materia
+// prima, y se ve distinto de lo que sale.
+function pilaMineral(x, z, max){
+  const items = [];
+  for (let i=0;i<max;i++){
+    const g = grupo(x, i*2.4, z, world);
+    box(13, 1.6, 7, C.mineral, 0, 0, 0, g);
+    box(10, 1.1, 5, C.mineral2, 0, 1.6, 0, g);
+    g.visible = false;
+    items.push(g);
+  }
+  let n = 0;
+  return {
+    max, base:0, x, z,
+    get n(){ return n; },
+    set n(v){ n = Math.max(0, Math.min(max, Math.round(v))); items.forEach((h,i)=> h.visible = i < n); },
+  };
+}
+function tolva(){
+  const g = grupo(0,0,0,world);
+  box(4.2, 3.2, 3.6, C.camion, 2.6, 1.0, 0, g);
+  box(4.0, 1.0, 3.5, C.vidrio, 2.7, 3.3, 0, g, true);
+  box(13, 1.0, 3.8, C.caja, -4.4, 1.2, 0, g);
+  box(13, 2.6, 0.5, C.caja, -4.4, 2.2, -1.9, g);                 // batea
+  box(13, 2.6, 0.5, C.caja, -4.4, 2.2,  1.9, g);
+  box(0.5, 2.6, 3.8, C.caja, -10.7, 2.2, 0, g);
+  const carga = grupo(-4.4, 2.3, 0, g);
+  box(11.6, 1.4, 3.0, C.mineral, 0, 0, 0, carga);
+  box(9, 0.9, 2.2, C.mineral2, 0, 1.4, 0, carga);
+  const rueda = (x,z)=>{ const r = cil(1.0, 0.7, C.llanta, x, 0, z, g, 8);
+                         r.rotation.x = Math.PI/2; r.position.y = 1.0; r.castShadow = false; };
+  [4.3, -0.8, -7.8, -9.6].forEach(x=>{ rueda(x, -1.75); rueda(x, 1.75); });
+  g.userData = {cargas:[carga], carga};
+  return g;
+}
+
 /* ---------------------------------------------------------------- buques ---- */
 function buque(){
   const g = grupo(0,0,0,world);
@@ -647,10 +687,11 @@ function buque(){
   box(7.8, 1.3, A - 1.8, C.vidrio, 0, 4.0, 0, casilla, true);
   box(6.4, 1.8, A - 4, C.torre, 0, 6.4, 0, casilla);
   cil(1.4, 4.6, C.chimenea, -0.8, 8.2, 0, casilla, 12);
-  // Dos columnas de cubierta, cada una bajo su grúa y apilada de tres.
-  const columnas = [-22, 22].map(lx=>{
+  // Una sola columna, justo en el centro del casco: con dos a los costados la
+  // carga quedaba montada sobre las amuras.
+  const columnas = [0].map(lx=>{
     const col = [];
-    for (let k=0;k<3;k++) col.push(hazRiel(lx, 4.6 + k*PASO_PILA, 0, 10.6, 2, g));
+    for (let k=0;k<3;k++) col.push(hazRiel(lx, 4.6 + k*PASO_PILA, 0, 11, 2, g));
     return col;
   });
   g.userData = {cargas: columnas[0].concat(columnas[1]), columnas};
@@ -942,10 +983,21 @@ function planta(){
   muelles.plantaBahias = [bahia(), bahia()];
   muelles.planta = pilaMuelle(P.x0 + 72, 38, 10);
   muelles.planta.n = 6;
+  // El mineral llega en tolvas por el oeste y una grúa lo baja a su patio; el
+  // laminador solo entrega riel si tiene con qué, así que la entrada se ve.
+  muelles.mineral = pilaMineral(P.x0 + 22, 46, 6);
+  muelles.mineral.n = 5;
+  muelles.mineralBahia = bahia();
+  gruas.push(gruaPortico(P.x0 + 22, 40, 72, 15, {
+    desfase: 0.35, ciclo: CICLO_CARGA, reposo: 46,
+    trabajos: [ {zo:BAHIA_MINERAL, zd:46, o:()=> muelles.mineralBahia.pila, d:()=> muelles.mineral} ],
+  }));
   animadores.push((t, dt)=>{
     const q = muelles.planta;
     q._c = (q._c || 0) + dt;
-    if (q._c > 20){ q._c = 0; q.n++; }
+    if (q._c > 26 && muelles.mineral.n > 0 && q.n < q.max){
+      q._c = 0; q.n++; muelles.mineral.n--;                       // un montón de mineral, un haz de riel
+    }
   });
   // una pila por carril, surtida desde la del laminador
   const pilasCarril = muelles.plantaX.map(x=> pilaMuelle(x, 38, 5));
@@ -973,7 +1025,7 @@ function planta(){
 // y su columna de cubierta, así ninguna depende de otra ni se estorban.
 function muelleCompleto(S, lado, bandera){
   const esOrigen = lado === 'origen';
-  const gx = [S.x0 + 60, S.x0 + 104];
+  const gx = [S.x0 + 82];                                        // un solo izaje, en el eje del buque
   muelles[lado] = [];
   muelles[lado + 'Bahias'] = [];
   muelles[lado + 'X'] = gx;
@@ -1015,6 +1067,19 @@ function muelleCompleto(S, lado, bandera){
   oficina(S.x0 + 14, 180, 16, 14, 3);
   // Bandera y letrero, juntos y en el hueco que dejan los pórticos: con el letrero
   // a 45 de ancho, una pata se le atravesaba por delante y tapaba el texto.
+  // Buques amarrados a lo largo de la costa, fuera del tramo de operación: con uno
+  // de 66 de eslora cada 70 quedaban pegados unos a otros, como un muro. Van más
+  // separados y de otro porte, que es lo que se ve en un puerto.
+  const amarrados = esOrigen ? [[S.x0 - 78, 0.72, 2], [S.x0 - 168, 0.58, 0]]
+                             : [[S.x0 + 212, 0.72, 0], [S.x0 + 300, 0.58, 1]];
+  amarrados.forEach(([bx, esc, carga], i)=>{
+    const q = buque();
+    q.scale.setScalar(esc);
+    q.position.set(bx, CALADO*esc, -7);
+    q.userData.columnas[0].forEach((h,k)=> h.visible = k < carga);
+    animadores.push(t=>{ q.position.y = CALADO*esc + Math.sin(t*0.5 + i*2)*0.12;
+                         q.rotation.z = Math.sin(t*0.6 + i)*0.008; });
+  });
   banderaEn(esOrigen ? MAR0 - 5 : MAR1 + 5, 40, bandera);
   letrero(esOrigen ? MAR0 - 33 : MAR1 + 33, 40,
           esOrigen ? 'Zhangjiagang, P. R. China' : 'Tamaulipas, Altamira');
@@ -1130,7 +1195,21 @@ function relleno(){
       faroles.push({x, z:CAMINO_Z + 14, lado:-1});
     }
   });
-  // En los claros entre recintos no hay nada construido: ahí el monte es tupido.
+  // El terreno extendido era un verde liso al alejarse. Se parcela en campos de
+  // distintos tonos y se le ponen bosquetes, que es lo que se ve desde lejos.
+  const ZT = Z_FRENTE + MARGEN;
+  const tonos = ['#bcd1a0', '#c9d8ae', '#cfc9a2', '#b4c898', '#d2cfa8'];
+  let semilla = 4;
+  for (let x = X_INI - MARGEN; x < X_FIN + MARGEN; x += 150){
+    for (let z = Z_FRENTE + 40; z < ZT; z += 110){
+      if (x > MAR0 - 160 && x < MAR1 + 10) continue;              // el estrecho no tiene campo
+      const w = 90 + rnd()*70, d2 = 70 + rnd()*50;
+      placa(x, x + w, z, z + d2, 0.004, tonos[(semilla++) % tonos.length]);
+      for (let k=0;k<6;k++)
+        if (rnd() < 0.5) arboles.push({x:x + rnd()*w, z:z + rnd()*d2, r:2 + rnd()*2.4});
+    }
+  }
+  // Y en los claros entre recintos el monte es tupido.
   const claros = [[X_INI + 10, SITIO.planta.x0 - 14], [SITIO.planta.x1 + 14, SITIO.origen.x0 - 14],
                   [SITIO.descarga.x1 + 14, SITIO.acopio.x0 - 14], [SITIO.acopio.x1 + 14, X_FIN - 10]];
   claros.forEach(c=>{
@@ -1153,7 +1232,7 @@ function relleno(){
 // con el riel a la vista y nada aparece de golpe. El rumbo sale del camino, de modo
 // que no se va de costado al salir.
 const CALADO = -1.6;                               // cuánto se hunde el casco
-const PACIENCIA = 150;                             // si el muelle no surte, zarpa con lo que haya
+const PACIENCIA = 115;                             // si el muelle no surte, zarpa con lo que haya
 const VEL_BUQUE = 7;                               // unidades por segundo
 
 function flota(){
@@ -1289,7 +1368,7 @@ function haciaAngulo(actual, meta, k){
   return actual + d*Math.min(1, k);
 }
 
-const VEL_CAMION = 13;                             // unidades por segundo
+const VEL_CAMION = 16;                             // unidades por segundo
 const ESPERA_MIN = 3;                              // lo que tarda en maniobrar y arrancar
 
 function camionesDeRuta(){
@@ -1301,17 +1380,20 @@ function camionesDeRuta(){
   // De la bahía sale a la vialidad interna del recinto, de ahí al acceso, y del
   // acceso a la carretera. Antes cortaba campo a través por encima de los patios.
   const hacerRuta = (xA, zA, aA, xB, zB, aB, i)=>{
-    const dA = xA + 13 + i*9, dB = xB - 13 - i*9;                // cada bahía, su ramal
+    const dA = xA + 13 + i*9, dB = xB + 13 + i*9;                // por donde sale de cada bahía
+    const eA = xA - 20 - i*9, eB = xB - 20 - i*9;                // y por donde entra, siempre de frente
     return {
       bA:null, bB:null,                                          // los pone quien arma la ruta
+      // Entra y sale siempre de frente: antes volvía a la bahía marcha atrás y los
+      // dos camiones acababan encarados, parados uno frente al otro.
       ida: camino([ {x:xA + OFS_CAMION, z:zA}, {x:dA, z:zA}, {x:dA, z:VIAL_Z},
                     {x:aA.s, z:VIAL_Z}, {x:aA.s, z:CARRIL_IDA},
                     {x:aB.e, z:CARRIL_IDA}, {x:aB.e, z:VIAL_Z},
-                    {x:dB, z:VIAL_Z}, {x:dB, z:zB}, {x:xB + OFS_CAMION, z:zB} ]),
+                    {x:eB, z:VIAL_Z}, {x:eB, z:zB}, {x:xB + OFS_CAMION, z:zB} ]),
       vuelta: camino([ {x:xB + OFS_CAMION, z:zB}, {x:dB, z:zB}, {x:dB, z:VIAL_Z},
                        {x:aB.s, z:VIAL_Z}, {x:aB.s, z:CARRIL_VUELTA},
                        {x:aA.e, z:CARRIL_VUELTA}, {x:aA.e, z:VIAL_Z},
-                       {x:dA, z:VIAL_Z}, {x:dA, z:zA}, {x:xA + OFS_CAMION, z:zA} ]),
+                       {x:eA, z:VIAL_Z}, {x:eA, z:zA}, {x:xA + OFS_CAMION, z:zA} ]),
     };
   };
 
@@ -1335,13 +1417,37 @@ function camionesDeRuta(){
   });
 
   rutas.forEach((r, i)=>{
-    const c = camion();
-    c.userData.r = r;
-    c.userData.pila = pilaVehiculo(c, 2.3, 1);
-    c.userData.estado = 'cargando';
-    c.userData.u = 0; c.userData.espera = 0; c.userData.ang = 0;
-    camiones.push(c);
+    for (let n=0;n<2;n++){                                        // dos por ruta: siempre hay uno rodando
+      const c = camion();
+      c.userData.r = r;
+      c.userData.pila = pilaVehiculo(c, 2.3, 1);
+      c.userData.estado = n ? 'volviendo' : 'cargando';
+      c.userData.u = n ? 0.45 : 0; c.userData.espera = 0; c.userData.ang = 0;
+      camiones.push(c);
+    }
   });
+
+  // Mineral: entran cargadas por el oeste, las vacía la grúa y se van vacías.
+  const mineral = {
+    bA: ()=> muelles.mineralBahia,
+    bB: ()=> null,
+    ida: camino([ {x:X_INI - 34, z:BORDE_VUELTA}, {x:P.x0 - 26, z:BORDE_VUELTA},
+                  {x:P.x0 - 26, z:VIAL_Z}, {x:P.x0 + 2, z:VIAL_Z},
+                  {x:P.x0 + 2, z:BAHIA_MINERAL}, {x:P.x0 + 22 + OFS_CAMION, z:BAHIA_MINERAL} ]),
+    vuelta: camino([ {x:P.x0 + 22 + OFS_CAMION, z:BAHIA_MINERAL}, {x:P.x0 + 46, z:BAHIA_MINERAL},
+                     {x:P.x0 + 46, z:VIAL_Z}, {x:P.x0 - 40, z:VIAL_Z},
+                     {x:P.x0 - 40, z:BORDE_IDA}, {x:X_INI - 34, z:BORDE_IDA} ]),
+    esMineral: true,
+  };
+  for (let n=0;n<3;n++){                                           // tres tolvas: el laminador no se queda sin mineral
+    const c = tolva();
+    c.userData.r = mineral;
+    c.userData.pila = pilaVehiculo(c, 2.3, 1);
+    c.userData.pila.n = 1;                                        // llega cargada de mina
+    c.userData.estado = n ? 'yendo' : 'volviendo';
+    c.userData.u = n*0.33; c.userData.espera = 0; c.userData.ang = 0;
+    camiones.push(c);
+  }
 
   // Salida a la obra: el riel que llega al acopio tiene que irse a algún lado, o
   // el patio se llena y la cadena entera se traba.
@@ -1395,8 +1501,18 @@ function camionesDeRuta(){
           if (u.u >= 1){
             u.u = 1;
             if (r.esSalida){ u.pila.n = 0; u.estado = 'volviendo'; u.u = 0; }
+            else if (r.esMineral){ u.estado = 'vaciando'; }
             else { u.estado = 'descargando'; }
             u.espera = 0;
+          }
+        break;
+        case 'vaciando':                             // tolva en la bahía, hasta que la grúa la vacíe
+          if (bA) bA.pila = u.pila;
+          u.pila.restante = Infinity;
+          p = r.vuelta.en(0);
+          if (u.pila.n === 0 && u.espera > ESPERA_MIN){
+            if (bA) bA.pila = false;
+            u.estado = 'volviendo'; u.u = 0; u.espera = 0;
           }
           break;
         case 'descargando':                          // parado, hasta que lo vacíen
@@ -1411,12 +1527,16 @@ function camionesDeRuta(){
         default:                                     // volviendo
           if (libre) u.u += dt*VEL_CAMION/r.vuelta.total;
           p = r.vuelta.en(u.u);
-          if (u.u >= 1){ u.u = 1; u.estado = 'cargando'; u.espera = 0; }
+          if (u.u >= 1){
+            u.u = 1; u.espera = 0;
+            if (r.esMineral){ u.pila.n = 1; u.estado = 'yendo'; u.u = 0; }  // vuelve a cargar en la mina
+            else u.estado = 'cargando';
+          }
       }
       c.position.set(p.x, 0, p.z);
       u.ang = haciaAngulo(u.ang, p.ang, dt*3.5);
       c.rotation.y = u.ang;
-      c.visible = p.x < X_FIN + 12;                  // al salir del predio, se va
+      c.visible = p.x < X_FIN + 12 && p.x > X_INI - 12;   // al salir del predio, se va
     });
   });
 }
@@ -1651,7 +1771,7 @@ let labs = [];
 function armarLabs(){
   elLabs.innerHTML = EST.map(e=>
     '<div class="r3-lab" data-k="' + e.k + '"><div class="caja"><label>' + e.n +
-    '</label><b data-v>—</b></div><span class="palo"></span></div>').join('');
+    '</label><b data-v>—</b></div><span class="palo"></span><span class="punta"></span></div>').join('');
   labs = EST.map((e,i)=>({e, el: elLabs.children[i]}));
 }
 function pintarLabs(){
@@ -1676,7 +1796,7 @@ function moverLabs(){
     const x = (_v.x*0.5 + 0.5)*w, y = (-_v.y*0.5 + 0.5)*h;
     L.el.style.transform = 'translate(' + (x|0) + 'px,' + (y|0) + 'px) translate(-50%,-100%)';
     // y es el pie del rótulo; la tarjeta cuelga hacia arriba, de ahí el recuadro
-    const caja = {x0:x - 72, x1:x + 72, y0:y - 76, y1:y};
+    const caja = {x0:x - 84, x1:x + 84, y0:y - 124, y1:y};
     // se esconde solo si de verdad lo tapa; rozar una esquina por unos píxeles no cuenta
     const tapado = estorbos.some(r=>
       Math.min(caja.x1, r.right) - Math.max(caja.x0, r.left) > 18 &&
