@@ -37,9 +37,14 @@ const C = {
   grua:'#f2c230', gruaOsc:'#39404c', casco:'#24487f', cascoBajo:'#16233a',
   cubierta:'#dde4ee', torre:'#fbfcfe', chimenea:'#d24b42',
   camion:'#fbfcfe', caja:'#e3e9f2', llanta:'#2a2f38', cobalto:'#2f5be0',
-  fleje:'#d9743a', mineral:'#6b5a4e', mineral2:'#584a40',
-  // La mina y el horno: los dos extremos que faltaban, tierra y fuego.
-  roca:'#9b9284', roca2:'#857c6e', roca3:'#6d6558', grava:'#bcb19b', mena:'#6e4b3a',
+  fleje:'#d9743a',
+  // El mineral es hierro y va en color acero, no en tierra café: lo que entra a
+  // la planta y lo que sale de ella son el mismo metal en dos estados.
+  mineral:'#8792a3', mineral2:'#6d7786', mena:'#8792a3',
+  // La roca del tajo, en cambio, es piedra, y oscura: por dentro le da luz
+  // rasante, y en gris claro el hoyo parecía un platón de yeso, sin fondo. Cada
+  // banco va un punto más oscuro que el de arriba, que es como se ve un tajo.
+  roca:'#8f8b83', roca2:'#7b776f', roca3:'#5e5b55', grava:'#b6b3ac',
   refractario:'#b04a33', colada:'#ffb347',
 };
 // Contenedores de los buques amarrados: ninguna naviera pinta dos cajas iguales.
@@ -52,7 +57,7 @@ const CONT = ['#c8553d', '#2f7fb8', '#3f9a6a', '#d9a43a', '#7b6aa8', '#b8632f'];
 const SITIO = {
   // La mina va aparte y bien al oeste. El mineral tiene que venir de un sitio que
   // se vea: antes la tolva aparecía por el borde del mundo y nadie sabía de dónde.
-  mina:     {x0:-186, x1: -54},
+  mina:     {x0:-206, x1: -54},
   planta:   {x0:   0, x1: 170},
   origen:   {x0: 360, x1: 530},
   mar:      {x0: 530, x1: 900},
@@ -60,7 +65,7 @@ const SITIO = {
   acopio:   {x0:1230, x1:1420},
 };
 const MAR0 = 530, MAR1 = 900;                    // el estrecho: ahí la tierra se corta
-const X_INI = -216, X_FIN = 1480;
+const X_INI = -236, X_FIN = 1480;
 const Z_FONDO = -190, Z_FRENTE = 196;            // hasta donde llega lo construido
 // La cámara ve más allá del recuadro que encuadra, así que el terreno y el mar se
 // extienden bastante más: si no, por los bordes asoma el fondo de la escena.
@@ -97,6 +102,13 @@ const BAHIA_PLANTA = 54, BAHIA_MUELLE = 44, BAHIA_ACOPIO = 54, BAHIA_SALIDA = 14
 // que vuelve al oeste.
 const MINA_Z = 98, MINA_O = MINA_Z + 3;
 const BAHIA_SILO = 84;
+// El tajo va hacia abajo, que es como se excava una mina a cielo abierto. Se
+// describe aquí porque el terreno tiene que abrirse justo donde está: el pasto,
+// la tierra, la terracería y hasta el agua llevan este hueco recortado, o el
+// hoyo quedaría tapado por el suelo y la mina volvería a ser un cerro.
+// Es elíptico: ancho en X, que es por donde hay sitio, y angosto en Z.
+const TAJO = {x: -176, z: 28, r: 20, ex: 1.35, prof: 18, sesgo: -1.7};
+const HUECO_TAJO = {x: TAJO.x, z: TAJO.z, rx: TAJO.r*TAJO.ex, rz: TAJO.r};
 // El haz del camión va 4.4 por detrás de su morro: la bahía se corre otro tanto
 // para que quede justo bajo la grúa y el traspaso no dé un brinco de costado.
 const OFS_CAMION = 4.4;
@@ -108,7 +120,7 @@ const EST = [
   {k:'produccion', n:'Por fabricar',      x: 72, z: 36, y:26,
    // el encuadre abarca la mina: de ahí baja el mineral, y sin el cerro a la vista
    // las tolvas volvían a parecer salidas de la nada
-   enc:{x0:-204, x1:210, z0:-30, z1:200}},
+   enc:{x0:-224, x1:210, z0:-30, z1:200}},
   {k:'puerto',     n:'Origen · puerto',   x:445, z: 22, y:32,
    enc:{x0:330, x1:570, z0:-70, z1:200}},
   {k:'traslado',   n:'Traslado marítimo', x:715, z:-95, y:18,
@@ -446,6 +458,30 @@ function cil(r,h,c,x,y,z,parent,seg){
   m.position.set(x, y + h/2, z);
   m.castShadow = true; m.receiveShadow = true;
   (parent || world).add(m);
+  return m;
+}
+/* ---------- superficies con hueco: así el terreno se puede excavar ---------- */
+// Una superficie horizontal no se puede agujerear con un plano: hay que armarla
+// como forma recortada. Las coordenadas de la forma van en (x, -z) porque al
+// tumbarla 90° sobre el eje X la Y de la forma cae sobre la Z del mundo.
+function formaConHueco(x0, x1, z0, z1, hueco){
+  const f = new THREE.Shape();
+  f.moveTo(x0, -z0); f.lineTo(x1, -z0); f.lineTo(x1, -z1); f.lineTo(x0, -z1); f.closePath();
+  if (hueco){
+    const h = new THREE.Path();
+    h.absellipse(hueco.x, -hueco.z, hueco.rx, hueco.rz, 0, Math.PI*2, false);
+    f.holes.push(h);
+  }
+  return f;
+}
+// Suelo horizontal recortado, en coordenadas del mundo ya tumbadas.
+function placaConHueco(x0, x1, z0, z1, y, c, hueco){
+  const g = new THREE.ShapeGeometry(formaConHueco(x0, x1, z0, z1, hueco), 22);
+  g.rotateX(-Math.PI/2);
+  const m = new THREE.Mesh(g, typeof c === 'string' ? mat(c) : c);
+  m.position.y = y;
+  m.receiveShadow = true;
+  world.add(m);
   return m;
 }
 function grupo(x,y,z,parent){
@@ -1092,10 +1128,20 @@ function construir(){
   const texA = texAgua();
   const AX0 = X_INI - MARGEN, AX1 = X_FIN + MARGEN;
   const AZ0 = Z_FONDO - MARGEN, AZ1 = Z_FRENTE + MARGEN;
-  const agua = new THREE.Mesh(new THREE.PlaneGeometry(AX1 - AX0, AZ1 - AZ0),
+  // El agua también lleva el hueco del tajo. Es una lámina que corre por debajo
+  // de toda la tierra, y sin recortarla el fondo del tajo quedaba inundado a
+  // metro y medio: el hoyo no podía ser más hondo que el mar.
+  const aguaGeo = new THREE.ShapeGeometry(formaConHueco(AX0, AX1, AZ0, AZ1, HUECO_TAJO), 22);
+  aguaGeo.rotateX(-Math.PI/2);
+  // La forma recortada no trae coordenadas de textura utilizables: se rehacen a
+  // partir de la posición, que es lo que el oleaje espera.
+  const pos = aguaGeo.attributes.position, uv = [];
+  for (let i=0;i<pos.count;i++)
+    uv.push((pos.getX(i) - AX0)/(AX1 - AX0), (pos.getZ(i) - AZ0)/(AZ1 - AZ0));
+  aguaGeo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  const agua = new THREE.Mesh(aguaGeo,
     new THREE.MeshStandardMaterial({map:texA, color:'#ffffff', roughness:.16, metalness:.05}));
-  agua.rotation.x = -Math.PI/2;
-  agua.position.set((AX0 + AX1)/2, NIVEL_MAR, (AZ0 + AZ1)/2);
+  agua.position.y = NIVEL_MAR;
   agua.receiveShadow = true;
   world.add(agua);
   animadores.push(t=>{ texA.offset.x = t*0.004; texA.offset.y = Math.sin(t*0.08)*0.01; });
@@ -1103,14 +1149,23 @@ function construir(){
   // La costa se corta en el estrecho; hacia los lados y tierra adentro sigue, para
   // que el encuadre nunca llegue al borde del terreno.
   const ZT = Z_FRENTE + MARGEN;
-  const tierra = (x0,x1)=>{
-    box(x1-x0, 4, ZT + 4, C.tierra, (x0+x1)/2, -4, (ZT - 4)/2);
-    placa(x0, x1, 0, ZT, 0.002, C.pasto);
+  const tierra = (x0, x1, hueco)=>{
+    // El cuerpo de tierra se extruye en vez de ser una caja: así puede llevar el
+    // hueco del tajo, y la pared del hueco queda como la capa de tierra vegetal
+    // que se ve al asomarse al corte.
+    const cuerpo = new THREE.ExtrudeGeometry(formaConHueco(x0, x1, -4, ZT, hueco),
+                                             {depth:4, bevelEnabled:false, curveSegments:22});
+    cuerpo.rotateX(-Math.PI/2);
+    const mt = new THREE.Mesh(cuerpo, mat(C.tierra));
+    mt.position.y = -4;
+    mt.castShadow = mt.receiveShadow = true;
+    world.add(mt);
+    placaConHueco(x0, x1, 0, ZT, 0.002, C.pasto, hueco);
     placa(x0, x1, Z_FRENTE + 30, ZT, 0.006, C.pasto2);          // el campo, pasado el predio
     box(x1-x0, 0.5, 3.2, C.muelle, (x0+x1)/2, 0, 1.6);
     for (let x=x0+10; x<x1-5; x+=18) cil(0.6, 1.4, C.gruaOsc, x, 0.5, 0.9);
   };
-  tierra(X_INI - MARGEN, MAR0);
+  tierra(X_INI - MARGEN, MAR0, HUECO_TAJO);
   tierra(MAR1, X_FIN + MARGEN);
 
   const pavimento = (x0,x1)=> placa(x0, x1, 2.6, VIAL_Z + 8, 0.014, C.piso);
@@ -1170,6 +1225,30 @@ function chimenea(x, z, h){
   }
 }
 
+/* ---------- excavadora ---------- */
+// Se arma aparte porque hacen falta dos: la que trabaja en el fondo del tajo y
+// la que carga los volquetes en la boca.
+function excavadora(x, y, z, giro){
+  const g = grupo(x, y, z, world);
+  g.rotation.y = giro || 0;
+  box(7.4, 1.4, 5.0, C.gruaOsc, 0, 0, 0, g);
+  const torre = grupo(0, 1.4, 0, g);
+  box(5.6, 3.6, 4.4, C.grua, -0.6, 0, 0, torre);
+  box(3.0, 1.0, 3.6, C.vidrio, 1.2, 3.6, 0, torre, true);
+  const pluma = grupo(2.0, 2.8, 0, torre);
+  box(9.0, 1.1, 1.4, C.grua, 4.5, -0.55, 0, pluma);
+  const balde = grupo(9.0, 0, 0, pluma);
+  box(2.8, 2.4, 3.4, C.acero2, 1.2, -1.2, 0, balde);
+  const d = (x % 7)/7;                                             // cada una a su aire
+  animadores.push(t=>{
+    const u = (Math.sin(t*0.55 + d*6) + 1)/2;
+    pluma.rotation.z = -0.60 + u*0.48;
+    balde.rotation.z = 0.50 - u*0.90;
+    torre.rotation.y = Math.sin(t*0.27 + d*6)*0.5;
+  });
+  return g;
+}
+
 /* =================== 0 · LA MINA =================== */
 // El principio de la cadena, que antes no existía: el mineral salía de la nada y
 // una tolva aparecía por el borde del mapa. Aquí está de dónde viene. El cerro con
@@ -1179,62 +1258,70 @@ function chimenea(x, z, h){
 // rincón del predio.
 function mina(){
   const M = SITIO.mina;
-  placa(M.x0 - 16, M.x1 + 8, 2.6, MINA_Z + 9, 0.012, C.grava);     // terracería
-  carretera(M.x0 + 56, M.x1 + 8, MINA_Z, 10, world);               // camino interior
-  ACCESO.mina = {e:M.x1 - 16, s:M.x1 - 1};        // uno para entrar y otro para salir
+  // La terracería también va recortada: por el hueco se mira el fondo del tajo.
+  placaConHueco(M.x0 - 14, M.x1 + 8, 2.6, MINA_Z + 9, 0.012, C.grava, HUECO_TAJO);
+  carretera(M.x0 + 96, M.x1 + 8, MINA_Z, 10, world);               // camino interior
+  ACCESO.mina = {e:M.x1 - 22, s:M.x1 - 1};        // uno para entrar y otro para salir
   rampa(ACCESO.mina.e, MINA_Z + 5, CAMINO_Z + 2);
   rampa(ACCESO.mina.s, MINA_Z + 5, CAMINO_Z + 2);
 
-  // El cerro, en bancos: un tajo a cielo abierto visto por fuera. Así se reconoce
-  // de lejos sin tener que agujerear el terreno de la maqueta.
-  const cerro = grupo(M.x0 + 34, 0, 30, world);
-  // Bancos anchos y bajos, y descentrados hacia atrás: por delante quedan las
-  // terrazas del tajo con su camino, y por detrás el talud entero. Concéntricos y
-  // empinados, el cerro era un cono de anillos y parecía un montón de tierra.
-  const banco = [[31, 0], [24.5, 4.5], [18.5, 8.5], [13, 12], [8, 15], [4, 17.5]];
-  banco.forEach((b, i)=>{
-    const dx = -i*1.9, dz = -i*3.0;
-    const alto = (banco[i+1] ? banco[i+1][1] : 19.4) - b[1];
-    cil(b[0], alto + 0.4, i % 2 ? C.roca2 : C.roca, dx, b[1], dz, cerro, 22);
-    // Veta de mena asomando en la cara del banco: es hierro, y tiene que verse.
-    // Va como faja alrededor del banco, no como caja pegada al frente: una caja
-    // recta sobre una cara curva le salía por los costados como un travesaño.
-    if (i < 4)
-      cil(b[0] + 0.2, alto*0.5, C.mena, dx, b[1] + alto*0.22, dz, cerro, 22);
-    // Y el camino de la terraza, que es lo que delata un tajo y no un cerro.
-    if (i > 0){
-      const q = banco[i-1];
-      const anillo = new THREE.Mesh(new THREE.RingGeometry(b[0]*0.72, q[0] - 0.5, 26),
-                                    mat(C.grava, {roughness:.95}));
-      anillo.rotation.x = -Math.PI/2;
-      anillo.position.set(-(i-1)*1.9, b[1] + 0.05, -(i-1)*3.0);
-      anillo.receiveShadow = true;
-      cerro.add(anillo);
+  // ---- el tajo ----
+  // Un banco tras otro, hacia abajo: la cara vertical del banco y la berma que
+  // la remata, hasta el piso. Las caras se ven por dentro, que es lo único que
+  // se mira de un tajo desde arriba.
+  const T = grupo(TAJO.x, 0, TAJO.z, world);
+  T.scale.set(TAJO.ex, 1, 1);                                      // elíptico: ancho en X
+  const cara = (r, y0, y1, dz, color)=>{
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, y1 - y0, 44, 1, true),
+                             mat(color, {side:THREE.BackSide}));
+    m.position.set(0, (y0 + y1)/2, dz);
+    m.receiveShadow = true;
+    T.add(m);
+    return m;
+  };
+  const berma = (r0, r1, y, dz, color)=>{
+    const m = new THREE.Mesh(new THREE.RingGeometry(r0, r1, 44), mat(color, {side:THREE.DoubleSide}));
+    m.rotation.x = -Math.PI/2; m.position.set(0, y, dz); m.receiveShadow = true;
+    T.add(m);
+    return m;
+  };
+  // Cada banco se corre un poco hacia el fondo: el tajo se excava de un lado, y
+  // además así el labio de enfrente no esconde todo el piso. De frente y a plomo
+  // no se vería ni el fondo ni las máquinas que dan la escala del hoyo.
+  const BANCO = [{r:TAJO.r, y:0.02}, {r:16.2, y:-5.0}, {r:13.0, y:-9.4},
+                 {r:10.4, y:-13.2}, {r:8.5, y:-16.2}];
+  const PISO = -TAJO.prof, SESGO = TAJO.sesgo;
+  const TONO = ['#9a968e', '#8a867e', '#7a766f', '#6b6861', '#5d5a54'];
+  BANCO.forEach((b, i)=>{
+    const sig = BANCO[i+1], abajo = sig ? sig.y : PISO, dz = i*SESGO;
+    cara(b.r, abajo, b.y, dz, TONO[i]);
+    // La veta de mena, en la mitad de la cara: es el hierro, color acero.
+    cara(b.r - 0.08, abajo + (b.y - abajo)*0.26, abajo + (b.y - abajo)*0.60, dz, C.mena);
+    if (sig){
+      berma(sig.r, b.r, abajo, dz, C.roca3);
+      // El camino de acarreo baja de banco en banco, girando: eso es lo que hace
+      // que el hoyo se lea como tajo y no como cráter.
+      const v = new THREE.Mesh(new THREE.RingGeometry(sig.r + 0.5, b.r - 0.5, 26, 1, i*2.0, 2.3),
+                               mat(C.grava, {side:THREE.DoubleSide}));
+      v.rotation.x = -Math.PI/2; v.position.set(0, abajo + 0.04, dz);
+      T.add(v);
     }
   });
-  box(8, 1.0, 30, C.grava, 19, 0.2, 8, cerro);                     // rampa de entrada al tajo
+  const zPiso = (BANCO.length - 1)*SESGO;
+  const piso = new THREE.Mesh(new THREE.CircleGeometry(BANCO[BANCO.length-1].r, 44), mat(C.roca3));
+  piso.rotation.x = -Math.PI/2; piso.position.set(0, PISO, zPiso); piso.receiveShadow = true;
+  T.add(piso);
+  // En el fondo, la pala y un volquete cargando: dan la escala del hoyo.
+  excavadora(TAJO.x - 7, PISO, TAJO.z + zPiso - 2, 0.5);
+  const vq = volquete();
+  vq.position.set(TAJO.x + 7, PISO, TAJO.z + zPiso - 3);
+  vq.rotation.y = 2.5;
+  vq.userData.carga.visible = true;
 
-  // Excavadora en el frente: el brazo sube y baja, y eso delata que la mina
-  // trabaja y no es un cerro pintado.
-  const exc = grupo(M.x0 + 8, 0, 50, world);
-  box(7.4, 1.4, 5.0, C.gruaOsc, 0, 0, 0, exc);
-  const torre = grupo(0, 1.4, 0, exc);
-  box(5.6, 3.6, 4.4, C.grua, -0.6, 0, 0, torre);
-  box(3.0, 1.0, 3.6, C.vidrio, 1.2, 3.6, 0, torre, true);
-  const pluma = grupo(2.0, 2.8, 0, torre);
-  box(9.0, 1.1, 1.4, C.grua, 4.5, -0.55, 0, pluma);
-  const balde = grupo(9.0, 0, 0, pluma);
-  box(2.8, 2.4, 3.4, C.acero2, 1.2, -1.2, 0, balde);
-  animadores.push(t=>{
-    const u = (Math.sin(t*0.55) + 1)/2;
-    pluma.rotation.z = -0.60 + u*0.48;
-    balde.rotation.z = 0.50 - u*0.90;
-    torre.rotation.y = Math.sin(t*0.27)*0.5;
-  });
-
-  // Camino de acarreo: el frente de corte a un extremo, el tolvar al otro.
-  placa(M.x0 - 2, M.x0 + 86, 56, 74, 0.016, C.roca2);
-  const trit = grupo(M.x0 + 90, 0, 66, world);                     // trituradora y cribas
+  // Camino de acarreo en superficie: de la boca del tajo al tolvar.
+  placa(M.x0 + 42, M.x0 + 112, 56, 74, 0.016, C.roca2);
+  excavadora(M.x0 + 50, 0, 53, -0.4);                              // carga en la boca del tajo
+  const trit = grupo(M.x0 + 108, 0, 66, world);                    // trituradora y cribas
   box(16, 11, 20, C.muro2, 0, 0, 0, trit);
   box(17, 1.3, 21, C.techo, 0, 11, 0, trit);
   box(9, 20, 9, C.muro, -1, 0, -6, trit);
@@ -1245,42 +1332,42 @@ function mina(){
   const polvo = [];
   for (let k=0;k<5;k++){
     const e = new THREE.Mesh(new THREE.SphereGeometry(2 + k*0.8, 8, 6),
-      new THREE.MeshStandardMaterial({color:'#cdbfa6', roughness:1, transparent:true,
+      new THREE.MeshStandardMaterial({color:'#c6c3bc', roughness:1, transparent:true,
                                       opacity:.24, depthWrite:false}));
     world.add(e);
     polvo.push({m:e, k});
   }
   animadores.push(t=> polvo.forEach(v=>{
     const u = (t*0.19 + v.k*0.2) % 1;
-    v.m.position.set(M.x0 + 89 + u*4, 21 + u*12, 60 - u*3);
+    v.m.position.set(M.x0 + 107 + u*4, 21 + u*12, 60 - u*3);
     v.m.material.opacity = 0.22*(1 - u);
     v.m.scale.setScalar(0.5 + u*1.5);
   }));
 
   // De la trituradora al silo, y del silo a la tolva por su manga.
-  cinta(M.x0 + 100, 68, 10, M.x0 + 118, 73, 21.5);
-  const silo = grupo(M.x0 + 118, 0, 73, world);
+  cinta(M.x0 + 118, 68, 10, M.x0 + 136, 73, 21.5);
+  const silo = grupo(M.x0 + 136, 0, 73, world);
   cil(5.5, 21, C.muro, 0, 0, 0, silo, 16);
   cil(5.9, 1.0, C.cobalto, 0, 21, 0, silo, 16);
   cil(3.4, 3.0, C.acero2, 0, -0.2, 0, silo, 14);
-  cinta(M.x0 + 118, 78, 10.6, M.x0 + 118, 85, 8.6, 2.4);
-  box(3.0, 2.8, 3.0, C.acero2, M.x0 + 118, 6.0, 85, world);        // boca de carga
+  cinta(M.x0 + 136, 78, 10.6, M.x0 + 136, 85, 8.6, 2.4);
+  box(3.0, 2.8, 3.0, C.acero2, M.x0 + 136, 6.0, 85, world);        // boca de carga
   // El chorro de mineral: sólo se ve mientras una tolva se está llenando.
-  const chorro = box(2.0, 4.6, 2.0, C.mineral, M.x0 + 118, 1.4, 85, world, true);
+  const chorro = box(2.0, 4.6, 2.0, C.mineral, M.x0 + 136, 1.4, 85, world, true);
   chorro.material = mat(C.mineral, {transparent:true, opacity:.9});
   animadores.push(()=>{
     chorro.visible = camiones.some(c=> c.userData.r.esMineral
                                     && c.userData.estado === 'enMina'
                                     && c.userData.pila.n === 0);
   });
-  bahiaVisible(M.x0 + 118, BAHIA_SILO, {calle:MINA_Z});
+  bahiaVisible(M.x0 + 136, BAHIA_SILO, {calle:MINA_Z});
 
   // Dos volquetes en el acarreo. Cargan en el frente, vuelcan en el tolvar y
   // vuelven en vacío: hacen algo, a diferencia del camión que antes se pasaba el
   // día dando vueltas por la carretera sin recoger ni dejar nada.
-  const acarreo = camino([ {x:M.x0 + 14, z:60}, {x:M.x0 + 64, z:60}, {x:M.x0 + 72, z:65},
-                           {x:M.x0 + 64, z:70}, {x:M.x0 + 14, z:70}, {x:M.x0 + 6, z:65},
-                           {x:M.x0 + 14, z:60} ], 7);
+  const acarreo = camino([ {x:M.x0 + 56, z:60}, {x:M.x0 + 82, z:60}, {x:M.x0 + 90, z:65},
+                           {x:M.x0 + 82, z:70}, {x:M.x0 + 56, z:70}, {x:M.x0 + 48, z:65},
+                           {x:M.x0 + 56, z:60} ], 7);
   const VEL_VOLQUETE = 11, TOPE_ACARREO = 0.42;
   [0, 0.52].forEach((u0, i)=>{
     const v = volquete();
@@ -1837,7 +1924,7 @@ function camionesDeRuta(){
   // la rampa del recinto, corre al este y baja por la rampa del mineral a la
   // bahía del patio de la planta. De vuelta hace el camino al revés, en vacío.
   // Antes nacía y moría en el borde del mapa y el mineral no venía de ningún sitio.
-  const SILO_X = SITIO.mina.x0 + 118;
+  const SILO_X = SITIO.mina.x0 + 136;
   const mineral = {
     bA: ()=> muelles.mineralBahia,
     bB: ()=> null,
