@@ -542,6 +542,17 @@ function hazRiel(x, y, z, largo, n, parent, color){
   }
   return g;
 }
+// Palanquilla: el acero en bruto, lo que entra al laminador. Barras de sección
+// cuadrada, sin fleje y más gruesas que un riel: así, de un vistazo, se sabe si
+// un patio guarda material por fabricar o riel ya terminado.
+function hazAcero(x, y, z, largo, n, parent){
+  const g = grupo(x, y, z, parent);
+  for (let i=0;i<n;i++){
+    const col = i % 2 ? C.acero2 : C.acero;
+    for (let k=0;k<4;k++) box(largo, 1.05, 1.05, col, 0, i*1.15, (k - 1.5)*1.18, g);
+  }
+  return g;
+}
 // Carretera con raya central
 function carretera(x0, x1, z, ancho, parent){
   placa(x0, x1, z-ancho/2, z+ancho/2, 0.03, C.asfalto);
@@ -1028,17 +1039,28 @@ function farolasEn(puntos){
   world.add(mastil); world.add(brazo);
   detalles.push(mastil, brazo);
 }
-// Patio decorativo: cientos de haces en dos llamadas de dibujo
-function patioDecorativo(bultos){
+// Patio decorativo: cientos de bultos en dos llamadas de dibujo. Con 'acero' en
+// vez de riel guarda palanquilla, que es lo que corresponde a un patio de
+// material por fabricar.
+function patioDecorativo(bultos, acero){
   if (!bultos.length) return;
-  const riel = new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1), mat(C.acero), bultos.length*3);
+  const porBulto = acero ? 4 : 3;
+  const riel = new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),
+                                       mat(acero ? C.acero2 : C.acero), bultos.length*porBulto);
   const flej = new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1), mat(C.fleje), bultos.length*2);
   riel.castShadow = riel.receiveShadow = flej.castShadow = true;
   const m = new THREE.Matrix4(), q = new THREE.Quaternion();
   const e = new THREE.Vector3(), pos = new THREE.Vector3();
   let i = 0, j = 0;
   bultos.forEach(b=>{
-    const h = 0.56*b.alto;
+    const h = (acero ? 1.15 : 0.56)*b.alto;
+    if (acero){
+      for (let k=0;k<4;k++){
+        e.set(b.largo, h, 1.05); pos.set(b.x, h/2, b.z + (k - 1.5)*1.18);
+        m.compose(pos, q, e); riel.setMatrixAt(i++, m);
+      }
+      return;
+    }
     for (let k=-1;k<=1;k++){
       e.set(b.largo, h, 0.68); pos.set(b.x, h/2, b.z + k*0.78);
       m.compose(pos, q, e); riel.setMatrixAt(i++, m);
@@ -1049,7 +1071,8 @@ function patioDecorativo(bultos){
     });
   });
   riel.count = i; flej.count = j;
-  world.add(riel); world.add(flej);
+  world.add(riel);
+  if (j) world.add(flej);
 }
 function faro(x, z){
   const g = grupo(x, 0, z, world);
@@ -1319,8 +1342,10 @@ function mina(){
   vq.userData.carga.visible = true;
 
   // Camino de acarreo en superficie: de la boca del tajo al tolvar.
-  placa(M.x0 + 42, M.x0 + 112, 56, 74, 0.016, C.roca2);
-  excavadora(M.x0 + 50, 0, 53, -0.4);                              // carga en la boca del tajo
+  placa(M.x0 + 42, M.x0 + 112, 52, 78, 0.016, C.roca2);
+  // Apartada del punto donde para el volquete y mirando al tajo: pegada al
+  // camino, la pala y el volquete se veían encimados, como una sola pieza rara.
+  excavadora(M.x0 + 48, 0, 48, 0.5);                               // trabaja en la boca del tajo
   const trit = grupo(M.x0 + 108, 0, 66, world);                    // trituradora y cribas
   box(16, 11, 20, C.muro2, 0, 0, 0, trit);
   box(17, 1.3, 21, C.techo, 0, 11, 0, trit);
@@ -1365,14 +1390,29 @@ function mina(){
   // Dos volquetes en el acarreo. Cargan en el frente, vuelcan en el tolvar y
   // vuelven en vacío: hacen algo, a diferencia del camión que antes se pasaba el
   // día dando vueltas por la carretera sin recoger ni dejar nada.
-  const acarreo = camino([ {x:M.x0 + 56, z:60}, {x:M.x0 + 82, z:60}, {x:M.x0 + 90, z:65},
-                           {x:M.x0 + 82, z:70}, {x:M.x0 + 56, z:70}, {x:M.x0 + 48, z:65},
-                           {x:M.x0 + 56, z:60} ], 7);
-  const VEL_VOLQUETE = 11, TOPE_ACARREO = 0.42;
+  const acarreo = camino([ {x:M.x0 + 56, z:58}, {x:M.x0 + 82, z:58}, {x:M.x0 + 92, z:65},
+                           {x:M.x0 + 82, z:72}, {x:M.x0 + 56, z:72}, {x:M.x0 + 46, z:65},
+                           {x:M.x0 + 56, z:58} ], 8);
+  const VEL_VOLQUETE = 11, TOPE_ACARREO = 0.42, HUECO_ACARREO = 34;
+  const acarreando = [];
   [0, 0.52].forEach((u0, i)=>{
     const v = volquete();
     const d = {u:u0, espera:0, ang:0, estado:i ? 'bajando' : 'cargando'};
+    acarreando.push(d);
     v.userData.carga.visible = false;
+    // El acarreo es un anillo y los dos van en el mismo sentido, así que el de
+    // atrás guarda su hueco con el de delante, medido sobre el propio camino y
+    // dando la vuelta. Sin esto, el que llegaba a cargar se metía encima del que
+    // ya estaba parado en el frente, y se veían los dos volquetes encimados.
+    const libre = ()=>{
+      for (const o of acarreando){
+        if (o === d) continue;
+        let h = o.u - d.u;
+        if (h < 0) h += 1;                                         // el que va delante, en el anillo
+        if (h*acarreo.total < HUECO_ACARREO) return false;
+      }
+      return true;
+    };
     animadores.push((t, dt)=>{
       d.espera += dt;
       switch (d.estado){
@@ -1382,7 +1422,7 @@ function mina(){
           if (d.espera > 9){ d.estado = 'subiendo'; d.espera = 0; }
           break;
         case 'subiendo':
-          d.u += dt*VEL_VOLQUETE/acarreo.total;
+          if (libre()) d.u += dt*VEL_VOLQUETE/acarreo.total;
           if (d.u >= TOPE_ACARREO){ d.u = TOPE_ACARREO; d.estado = 'volcando'; d.espera = 0; }
           break;
         case 'volcando':                                           // de espaldas al tolvar
@@ -1390,7 +1430,7 @@ function mina(){
           if (d.espera > 6){ d.estado = 'bajando'; d.espera = 0; }
           break;
         default:
-          d.u += dt*VEL_VOLQUETE/acarreo.total;
+          if (libre()) d.u += dt*VEL_VOLQUETE/acarreo.total;
           if (d.u >= 1){ d.u = 0; d.estado = 'cargando'; d.espera = 0; }
       }
       const q = acarreo.en(d.u);
@@ -1484,8 +1524,12 @@ function planta(){
     });
   });
 
+  // El patio del dato y el de fondo guardan palanquilla, no riel. «Por fabricar»
+  // es lo que todavía no se ha laminado: con haces de riel ahí, al llegar a la
+  // planta parecía que el riel ya estaba hecho y que la fábrica no pintaba nada.
+  // El riel sólo aparece del laminador para allá, camino de los carriles de carga.
   pilas.produccion = grupo(P.x0 + 10, 0, 78, world);              // patio del dato
-  patioDecorativo(rejilla(P.x0 + 12, 94, 6, 1, 15.5, 10));        // patio de fondo
+  patioDecorativo(rejilla(P.x0 + 12, 94, 6, 1, 15.5, 10), true);  // patio de fondo
   ACCESO.planta = {e:P.x0 + 122, s:P.x0 + 150};
 }
 
@@ -1854,7 +1898,7 @@ function haciaAngulo(actual, meta, k){
 }
 
 const VEL_CAMION = 16;                             // unidades por segundo
-const HUECO = 15;                                  // el hueco que se guarda con el de delante
+const HUECO = 22;                                  // el hueco que se guarda con el de delante
 const ESPERA_CARGA = 55;                           // lo que espera en la bahía a completar carga
 const ESPERA_MINA = 24;                            // lo que tarda la mina en llenar una tolva
 const ESPERA_MIN = 3;                              // lo que tarda en maniobrar y arrancar
@@ -2006,7 +2050,7 @@ function camionesDeRuta(){
           if (o === c || v.r !== r) continue;
           const d = v.estado === u.estado ? v.u
                   : yendo  ? ((v.estado === 'descargando' || v.estado === 'vaciando') ? 1 : -1)
-                  : (v.estado === 'cargando' ? 1 : -1);
+                  : ((v.estado === 'cargando' || v.estado === 'enMina') ? 1 : -1);
           if (d > u.u && d - u.u < hueco) return false;
         }
         // 2 · Con todos los demás —y con el de su propia ruta que viene de vuelta,
@@ -2147,7 +2191,9 @@ function pintarPatios(){
     for (let f=0; f<F.f && hecho<haces; f++)
       for (let i=0; i<F.p && hecho<haces; i++, hecho++){
         const n = 2 + ((f + i) % 3);                 // altura de pila variada, para que no parezca molde
-        hazRiel(i*PASO_X + LARGO_HAZ/2, 0, f*PASO_Z, LARGO_HAZ, n, g);
+        // Lo que está por fabricar es acero en bruto; lo demás ya es riel.
+        (k === 'produccion' ? hazAcero : hazRiel)
+          (i*PASO_X + LARGO_HAZ/2, 0, f*PASO_Z, LARGO_HAZ, n, g);
       }
   });
 }
