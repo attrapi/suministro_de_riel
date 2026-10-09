@@ -181,6 +181,9 @@ const CSS = `
 #riel3d .r3-code{font-family:var(--r3-m);font-size:10px;letter-spacing:.06em;color:var(--r3-ink3);
   border:1px solid var(--r3-line);border-radius:7px;padding:4px 7px;white-space:nowrap}
 #riel3d .r3-sp{flex:1 1 auto;min-width:8px}
+/* El proyecto va junto al código de contrato, no al otro extremo de la barra:
+   son el mismo dato —qué se está mirando— y leerlos juntos ahorra el viaje. */
+#riel3d .r3-sitewrap{position:relative;margin-left:10px}
 #riel3d .r3-site{position:relative;display:flex;align-items:center;gap:8px;padding:4px 10px 4px 4px;
   border:1.5px solid var(--r3-guinda);border-radius:10px;background:var(--r3-solid);white-space:nowrap;text-align:left}
 #riel3d .r3-site .cod{background:var(--r3-cobalto);color:#fff;font-family:var(--r3-m);font-size:10px;
@@ -272,8 +275,13 @@ const CSS = `
 #riel3d .r3-pill.mal{background:var(--r3-mal-s);color:var(--r3-mal)}
 #riel3d .r3-vacio{font-size:11.5px;color:var(--r3-ink3);padding:14px 4px;line-height:1.5}
 
-/* la cadena, abajo */
-#riel3d .r3-chain{position:absolute;left:16px;bottom:16px;right:368px;display:grid;
+/* abajo: los mandos y, debajo, la cadena. Antes los mandos vivían en la barra
+   de arriba, lejos de lo que mueven; aquí quedan a la mano, junto a la cadena, y
+   la barra de arriba se queda sólo con la identidad y la salida. */
+#riel3d .r3-abajo{position:absolute;left:16px;right:368px;bottom:16px;z-index:15;
+  display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+#riel3d .r3-mandos{display:flex;align-items:center;gap:8px;padding:6px 8px;flex-wrap:wrap}
+#riel3d .r3-chain{align-self:stretch;display:grid;
   grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;padding:6px;overflow:hidden}
 #riel3d .r3-paso{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:10px;text-align:left}
 #riel3d .r3-paso:hover{background:var(--r3-mute)}
@@ -303,30 +311,31 @@ const CSS = `
 #riel3d .r3-lab .punta{width:11px;height:11px;margin-top:-6px;border-radius:50%;
   background:var(--r3-solid);border:2.5px solid var(--r3-guinda);box-shadow:0 1px 3px rgba(20,34,60,.3)}
 #riel3d .r3-lab.apagado .caja b{color:var(--r3-ink3)}
-#riel3d .r3-hint{position:absolute;left:50%;bottom:92px;transform:translateX(-50%);font-size:11.5px;
+#riel3d .r3-hint{position:absolute;left:50%;bottom:148px;transform:translateX(-50%);font-size:11.5px;
   color:var(--r3-ink2);background:var(--r3-glass);border:1.5px solid var(--r3-guinda);border-radius:999px;
   padding:5px 12px;white-space:nowrap;transition:opacity .6s;box-shadow:var(--r3-sh)}
 #riel3d .r3-hint.ido{opacity:0}
 
 @media (max-width:1180px){
   #riel3d .r3-panel{width:300px}
-  #riel3d .r3-chain{right:332px}
+  #riel3d .r3-abajo{right:332px}
   #riel3d .r3-kpi{min-width:150px}
 }
 @media (max-width:980px){
   #riel3d .r3-panel{display:none}
   #riel3d .r3-dona{padding:9px 12px 9px 9px}
   #riel3d .r3-dona svg{width:76px;height:76px}
-  #riel3d .r3-chain{right:16px}
+  #riel3d .r3-abajo{right:16px}
   #riel3d .r3-code,#riel3d .r3-site small{display:none}
 }
 @media (max-width:760px){
   #riel3d .r3-bar{left:10px;right:10px;padding:7px 8px}
   #riel3d .r3-brand{font-size:15px}
-  #riel3d .r3-kpis{top:auto;bottom:124px;left:10px;right:10px;overflow-x:auto;flex-wrap:nowrap;
+  #riel3d .r3-kpis{top:auto;bottom:196px;left:10px;right:10px;overflow-x:auto;flex-wrap:nowrap;
     scrollbar-width:none;padding-bottom:2px}
   #riel3d .r3-kpi{min-width:148px;flex:none}
-  #riel3d .r3-chain{left:10px;right:10px;grid-template-columns:repeat(5,minmax(104px,1fr));overflow-x:auto}
+  #riel3d .r3-abajo{left:10px;right:10px}
+  #riel3d .r3-chain{grid-template-columns:repeat(5,minmax(104px,1fr));overflow-x:auto}
   #riel3d .r3-paso{flex-direction:column;align-items:flex-start;gap:4px;padding:7px 8px}
   #riel3d .r3-hint,#riel3d .r3-tools,#riel3d .r3-dona{display:none}
 }
@@ -363,8 +372,7 @@ raiz.innerHTML = `
   <div class="r3-bar r3-glass">
     <span class="r3-brand">${ICO.riel} Adquisición de riel <i>3D</i></span>
     <span class="r3-code">ATTRAPI · ARTF / 076-A-P / 2025</span>
-    <span class="r3-sp"></span>
-    <div style="position:relative">
+    <div class="r3-sitewrap">
       <button class="r3-site" id="r3Site" aria-haspopup="true" aria-expanded="false">
         <span class="cod" id="r3SiteCod">P1</span>
         <span><b id="r3SiteNom">—</b><small>Proyecto en pantalla</small></span>
@@ -372,20 +380,7 @@ raiz.innerHTML = `
       </button>
       <div class="r3-pop" id="r3Pop" role="menu"></div>
     </div>
-    <div class="r3-seg" id="r3Fases"></div>
-    <div class="r3-seg r3-vel" id="r3Vel" role="group" aria-label="Velocidad">
-      <button type="button" data-v="0" title="Pausa" aria-label="Pausa">&#10073;&#10073;</button>
-      <button type="button" data-v="0.5">&frac12;&times;</button>
-      <button type="button" data-v="1" class="on">1&times;</button>
-      <button type="button" data-v="2">2&times;</button>
-    </div>
-    <div class="r3-tools">
-      <button class="r3-ibtn" data-rot="-1" title="Girar a la izquierda" aria-label="Girar a la izquierda">${ICO.izq}</button>
-      <button class="r3-ibtn" data-rot="1" title="Girar a la derecha" aria-label="Girar a la derecha">${ICO.der}</button>
-      <button class="r3-ibtn" data-zoom="1" title="Acercar" aria-label="Acercar">+</button>
-      <button class="r3-ibtn" data-zoom="-1" title="Alejar" aria-label="Alejar">&minus;</button>
-      <button class="r3-ibtn" id="r3Fit" title="Encuadrar la cadena completa" aria-label="Encuadrar">${ICO.marco}</button>
-    </div>
+    <span class="r3-sp"></span>
     <button class="r3-close" id="r3Close" title="Volver a la maqueta plana (Esc)">&larr; Volver al 2D</button>
   </div>
 
@@ -402,7 +397,25 @@ raiz.innerHTML = `
     <div class="r3-rows" id="r3Rows"></div>
   </aside>
 
-  <div class="r3-chain r3-glass" id="r3Chain"></div>
+  <div class="r3-abajo" id="r3Abajo">
+    <div class="r3-mandos r3-glass">
+      <div class="r3-seg" id="r3Fases"></div>
+      <div class="r3-seg r3-vel" id="r3Vel" role="group" aria-label="Velocidad">
+        <button type="button" data-v="0" title="Pausa" aria-label="Pausa">&#10073;&#10073;</button>
+        <button type="button" data-v="0.5">&frac12;&times;</button>
+        <button type="button" data-v="1" class="on">1&times;</button>
+        <button type="button" data-v="2">2&times;</button>
+      </div>
+      <div class="r3-tools">
+        <button class="r3-ibtn" data-rot="-1" title="Girar a la izquierda" aria-label="Girar a la izquierda">${ICO.izq}</button>
+        <button class="r3-ibtn" data-rot="1" title="Girar a la derecha" aria-label="Girar a la derecha">${ICO.der}</button>
+        <button class="r3-ibtn" data-zoom="1" title="Acercar" aria-label="Acercar">+</button>
+        <button class="r3-ibtn" data-zoom="-1" title="Alejar" aria-label="Alejar">&minus;</button>
+        <button class="r3-ibtn" id="r3Fit" title="Encuadrar la cadena completa" aria-label="Encuadrar">${ICO.marco}</button>
+      </div>
+    </div>
+    <div class="r3-chain r3-glass" id="r3Chain"></div>
+  </div>
   <div class="r3-hint" id="r3Hint">Arrastra para mover · scroll o pinza para acercar</div>
   <div class="r3-labs" id="r3Labs"></div>
 </div>`;
@@ -2429,7 +2442,7 @@ function moverLabs(){
   const w = innerWidth, h = innerHeight;
   // El rótulo se esconde si cae fuera o si lo taparía una tarjeta del HUD: ahí no se leería
   const estorbos = [];
-  ['#r3Panel', '#r3Dona', '#r3Kpis'].forEach(sel=>{
+  ['#r3Panel', '#r3Dona', '#r3Kpis', '#r3Abajo'].forEach(sel=>{
     const e = $(sel);
     if (e && e.offsetParent && !e.hidden) estorbos.push(e.getBoundingClientRect());
   });
