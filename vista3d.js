@@ -553,6 +553,14 @@ function hazAcero(x, y, z, largo, n, parent){
   }
   return g;
 }
+// Bulto de acero en bruto: la carga de la tolva y lo que cuelga de la grúa del
+// mineral. Un haz de riel no tiene nada que hacer entre la mina y el horno.
+function bultoAcero(x, y, z, largo, parent){
+  const g = grupo(x, y, z, parent);
+  box(largo, 1.6, 3.2, C.mineral, 0, 0, 0, g);
+  box(largo - 2.6, 1.1, 2.3, C.mineral2, 0, 1.6, 0, g);
+  return g;
+}
 // Carretera con raya central
 function carretera(x0, x1, z, ancho, parent){
   placa(x0, x1, z-ancho/2, z+ancho/2, 0.03, C.asfalto);
@@ -670,7 +678,10 @@ function gruaPortico(x, zPata0, zPata1, alto, opc){
   [[-1.4,-1.9],[1.4,-1.9],[-1.4,1.9],[1.4,1.9]].forEach(c=>
     cables.push(box(0.14, 4, 0.14, C.gruaOsc, c[0], -5, c[1], carro, true)));
   const bastidor = box(13.5, 0.7, 4.5, C.grua, 0, -7.2, 0, carro);    // bastidor de izaje
-  const pinza = hazRiel(0, -6.6, 0, 11, 1, carro, C.acero2);
+  // Lo que cuelga del bastidor es la carga de verdad: la grúa del mineral sacaba
+  // un haz de riel de una tolva de hierro, y parecía que el riel venía de la mina.
+  const pinza = opc.acero ? bultoAcero(0, -6.6, 0, 11, carro)
+                          : hazRiel(0, -6.6, 0, 11, 1, carro, C.acero2);
 
   const ALTO = 2.2;                                               // cuánto cuelga en viaje
   let t = opc.desfase || 0;
@@ -777,9 +788,11 @@ function bahia(){ return {pila:false}; }
 function pilaMineral(x, z, max){
   const items = [];
   for (let i=0;i<max;i++){
-    const g = grupo(x, i*2.4, z, world);
-    box(13, 1.6, 7, C.mineral, 0, 0, 0, g);
-    box(10, 1.1, 5, C.mineral2, 0, 1.6, 0, g);
+    // Apilados al mismo paso con que la grúa suelta, o el montón aparecía un
+    // palmo más arriba de donde se había soltado.
+    const g = grupo(x, i*PASO_PILA, z, world);
+    box(13, 1.2, 7, C.mineral, 0, 0, 0, g);
+    box(10, 0.8, 5, C.mineral2, 0, 1.2, 0, g);
     g.visible = false;
     items.push(g);
   }
@@ -798,9 +811,11 @@ function tolva(){
   box(13, 2.6, 0.5, C.caja, -4.4, 2.2, -1.9, g);                 // batea
   box(13, 2.6, 0.5, C.caja, -4.4, 2.2,  1.9, g);
   box(0.5, 2.6, 3.8, C.caja, -10.7, 2.2, 0, g);
-  const carga = grupo(-4.4, 2.3, 0, g);
-  box(11.6, 1.4, 3.0, C.mineral, 0, 0, 0, carga);
-  box(9, 0.9, 2.2, C.mineral2, 0, 1.4, 0, carga);
+  // Colmada y asomando por encima del costado. Metida dentro de la batea no se
+  // veía desde esta cámara, y la tolva parecía salir vacía de la mina.
+  const carga = grupo(-4.4, 2.6, 0, g);
+  box(12.4, 2.6, 3.2, C.mineral, 0, 0, 0, carga);
+  box(9.6, 1.3, 2.3, C.mineral2, 0, 2.6, 0, carga);
   const rueda = (x,z)=>{ const r = cil(1.0, 0.7, C.llanta, x, 0, z, g, 8);
                          r.rotation.x = Math.PI/2; r.position.y = 1.0; r.castShadow = false; };
   [4.3, -0.8, -7.8, -9.6].forEach(x=>{ rueda(x, -1.75); rueda(x, 1.75); });
@@ -1493,6 +1508,7 @@ function planta(){
   cinta(P.x0 + 11, 43, 6, P.x0 - 14.5, 39, 22);
   horno(P.x0 - 20, 38);
   gruas.push(gruaPortico(P.x0 + 22, 40, 72, 15, {
+    acero: true,                                                  // mueve mineral, no riel
     desfase: 0.35, ciclo: CICLO_CARGA, reposo: 46,
     trabajos: [ {zo:BAHIA_MINERAL, zd:46, o:()=> muelles.mineralBahia.pila, d:()=> muelles.mineral} ],
   }));
@@ -1988,7 +2004,7 @@ function camionesDeRuta(){
   for (let n=0;n<3;n++){                                           // tres tolvas: el laminador no se queda sin mineral
     const c = tolva();
     c.userData.r = mineral;
-    c.userData.pila = pilaVehiculo(c, 2.3, 1);
+    c.userData.pila = pilaVehiculo(c, 3.4, 1);                    // a la altura del copete
     c.userData.pila.n = n === 1 ? 1 : 0;                          // cargada sólo la que va a la planta
     c.userData.estado = n === 0 ? 'volviendo' : n === 1 ? 'yendo' : 'enMina';
     c.userData.u = n*0.33; c.userData.espera = 0; c.userData.ang = 0;
