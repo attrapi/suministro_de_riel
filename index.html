@@ -318,14 +318,12 @@
 
 <script>
 /* ============================================================
-   DATOS — salen de la hoja de Google; el respaldo de abajo es lo último
-   que se leyó, y es lo que se ve si la hoja no se puede alcanzar.
+   DATOS — salen de la hoja publicada, celda por celda. Lo que todavía no
+   tiene celda asignada se queda con el respaldo de abajo, que también es
+   lo que se ve si la hoja no se puede alcanzar.
    ============================================================ */
-const HOJA_CSV = 'https://docs.google.com/spreadsheets/d/1yhYrAhYaH7InE_3JNbGBG2TCpqEnfxpG/export?format=csv&gid=17083721';
+const HOJA = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjWDwrja2oSt_FrI2qKGDl7luhZljGFuGWXoZSfj41zpctuMcUFrWzB_yYsoKj7Q/pub?output=csv';
 const RECARGA_MIN = 5;                       // cada cuánto se vuelve a leer la hoja, con la página abierta
-// La misma hoja, pero publicada en la web: de aquí se toman celdas sueltas por su dirección,
-// sin depender de que el renglón se llame de alguna manera.
-const HOJA_PUB = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjWDwrja2oSt_FrI2qKGDl7luhZljGFuGWXoZSfj41zpctuMcUFrWzB_yYsoKj7Q/pub?output=csv';
 // Qué cifra de la portada sale de qué celda. Para sumar otra, basta un renglón más.
 const CELDAS = {
   contratado:   'D17',                       // total contractual en toneladas
@@ -395,7 +393,7 @@ function armar(h){
 }
 
 /* ---------- Lectura de la hoja ---------- */
-function filasCSV(texto){                    // separa respetando las comillas: los números vienen como "88,559.16"
+function filasCSV(texto){                    // separa respetando las comillas: los números vienen como "88.559,16"
   const filas = [[]]; let campo = '', entre = false;
   for (let i=0; i<texto.length; i++){
     const ch = texto[i];
@@ -408,55 +406,8 @@ function filasCSV(texto){                    // separa respetando las comillas: 
   filas[filas.length-1].push(campo);
   return filas;
 }
-// Una celda puede traer cifra y texto juntos, como "2150.57 Lote I". Se parte en las dos:
-// la cifra para poder formatearla y sumarla, y la nota para mostrarla al lado.
-function aCelda(v){
-  const s = (v||'').trim();
-  if (!s || s === '-' || s === '—') return { valor:'—', nota:'' };
-  const m = /^\$?\s*([\d.,]+)\s*(.*)$/.exec(s);
-  if (m){
-    const n = Number(m[1].replace(/,/g, ''));
-    if (!isNaN(n)) return { valor:n, nota:m[2].trim() };
-  }
-  return { valor:s, nota:'' };               // sin cifra al inicio: la celda se muestra tal cual
-}
-const aNum = v => aCelda(v).valor;
 // siempre dos decimales, como en la hoja: así los puntos quedan alineados en la tabla
 const fmt = v => typeof v === 'number' ? v.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : String(v);
-const clave = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
-
-function leerHoja(filas){
-  const h = { kpis:{}, maqueta:{}, tramos:{} };
-  const fila = filas.find(f => clave(f[0]) === 'resumengeneral');
-  if (!fila) return null;                    // sin ese renglón la hoja cambió de forma: mejor no tocar nada
-  const monto = aNum(fila[5]);               // la hoja lo da en pesos; la tarjeta lo muestra en millones
-  h.kpis = { contratado:aNum(fila[1]), proceso:aNum(fila[2]), entregado:aNum(fila[3]), pendiente:aNum(fila[4]),
-             monto: typeof monto === 'number' ? monto/1e6 : monto };
-  h.notas = { contratado:aCelda(fila[1]).nota, proceso:aCelda(fila[2]).nota, entregado:aCelda(fila[3]).nota,
-              pendiente:aCelda(fila[4]).nota, monto:aCelda(fila[5]).nota };
-  const campos = ['produccion','puerto','traslado','descarga','acopio'];
-  for (const f of filas){                    // columnas H..M: una fila por entrega
-    const m = /^(?:entrega|lote)\s+(i{1,3})\b/i.exec((f[7]||'').trim());
-    if (!m) continue;
-    const id = { i:'f1', ii:'f2', iii:'f3' }[m[1].toLowerCase()];
-    h.maqueta[id] = {}; h.maqueta[id].notas = {};
-    campos.forEach((k,n)=>{ const c = aCelda(f[8+n]); h.maqueta[id][k] = c.valor; h.maqueta[id].notas[k] = c.nota; });
-  }
-  for (const t of TRAMOS){                   // el nombre del proyecto encabeza su tabla; los datos empiezan dos filas abajo
-    const i = filas.findIndex(f => clave(f[1]) === clave(t.nombre));
-    if (i < 0) continue;
-    const lista = [];
-    for (let r=i+2; r<filas.length; r++){
-      const f = filas[r];
-      if (!f || !(f[0]||'').trim()) break;
-      const cs = { solicitado:aCelda(f[1]), entregado:aCelda(f[2]), pendiente:aCelda(f[3]) };
-      lista.push({ tramo:f[0].trim(), solicitado:cs.solicitado.valor, entregado:cs.entregado.valor, pendiente:cs.pendiente.valor,
-                   notas:{ solicitado:cs.solicitado.nota, entregado:cs.entregado.nota, pendiente:cs.pendiente.nota } });
-    }
-    h.tramos[t.id] = lista;
-  }
-  return h;
-}
 /* ---------- Celdas sueltas, pedidas por su dirección ----------
    filasCSV ya respeta los saltos de línea que vienen dentro de comillas, así que
    cada renglón del arreglo es un renglón de la hoja: A1 es filas[0][0].          */
@@ -479,9 +430,9 @@ function numHoja(v){
 }
 // Lee la hoja publicada y se queda con las celdas de CELDAS. Si una no trae cifra,
 // se deja la que ya había en lugar de borrarla.
-async function cargarPortada(){
+async function cargarHoja(){
   try {
-    const r = await fetch(HOJA_PUB, { cache:'no-store' });
+    const r = await fetch(HOJA + '&_=' + Date.now(), { cache:'no-store' });
     if (!r.ok) return false;
     const filas = filasCSV(await r.text());
     let alguna = false;
@@ -494,17 +445,6 @@ async function cargarPortada(){
     return true;
   } catch(e){ return false; }               // sin red o con la hoja cerrada, se queda el respaldo
 }
-async function cargarHoja(){
-  try {
-    const r = await fetch(HOJA_CSV, { cache:'no-store' });
-    if (!r.ok) return false;
-    const h = leerHoja(filasCSV(await r.text()));
-    if (!h) return false;
-    armar(h); pintarDatos();
-    return true;
-  } catch(e){ return false; }               // sin red o con la hoja cerrada, se queda el respaldo
-}
-
 armar(RESPALDO);
 let SEG = 'qro-ira';
 try { SEG = localStorage.getItem('segmento') || SEG; } catch(e){}
@@ -1506,8 +1446,7 @@ const VERSION_3D = '2026-10-09b';     // súbele al cambiar vista3d.js
 }
 // la hoja manda: se lee al abrir y cada RECARGA_MIN minutos, para que un cambio en el Excel llegue solo
 cargarHoja();
-cargarPortada();
-setInterval(()=>{ cargarHoja(); cargarPortada(); }, RECARGA_MIN*60*1000);
+setInterval(cargarHoja, RECARGA_MIN*60*1000);
 </script>
 
 </body>
