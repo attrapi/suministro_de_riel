@@ -369,7 +369,7 @@ let DATOS_FASE = {}, TABLA = {};
 // Lo último que se leyó (al principio, el respaldo) y las cifras que vienen de celdas
 // con dirección fija, que se imponen a lo demás porque son la fuente más directa.
 let HOJA_VIGENTE = null;
-const PORTADA = {};
+const PORTADA = {}, PORTADA_DEC = {};
 // Arma lo que consume la página: cada entrega lleva su maqueta, los KPIs de la portada
 // (que la hoja da una sola vez) y los totales por proyecto, sumados de su propia tabla.
 function armar(h){
@@ -428,6 +428,12 @@ function numHoja(v){
   const n = Number(s.replace(/\./g,'').replace(',', '.'));
   return isNaN(n) ? null : n;
 }
+// Cuántos decimales trae escrita la celda. La página muestra esos mismos: ni le
+// recorta (que sería redondear) ni le inventa ceros de más.
+function decHoja(v){
+  const m = /,([0-9]+)\s*$/.exec((v||'').trim());
+  return m ? m[1].length : null;
+}
 // Lee la hoja publicada y se queda con las celdas de CELDAS. Si una no trae cifra,
 // se deja la que ya había en lugar de borrarla.
 async function cargarHoja(){
@@ -437,8 +443,9 @@ async function cargarHoja(){
     const filas = filasCSV(await r.text());
     let alguna = false;
     for (const k in CELDAS){
-      const n = numHoja(celda(filas, CELDAS[k]));
-      if (n !== null){ PORTADA[k] = n; alguna = true; }
+      const txt = celda(filas, CELDAS[k]);
+      const n = numHoja(txt);
+      if (n !== null){ PORTADA[k] = n; PORTADA_DEC[k] = decHoja(txt); alguna = true; }
     }
     if (!alguna) return false;
     armar(HOJA_VIGENTE || RESPALDO); pintarDatos();
@@ -1067,8 +1074,12 @@ function pintarDatos(){
   DATOS = DATOS_FASE[FASE][SEG];
   const notas = DATOS.notas || {};
   document.querySelectorAll('[data-d]').forEach(e=>{
-    const k = e.dataset.d, n = notas[k];
-    e.textContent = fmt(DATOS[k]) + (n ? ' ' + n : '');
+    const k = e.dataset.d, n = notas[k], d = PORTADA_DEC[k];
+    // Si la cifra viene de una celda, se muestra con los decimales que esa celda trae.
+    const txt = (d != null && typeof DATOS[k] === 'number')
+      ? DATOS[k].toLocaleString('es-MX', { minimumFractionDigits:d, maximumFractionDigits:d })
+      : fmt(DATOS[k]);
+    e.textContent = txt + (n ? ' ' + n : '');
   });
   // los pasos de la cadena sí cambian con el lote, así que su unidad lo nombra
   const laFase = (FASES.find(f=>f.id===FASE) || {}).nombre || '';
