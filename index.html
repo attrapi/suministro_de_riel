@@ -104,6 +104,11 @@
   .st .num{font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.06em}
   .st .cnt{font-family:var(--display);font-weight:600;font-size:24px;line-height:1;color:#FF9A4D;font-variant-numeric:tabular-nums;grid-column:2;white-space:nowrap}
   .st .cnt small{font:11px var(--mono);color:rgba(255,255,255,.6)}
+  /* Tarjeta con dos cifras (p. ej. Contratado en tm y en pzas): se apilan en la misma celda */
+  .st .cnts{grid-column:2;display:grid;grid-template-columns:minmax(0,1fr);gap:1px}
+  .st .cnts .cnt{grid-column:auto}
+  .st .cnt.sec{font-size:15px;color:rgba(255,255,255,.72)}
+  .st .cnt.sec small{font-size:10px}
   /* Cadena en vertical: reemplaza la maqueta en pantallas angostas, escalonada para que se lea el avance */
   .cadena{position:fixed;left:10px;right:10px;bottom:10px;z-index:2;display:none;flex-direction:column;gap:5px;overflow:auto;pointer-events:auto}
   .cadena[hidden]{display:none}
@@ -139,7 +144,7 @@
   @media (max-width:1180px){ header{flex-wrap:wrap;gap:12px} .brand{flex:1 1 100%} .st .ico{display:none} }
   /* de seis columnas a tres y luego a dos: seis tarjetas no caben en una pantalla angosta */
   @media (max-width:1040px){ .hstack{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px} .tramo{grid-column:1 / -1} .tmenu{flex-direction:row;flex-wrap:wrap} .tmenu>li{flex:1 1 200px} }
-  @media (max-width:900px){ .st{padding:6px 8px} .st .cnt{grid-column:1;font-size:18px} .note{display:none} }
+  @media (max-width:900px){ .st{padding:6px 8px} .st .cnt{grid-column:1;font-size:18px} .st .cnts{grid-column:1} .st .cnt.sec{font-size:13px} .note{display:none} }
 
   /* Celular */
   @media (max-width:760px){
@@ -156,6 +161,7 @@
     .hstack{width:100%;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
     .st .num{font-size:9px}
     .st .cnt{font-size:18px}
+    .st .cnt.sec{font-size:13px}
     .tramo{gap:6px}
     .tmenu>li{flex:1 1 100%}
 
@@ -185,6 +191,8 @@
     .st{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:8px 11px}
     .st .num{font-size:10px}
     .st .cnt{font-size:18px}
+    .st .cnt.sec{font-size:13px}
+    .st .cnts{justify-items:end;text-align:right}
     .tramo{grid-column:1}
   }
 
@@ -232,6 +240,7 @@
   :root[data-tema="claro"] .st .num{color:rgba(22,32,43,.62)}
   :root[data-tema="claro"] .st .cnt{color:var(--accent-light)}
   :root[data-tema="claro"] .st .cnt small{color:rgba(22,32,43,.6)}
+  :root[data-tema="claro"] .st .cnt.sec{color:rgba(22,32,43,.72)}
   :root[data-tema="claro"] .lbl .t{fill:var(--ink-light)}
   :root[data-tema="claro"] .lbl .n,:root[data-tema="claro"] .lbl .u{fill:rgba(22,32,43,.65)}
   :root[data-tema="claro"] .lbl .v{fill:var(--accent-light)}
@@ -270,7 +279,10 @@
   </div>
   <div class="hstack">
     <div class="chain" id="chainInicio">
-      <div class="st"><div class="ico" id="ico1"></div><div class="num">Contratado</div><div class="cnt"><span data-d="contratado">0</span> <small>tm</small></div></div>
+      <div class="st"><div class="ico" id="ico1"></div><div class="num">Contratado</div><div class="cnts">
+        <div class="cnt"><span data-d="contratado">0</span> <small>tm</small></div>
+        <div class="cnt sec"><span data-d="contratadoPz">0</span> <small>pzas</small></div>
+      </div></div>
       <div class="st"><div class="ico" id="ico2"></div><div class="num">En proceso</div><div class="cnt"><span data-d="proceso">0</span> <small>tm</small></div></div>
       <div class="st"><div class="ico" id="ico3"></div><div class="num">Entregado</div><div class="cnt"><span data-d="entregado">0</span> <small>tm</small></div></div>
       <div class="st"><div class="ico" id="ico6"></div><div class="num">Por fabricar</div><div class="cnt"><span data-d="pendiente">0</span> <small>tm</small></div></div>
@@ -311,6 +323,14 @@
    ============================================================ */
 const HOJA_CSV = 'https://docs.google.com/spreadsheets/d/1yhYrAhYaH7InE_3JNbGBG2TCpqEnfxpG/export?format=csv&gid=17083721';
 const RECARGA_MIN = 5;                       // cada cuánto se vuelve a leer la hoja, con la página abierta
+// La misma hoja, pero publicada en la web: de aquí se toman celdas sueltas por su dirección,
+// sin depender de que el renglón se llame de alguna manera.
+const HOJA_PUB = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjWDwrja2oSt_FrI2qKGDl7luhZljGFuGWXoZSfj41zpctuMcUFrWzB_yYsoKj7Q/pub?output=csv';
+// Qué cifra de la portada sale de qué celda. Para sumar otra, basta un renglón más.
+const CELDAS = {
+  contratado:   'D17',                       // total contractual en toneladas
+  contratadoPz: 'D4',                        // el mismo total, en piezas
+};
 
 const TRAMOS = [
   { id:'qro-ira', nombre:'Querétaro – Irapuato', segmentos:[] },
@@ -322,11 +342,11 @@ const FASES = [
   { id:'f3', nombre:'Lote III' },
 ];
 const UNIDAD = 'tm';
-const SIN_DATOS = { produccion:'—', puerto:'—', traslado:'—', descarga:'—', acopio:'—', contratado:'—', proceso:'—', entregado:'—', pendiente:'—', monto:'—', solicitado:'—', entregadoP:'—', pendienteP:'—' };
+const SIN_DATOS = { produccion:'—', puerto:'—', traslado:'—', descarga:'—', acopio:'—', contratado:'—', contratadoPz:'—', proceso:'—', entregado:'—', pendiente:'—', monto:'—', solicitado:'—', entregadoP:'—', pendienteP:'—' };
 
 // Así viene la hoja: KPIs de la portada (una sola vez), maqueta por entrega y una tabla por proyecto.
 const RESPALDO = {
-  kpis: { contratado:88559.16, proceso:40028.78, entregado:18014.99, pendiente:30515.39, monto:983.24671196 },
+  kpis: { contratado:88559.16, contratadoPz:64019.29, proceso:40028.78, entregado:18014.99, pendiente:30515.39, monto:983.24671196 },
   maqueta: {
     f1: { produccion:'—',      puerto:'—', traslado:'—', descarga:'—',      acopio:18010.81 },
     f2: { produccion:'—',      puerto:'—', traslado:'—', descarga:30517.28, acopio:'—' },
@@ -348,17 +368,22 @@ const RESPALDO = {
 };
 
 let DATOS_FASE = {}, TABLA = {};
+// Lo último que se leyó (al principio, el respaldo) y las cifras que vienen de celdas
+// con dirección fija, que se imponen a lo demás porque son la fuente más directa.
+let HOJA_VIGENTE = null;
+const PORTADA = {};
 // Arma lo que consume la página: cada entrega lleva su maqueta, los KPIs de la portada
 // (que la hoja da una sola vez) y los totales por proyecto, sumados de su propia tabla.
 function armar(h){
   const suma = (lista, k) => lista.reduce((a,f)=> a + (typeof f[k]==='number' ? f[k] : 0), 0);
+  HOJA_VIGENTE = h;
   DATOS_FASE = {}; TABLA = {};
   for (const f of FASES){
     DATOS_FASE[f.id] = {}; TABLA[f.id] = {};
     for (const t of TRAMOS){
       const lista = h.tramos[t.id] || [];
       const maq = h.maqueta[f.id] || {};
-      DATOS_FASE[f.id][t.id] = Object.assign({}, SIN_DATOS, maq, h.kpis, {
+      DATOS_FASE[f.id][t.id] = Object.assign({}, SIN_DATOS, maq, h.kpis, PORTADA, {
         solicitado:  suma(lista,'solicitado'),
         entregadoP:  suma(lista,'entregado'),
         pendienteP:  suma(lista,'pendiente'),
@@ -431,6 +456,43 @@ function leerHoja(filas){
     h.tramos[t.id] = lista;
   }
   return h;
+}
+/* ---------- Celdas sueltas, pedidas por su dirección ----------
+   filasCSV ya respeta los saltos de línea que vienen dentro de comillas, así que
+   cada renglón del arreglo es un renglón de la hoja: A1 es filas[0][0].          */
+function celda(filas, ref){
+  const m = /^([A-Za-z]+)([0-9]+)$/.exec((ref||'').trim());
+  if (!m) return '';
+  let col = 0;
+  for (const ch of m[1].toUpperCase()) col = col*26 + (ch.charCodeAt(0) - 64);
+  const f = filas[Number(m[2]) - 1];
+  return f ? (f[col-1] || '') : '';
+}
+// La hoja escribe las cifras a la mexicana: el punto agrupa los miles y la coma es el
+// decimal, así que "88.559,16" son 88 559.16 y no ochenta y ocho con pico.
+function numHoja(v){
+  const s = (v||'').replace(/\s/g,'').replace(/^\$/,'').trim();   // \s en JS ya cubre el espacio duro
+  if (!s || s === '-' || s === '—') return null;
+  if (!/[0-9]/.test(s)) return null;
+  const n = Number(s.replace(/\./g,'').replace(',', '.'));
+  return isNaN(n) ? null : n;
+}
+// Lee la hoja publicada y se queda con las celdas de CELDAS. Si una no trae cifra,
+// se deja la que ya había en lugar de borrarla.
+async function cargarPortada(){
+  try {
+    const r = await fetch(HOJA_PUB, { cache:'no-store' });
+    if (!r.ok) return false;
+    const filas = filasCSV(await r.text());
+    let alguna = false;
+    for (const k in CELDAS){
+      const n = numHoja(celda(filas, CELDAS[k]));
+      if (n !== null){ PORTADA[k] = n; alguna = true; }
+    }
+    if (!alguna) return false;
+    armar(HOJA_VIGENTE || RESPALDO); pintarDatos();
+    return true;
+  } catch(e){ return false; }               // sin red o con la hoja cerrada, se queda el respaldo
 }
 async function cargarHoja(){
   try {
@@ -1444,7 +1506,8 @@ const VERSION_3D = '2026-10-09b';     // súbele al cambiar vista3d.js
 }
 // la hoja manda: se lee al abrir y cada RECARGA_MIN minutos, para que un cambio en el Excel llegue solo
 cargarHoja();
-setInterval(cargarHoja, RECARGA_MIN*60*1000);
+cargarPortada();
+setInterval(()=>{ cargarHoja(); cargarPortada(); }, RECARGA_MIN*60*1000);
 </script>
 
 </body>
