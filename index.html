@@ -37,18 +37,22 @@
   *{box-sizing:border-box}
   html,body{height:100%;overflow:hidden}
   body{margin:0;background:var(--stage);color:#EAEFF5;font-family:var(--body);font-size:15px;line-height:1.5}
-  .menu{position:fixed;left:0;right:0;top:0;height:var(--menu-h);z-index:3;background:#0B1017;border-bottom:1px solid rgba(255,255,255,.12);padding-top:env(safe-area-inset-top,0px)}
+  /* La franja de arriba toma el color del mar que tiene justo debajo (lo pone el
+     estilo, más abajo, para que siga al tema) y se queda sin filo: así no corta la vista. */
+  .menu{position:fixed;left:0;right:0;top:0;height:var(--menu-h);z-index:3;background:var(--menu-bg,#0B1017);border-bottom:1px solid transparent;padding-top:env(safe-area-inset-top,0px)}
   .menu{display:flex;align-items:center;justify-content:flex-end;gap:6px;padding-inline:20px}
   .menu .mtitle{font:11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-right:6px}
-  .menu button{font:12px var(--mono);color:rgba(255,255,255,.75);background:transparent;border:1px solid rgba(255,255,255,.18);border-radius:4px;padding:5px 10px;cursor:pointer}
+  /* Blancos y sólidos: sobre el mar un botón de contorno se perdía */
+  .menu button{font:12px var(--mono);color:#16202B;background:#FFF;border:1px solid #FFF;border-radius:4px;padding:5px 10px;cursor:pointer;box-shadow:0 1px 3px rgba(8,16,26,.22)}
   .menu button.on{background:#FF9A4D;border-color:#FF9A4D;color:#0B1017}
-  /* El 3D es otra maqueta, no un estilo de esta: el botón va aparte y con el acento */
-  .menu .v3d{margin-left:16px;border-color:#FF9A4D;color:#FF9A4D;font-weight:600;letter-spacing:.1em}
-  .menu .v3d:hover{background:rgba(255,154,77,.16)}
+  /* El 3D es otra maqueta, no un estilo de esta: va aparte y conserva el acento,
+     en el naranja oscuro que sí se lee sobre blanco */
+  .menu .v3d{margin-left:16px;color:#B4521A;font-weight:700;letter-spacing:.1em}
+  .menu .v3d:hover{background:#FFF3E9}
   .menu .v3d[disabled]{opacity:.6;cursor:default}
-  .menu .dl{margin-left:16px;border-color:rgba(255,255,255,.4)}
-  .menu .dl:hover{border-color:#FF9A4D;color:#FF9A4D}
-  .menu .dl[disabled]{opacity:.5;cursor:default;border-color:rgba(255,255,255,.2)}
+  .menu .dl{margin-left:16px}
+  .menu .dl:hover{color:#B4521A}
+  .menu .dl[disabled]{opacity:.55;cursor:default}
   .menu button:focus-visible{outline:2px solid #FF9A4D;outline-offset:2px}
   .stage{position:fixed;left:0;right:0;top:var(--menu-h);bottom:0;background:#0F1A2A}
   .stage svg{width:100%;height:100%;display:block}
@@ -154,6 +158,7 @@
     .menu{justify-content:flex-start;gap:5px;padding-inline:12px;overflow-x:auto;overflow-y:hidden;white-space:nowrap}
     .menu .mtitle{display:none}
     .menu button{flex:0 0 auto;font-size:11px;padding:4px 9px}
+    .menu{background:var(--stage-bg,#16283A);border-bottom-color:rgba(255,255,255,.14)}
     .menu .dl{margin-left:8px}
 
     header{left:10px;right:10px;top:calc(var(--menu-h) + 10px);flex-direction:column;flex-wrap:nowrap;gap:10px}
@@ -590,6 +595,10 @@ const THEME = 'marino';
 const T = THEMES[THEME];
 document.querySelector('.stage').style.background = T.stage;
 document.body.style.background = T.stage;     // en celular la maqueta se oculta y el fondo lo pone el cuerpo
+// El mar que queda bajo la franja de arriba es el agua apenas aclarada, igual que la
+// lámina del fondo: así la franja se funde con la vista en vez de cortarla.
+document.documentElement.style.setProperty('--menu-bg', shade(T.water, 0.12));
+document.documentElement.style.setProperty('--stage-bg', T.stage);
 document.documentElement.dataset.tema = THEME;
 
 // Los grises de las estructuras son azulados. Un estilo puede declarar 'tinte' para acercarlos
