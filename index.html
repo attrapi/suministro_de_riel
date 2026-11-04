@@ -199,29 +199,16 @@
   }
 
   /* ============================================================
-     MARCA INSTITUCIONAL — dos propuestas, se eligen en el menú de arriba.
-     Solo tocan la franja superior (tarjetas, dona y botones de proyecto);
-     la maqueta se queda en Marino, que es donde vive el color del mar.
+     MARCA INSTITUCIONAL — el guinda de superficie en la franja de arriba:
+     tarjetas, dona, botones de proyecto y el recuadro de la tabla. La maqueta
+     se queda en Marino, que es donde el color hace de mar y de tierra.
+     Va después de los estilos base a propósito: así les gana sin tener que
+     subir la especificidad, y se quita de un tijeretazo si algún día sobra.
      ============================================================ */
-  /* A · BORDE: la tarjeta sigue oscura y el guinda entra nada más en el filo */
-  :root[data-marca="borde"] .st,
-  :root[data-marca="borde"] .dona,
-  :root[data-marca="borde"] .tabla-wrap{border:2px solid var(--guinda)}
-  :root[data-marca="borde"] .tmenu button{border:2px solid var(--guinda)}
-  :root[data-marca="borde"] .tmenu button:hover,
-  :root[data-marca="borde"] .tmenu li.open>button{background:rgba(105,28,50,.3)}
-
-  /* B · FONDO: el guinda ocupa la superficie de la tarjeta */
-  :root[data-marca="fondo"] .st,
-  :root[data-marca="fondo"] .dona,
-  :root[data-marca="fondo"] .tabla-wrap{background:rgba(105,28,50,.92);border-color:rgba(255,255,255,.26)}
-  :root[data-marca="fondo"] .st .num,
-  :root[data-marca="fondo"] .dona .l{color:rgba(255,255,255,.78)}
-  :root[data-marca="fondo"] .tmenu button{background:rgba(105,28,50,.92);border-color:rgba(255,255,255,.34);color:#FFF}
-  :root[data-marca="fondo"] .tmenu button:hover,
-  :root[data-marca="fondo"] .tmenu li.open>button{background:#691C32}
-  /* el botón que elige la propuesta se tiñe de lo que propone */
-  .menu .marca.on{background:var(--guinda);border-color:var(--guinda);color:#FFF}
+  .st, .dona, .tabla-wrap{background:rgba(105,28,50,.92);border-color:rgba(255,255,255,.26)}
+  .st .num, .dona .l{color:rgba(255,255,255,.78)}   /* respiran mejor sobre el guinda */
+  .tmenu button{background:rgba(105,28,50,.92);border-color:rgba(255,255,255,.34);color:#FFF}
+  .tmenu button:hover, .tmenu li.open>button{background:var(--guinda)}
 
   /* Institucional: las tarjetas, el selector de fase y la tabla también en guinda */
   :root[data-tema="institucional"] .st{background:rgba(105,28,50,.88);border-color:rgba(255,255,255,.22)}
@@ -285,10 +272,6 @@
 
 
 <div id="menu" class="menu"><!-- espacio reservado para el menú del sitio (100 % de ancho) -->
-  <span class="mtitle">Institucional</span>
-  <button type="button" class="marca" data-marca="no"    title="Sin marca institucional">No</button>
-  <button type="button" class="marca" data-marca="borde" title="Guinda solo en el borde de las tarjetas">Borde</button>
-  <button type="button" class="marca" data-marca="fondo" title="Guinda como fondo de las tarjetas">Fondo</button>
   <button type="button" id="btn3d" class="v3d" title="Abrir la maqueta en 3D (otra vista, aparte de esta)">3D</button>
   <button type="button" id="btnDescargar" class="dl">Descargar</button>
 </div>
@@ -1556,31 +1539,6 @@ const VERSION_3D = '2026-10-09b';     // súbele al cambiar vista3d.js
     btn.disabled = false; btn.textContent = '3D';
   };
 }
-/* ---------- Marca institucional ----------
-   Dos propuestas que conviven: 'borde' pinta de guinda solo el filo de las tarjetas,
-   'fondo' les pone el guinda de superficie. La elección se recuerda, así que se puede
-   enseñar una y otra sin tocar el archivo. Cuando se decida, basta dejar fija la línea
-   de MARCA_INICIAL y quitar los tres botones.                                        */
-const MARCA_INICIAL = 'no';
-{
-  const validas = ['no','borde','fondo'];
-  const btns = [...document.querySelectorAll('.menu .marca')];
-  let marca = MARCA_INICIAL;
-  try { marca = localStorage.getItem('marca') || marca; } catch(e){}
-  function setMarca(v){
-    marca = validas.includes(v) ? v : 'no';
-    document.documentElement.dataset.marca = marca;
-    btns.forEach(b=>{
-      const on = b.dataset.marca === marca;
-      b.classList.toggle('on', on);
-      b.setAttribute('aria-pressed', on);
-    });
-    try { localStorage.setItem('marca', marca); } catch(e){}
-  }
-  btns.forEach(b=> b.onclick = ()=> setMarca(b.dataset.marca));
-  setMarca(marca);
-}
-
 // la hoja manda: se lee al abrir y cada RECARGA_MIN minutos, para que un cambio en el Excel llegue solo
 cargarHoja();
 setInterval(cargarHoja, RECARGA_MIN*60*1000);
