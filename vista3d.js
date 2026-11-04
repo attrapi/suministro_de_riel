@@ -340,9 +340,17 @@ const CSS = `
 #riel3d .r3-lote i{font-style:normal;font-size:9.5px;font-weight:700;text-transform:uppercase;
   letter-spacing:.08em;color:var(--r3-ink3);white-space:nowrap}
 #riel3d .r3-nada{font-family:var(--r3-m);font-size:14px;color:var(--r3-ink3)}
-#riel3d .r3-lab .palo{width:2px;height:62px;background:var(--r3-guinda)}
-#riel3d .r3-lab .punta{width:11px;height:11px;margin-top:-6px;border-radius:50%;
+#riel3d .r3-lab .palo{width:2px;height:50px;background:var(--r3-guinda)}
+#riel3d .r3-lab .punta{position:relative;width:11px;height:11px;margin-top:-6px;border-radius:50%;
   background:var(--r3-solid);border:2.5px solid var(--r3-guinda);box-shadow:0 1px 3px rgba(20,34,60,.3)}
+/* El punto señalado late como un radar, igual que en la maqueta plana */
+#riel3d .r3-lab .punta::before,#riel3d .r3-lab .punta::after{content:'';position:absolute;
+  left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;
+  border:1.5px solid var(--r3-guinda);animation:r3radar 2.7s cubic-bezier(.22,.62,.3,1) infinite}
+#riel3d .r3-lab .punta::after{animation-delay:-1.35s}
+@keyframes r3radar{0%{transform:scale(.16);opacity:.9}70%{opacity:.16}100%{transform:scale(1);opacity:0}}
+@media (prefers-reduced-motion: reduce){#riel3d .r3-lab .punta::before,
+  #riel3d .r3-lab .punta::after{animation:none;opacity:.35;transform:scale(.6)}}
 #riel3d .r3-lab.apagado .caja b{color:var(--r3-ink3)}
 #riel3d .r3-hint{position:absolute;left:50%;bottom:148px;transform:translateX(-50%);font-size:11.5px;
   color:var(--r3-ink2);background:var(--r3-glass);border:1.5px solid var(--r3-guinda);border-radius:999px;

@@ -146,6 +146,11 @@
   .lbl .v2{font:600 20px var(--display);fill:#FF9A4D}      /* cifra de cada lote en el hito */
   .lbl .lt{font:500 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;fill:rgba(255,255,255,.55)}
   .lbl .borde{stroke:rgba(255,255,255,.32);stroke-width:1}  /* el único trazo de la cajita */
+  /* Radar: el punto que señala el rótulo late con tres ondas. Son elipses de ry = rx/2
+     para que se acuesten en el suelo isométrico, como la retícula de las placas. */
+  .lbl .onda{fill:none;stroke:#FF9A4D;stroke-width:1.1;transform-box:fill-box;transform-origin:center;
+             animation:radar 2.7s cubic-bezier(.22,.62,.3,1) infinite}
+  .lbl .centro{fill:#FF9A4D}
   .lbl .g{font:700 34px var(--display);letter-spacing:.3em;fill:rgba(255,255,255,.28)}
   .lbl text{paint-order:stroke;stroke:rgba(8,14,22,.85);stroke-width:3px;stroke-linejoin:round}
   .note{position:fixed;left:24px;top:calc(var(--menu-h) + 76px);z-index:2;font:11px/1.5 var(--mono);color:rgba(255,255,255,.55);max-width:44ch}
@@ -264,6 +269,8 @@
   :root[data-tema="claro"] .lbl .borde{stroke:rgba(22,32,43,.32)}
   :root[data-tema="claro"] .lbl text{stroke:rgba(255,255,255,.88)}
   :root[data-tema="claro"] .lbl .lead{stroke:rgba(22,32,43,.42)}
+  :root[data-tema="claro"] .lbl .onda{stroke:var(--accent-light)}
+  :root[data-tema="claro"] .lbl .centro{fill:var(--accent-light)}
 
   /* Animaciones CSS */
   .smoke circle{animation:rise 5s linear infinite;transform-box:fill-box;transform-origin:center}
@@ -274,7 +281,8 @@
   @keyframes pulse{50%{opacity:.55}}
   .wake line{animation:wake 2.4s linear infinite}
   @keyframes wake{0%{opacity:.5}100%{opacity:0}}
-  @media (prefers-reduced-motion: reduce){.smoke circle,.beacon,.furnace,.wake line{animation:none}}
+  @keyframes radar{0%{transform:scale(.14);opacity:.95}70%{opacity:.16}100%{transform:scale(1);opacity:0}}
+  @media (prefers-reduced-motion: reduce){.smoke circle,.beacon,.furnace,.wake line,.lbl .onda{animation:none}}
 </style>
 </head>
 <body>
@@ -1128,6 +1136,7 @@ const names = ['Por fabricar','Puerto Origen','Traslado marítimo','Puerto Desti
 // Segundo renglón, más chico, bajo el nombre del paso: los dos puertos llevan el suyo
 const subs  = ['', 'Zhangjiagang, P. R. China', '', 'Altamira, Tamaulipas', ''];
 const HAY_SUB = subs.some(Boolean);
+const SALTO = 12;                    // px que la línea deja libres sobre el punto, para el radar
 const keys  = ['produccion','puerto','traslado','descarga','acopio'];
 PX.forEach((x0,i)=>{
   const [tx,ty] = sc.P(x0+[7,8,SEA_W/2,16,12][i], 0, 2.2);
@@ -1145,7 +1154,16 @@ PX.forEach((x0,i)=>{
        <text class="val" x="-11" text-anchor="end"><tspan class="v2" data-fase="${f.id}" data-d="${keys[i]}Pz">0</tspan><tspan class="u" dx="5">pzas</tspan></text>
        <text class="lt" x="11">${f.nombre}</text>
      </g>`).join('');
-  g.innerHTML = `<line class="lead" x1="0" y1="0" x2="0" y2="-16" stroke="rgba(255,255,255,.5)" stroke-width="1"/>
+  // La línea ya no baja hasta el punto: se detiene arriba y el último tramo lo
+  // ocupa el radar, tres ondas que salen del punto señalado. Así el rótulo y su
+  // tablita no se mueven ni un píxel; lo único que se acorta es la línea.
+  g.innerHTML = `<g class="radar">
+      <ellipse class="onda" rx="9" ry="4.5"/>
+      <ellipse class="onda" rx="9" ry="4.5" style="animation-delay:-.9s"/>
+      <ellipse class="onda" rx="9" ry="4.5" style="animation-delay:-1.8s"/>
+      <ellipse class="centro" rx="1.8" ry=".9"/>
+    </g>
+    <line class="lead" x1="0" y1="-${SALTO}" x2="0" y2="-16" stroke="rgba(255,255,255,.5)" stroke-width="1"/>
     <text class="t" x="-9" text-anchor="middle">${names[i]}</text>
     ${subs[i] ? `<text class="s" x="-9" text-anchor="middle">${subs[i]}</text>` : ''}${filas}`;
 });
@@ -1545,7 +1563,7 @@ window.RIEL3D_API = {
   },
   pausar2D(v){ PAUSA3D = !!v; if (!v){ last = performance.now(); } },
 };
-const VERSION_3D = '2026-11-04b';     // súbele al cambiar vista3d.js
+const VERSION_3D = '2026-11-04c';     // súbele al cambiar vista3d.js
 {
   const btn = document.getElementById('btn3d');
   const script = src => new Promise((ok, falla)=>{
