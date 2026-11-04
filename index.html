@@ -1136,7 +1136,6 @@ const names = ['Por fabricar','Puerto Origen','Traslado marítimo','Puerto Desti
 // Segundo renglón, más chico, bajo el nombre del paso: los dos puertos llevan el suyo
 const subs  = ['', 'Zhangjiagang, P. R. China', '', 'Altamira, Tamaulipas', ''];
 const HAY_SUB = subs.some(Boolean);
-const SALTO = 12;                    // px que la línea deja libres sobre el punto, para el radar
 const keys  = ['produccion','puerto','traslado','descarga','acopio'];
 PX.forEach((x0,i)=>{
   const [tx,ty] = sc.P(x0+[7,8,SEA_W/2,16,12][i], 0, 2.2);
@@ -1163,7 +1162,7 @@ PX.forEach((x0,i)=>{
       <ellipse class="onda" rx="9" ry="4.5" style="animation-delay:-1.8s"/>
       <ellipse class="centro" rx="1.8" ry=".9"/>
     </g>
-    <line class="lead" x1="0" y1="-${SALTO}" x2="0" y2="-16" stroke="rgba(255,255,255,.5)" stroke-width="1"/>
+    <line class="lead" x1="0" y1="0" x2="0" y2="0" stroke="rgba(255,255,255,.5)" stroke-width="1"/>
     <text class="t" x="-9" text-anchor="middle">${names[i]}</text>
     ${subs[i] ? `<text class="s" x="-9" text-anchor="middle">${subs[i]}</text>` : ''}${filas}`;
 });
@@ -1173,6 +1172,7 @@ PX.forEach((x0,i)=>{
    solo lo que de verdad tiene.                                                      */
 const SIN = v => !v || v.trim() === '—';
 const ALTO = 60;                                          // alto de la cajita de un lote
+const LARGO_LINEA = 80;                                   // la línea señala con este largo fijo
 function acomodarHitos(){
   const lbls = [...document.querySelectorAll('.lbl')];
   const conCifra = f => [...f.querySelectorAll('[data-d]')].some(t=> !SIN(t.textContent));
@@ -1182,10 +1182,23 @@ function acomodarHitos(){
   const maxK = Math.max(1, ...vis.map(v=> v.length));
   lbls.forEach((g,i)=>{
     const h = +g.dataset.h || 16;
+    // el nombre sube el renglón del subtítulo en los cinco, no sólo en el que lo trae,
+    // para que los títulos sigan todos a la misma altura
+    const yNom = h + maxK*ALTO + 26;
+    g.querySelector('.t').setAttribute('y', -(yNom + (HAY_SUB ? 15 : 0)));
+    const sub = g.querySelector('.s');
+    if (sub) sub.setAttribute('y', -yNom);
+    // Todo cuelga del nombre hacia abajo: primero las cajitas de los lotes y al final
+    // la línea, siempre del mismo largo. Antes crecía desde el punto y en los hitos sin
+    // cifras quedaba muy abajo, lejos de su nombre.
+    // arranque, 10 px bajo el último renglón de texto del rótulo (el nombre, o el
+    // puerto si lo trae), para que los cinco dejen el mismo aire
+    const TOPE = (sub ? yNom : yNom + (HAY_SUB ? 15 : 0)) - 10;
+    const k = vis[i].length;
     g.querySelectorAll('.fila').forEach(f=> f.style.display = 'none');
-    vis[i].forEach((f,j)=>{                               // la primera pegada a la línea
+    vis[i].forEach((f,j)=>{                               // j = 0 es la de abajo, pegada a la línea
       f.style.display = '';
-      const top = h + j*ALTO;
+      const top = TOPE - 62 - (k-1-j)*ALTO;
       const borde = f.querySelector('.borde');
       borde.setAttribute('y1', -top); borde.setAttribute('y2', -(top + 62));   // abraza las dos cifras
       const vals = f.querySelectorAll('.val');
@@ -1193,12 +1206,10 @@ function acomodarHitos(){
       vals[1].setAttribute('y', -(top + 16));             // piezas abajo
       f.querySelector('.lt').setAttribute('y', -(top + 30));
     });
-    // el nombre sube el renglón del subtítulo en los cinco, no sólo en el que lo trae,
-    // para que los títulos sigan todos a la misma altura
-    const yNom = h + maxK*ALTO + 26;
-    g.querySelector('.t').setAttribute('y', -(yNom + (HAY_SUB ? 15 : 0)));
-    const sub = g.querySelector('.s');
-    if (sub) sub.setAttribute('y', -yNom);
+    const base = k ? TOPE - 62 - (k-1)*ALTO : TOPE;       // donde termina la cadena de cajitas
+    const lead = g.querySelector('.lead');
+    lead.setAttribute('y2', -base);
+    lead.setAttribute('y1', -Math.max(0, base - LARGO_LINEA));
   });
   // la cadena vertical del celular esconde los mismos lotes
   document.querySelectorAll('.cadena .fila').forEach(f=>{
@@ -1536,7 +1547,6 @@ function fit(){
     g.setAttribute('transform',`translate(${g.dataset.tx},${g.dataset.ty}) scale(${k})`);
     const h = (+g.dataset.ty - topY)/k;                                         // largo de la línea en px
     g.dataset.h = h;
-    g.querySelector('.lead').setAttribute('y2', -h);
   });
   acomodarHitos();                                                             // la tablita sube con la línea
 }
