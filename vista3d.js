@@ -143,7 +143,7 @@ const EST = [
    enc:{x0:330, x1:570, z0:-70, z1:200}},
   {k:'traslado',   n:'Traslado marítimo', x:715, z:-95, y:18,
    enc:{x0:500, x1:930, z0:-190, z1: 40}},
-  {k:'descarga',   n:'Descarga',          x:985, z: 22, y:32,
+  {k:'descarga',   n:'Puerto Destino',    s:'Altamira, Tamaulipas',        x:985, z: 22, y:32,
    enc:{x0:870, x1:1110, z0:-70, z1:200}},
   {k:'acopio',     n:'Centro de acopio',  x:1300, z: 36, y:26,
    enc:{x0:1190, x1:1460, z0:-30, z1:200}},
@@ -1660,7 +1660,7 @@ function muelleCompleto(S, lado, bandera){
   });
   banderaEn(esOrigen ? MAR0 - 5 : MAR1 + 5, 40, bandera);
   letrero(esOrigen ? MAR0 - 33 : MAR1 + 33, 40,
-          esOrigen ? 'Zhangjiagang, P. R. China' : 'Tamaulipas, Altamira');
+          esOrigen ? 'Zhangjiagang, P. R. China' : 'Altamira, Tamaulipas');
   faro(esOrigen ? MAR0 - 11 : MAR1 + 11, 8);
 }
 

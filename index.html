@@ -1121,9 +1121,9 @@ function updateTrucksB(dt){
 
 /* ---------- Rótulos con los datos del Excel ---------- */
 const corto = n => (n||'').replace(/^lote\s*/i,'');      // "Lote II" -> "II"
-const names = ['Por fabricar','Puerto Origen','Traslado marítimo','Descarga','Centro de acopio'];
-// Segundo renglón, más chico, bajo el nombre del paso: de momento sólo el puerto de salida lo tiene
-const subs  = ['', 'Zhangjiagang, P. R. China', '', '', ''];
+const names = ['Por fabricar','Puerto Origen','Traslado marítimo','Puerto Destino','Centro de acopio'];
+// Segundo renglón, más chico, bajo el nombre del paso: los dos puertos llevan el suyo
+const subs  = ['', 'Zhangjiagang, P. R. China', '', 'Altamira, Tamaulipas', ''];
 const HAY_SUB = subs.some(Boolean);
 const keys  = ['produccion','puerto','traslado','descarga','acopio'];
 PX.forEach((x0,i)=>{
@@ -1542,7 +1542,7 @@ window.RIEL3D_API = {
   },
   pausar2D(v){ PAUSA3D = !!v; if (!v){ last = performance.now(); } },
 };
-const VERSION_3D = '2026-11-04a';     // súbele al cambiar vista3d.js
+const VERSION_3D = '2026-11-04b';     // súbele al cambiar vista3d.js
 {
   const btn = document.getElementById('btn3d');
   const script = src => new Promise((ok, falla)=>{
