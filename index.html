@@ -145,7 +145,6 @@
   .lbl .s{font:500 11px var(--mono);letter-spacing:.04em;fill:rgba(255,255,255,.62)}
   .lbl .v2{font:600 20px var(--display);fill:#FF9A4D}      /* cifra de cada lote en el hito */
   .lbl .lt{font:500 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;fill:rgba(255,255,255,.55)}
-  .lbl .borde{stroke:rgba(255,255,255,.32);stroke-width:1}  /* el único trazo de la cajita */
   /* Radar: el punto que señala el rótulo late con tres ondas. Son elipses de ry = rx/2
      para que se acuesten en el suelo isométrico, como la retícula de las placas. */
   .lbl .onda{fill:none;stroke:#FF9A4D;stroke-width:1.1;transform-box:fill-box;transform-origin:center;
@@ -266,7 +265,6 @@
   :root[data-tema="claro"] .lbl .s{fill:rgba(22,32,43,.62)}
   :root[data-tema="claro"] .lbl .v2{fill:var(--accent-light)}
   :root[data-tema="claro"] .lbl .lt{fill:rgba(22,32,43,.6)}
-  :root[data-tema="claro"] .lbl .borde{stroke:rgba(22,32,43,.32)}
   :root[data-tema="claro"] .lbl text{stroke:rgba(255,255,255,.88)}
   :root[data-tema="claro"] .lbl .lead{stroke:rgba(22,32,43,.42)}
   :root[data-tema="claro"] .lbl .onda{stroke:var(--accent-light)}
@@ -1143,12 +1141,11 @@ PX.forEach((x0,i)=>{
   // todos los rótulos a la misma altura de pantalla; solo cambia el largo de la línea que señala
   // Un renglón por lote, con sus dos unidades. Las columnas van alineadas a la derecha
   // para que los puntos decimales queden uno debajo de otro.
-  // Cada lote es una cajita sin recuadro: solo el borde derecho, que además continúa
-  // la línea que señala el punto. Las dos cifras quedan a su izquierda, una encima de
-  // otra con su unidad pegada, y el nombre del lote afuera, del otro lado del borde.
+  // Cada lote es una cajita sin recuadro ni trazo propio: se cuelga de la línea del
+  // hito, que le hace de borde. Las dos cifras quedan a su izquierda, una encima de
+  // otra con su unidad pegada, y el nombre del lote al otro lado de la línea.
   const filas = FASES.map(f=>
     `<g class="fila" data-fase="${f.id}">
-       <line class="borde" x1="0" x2="0" y1="0" y2="0"/>
        <text class="val" x="-11" text-anchor="end"><tspan class="v2" data-fase="${f.id}" data-d="${keys[i]}">0</tspan><tspan class="u" dx="5">${UNIDAD}</tspan></text>
        <text class="val" x="-11" text-anchor="end"><tspan class="v2" data-fase="${f.id}" data-d="${keys[i]}Pz">0</tspan><tspan class="u" dx="5">pzas</tspan></text>
        <text class="lt" x="11">${f.nombre}</text>
@@ -1196,20 +1193,22 @@ function acomodarHitos(){
     const TOPE = (sub ? yNom : yNom + (HAY_SUB ? 15 : 0)) - 10;
     const k = vis[i].length;
     g.querySelectorAll('.fila').forEach(f=> f.style.display = 'none');
-    vis[i].forEach((f,j)=>{                               // j = 0 es la de abajo, pegada a la línea
+    vis[i].forEach((f,j)=>{                               // j = 0 es la de abajo
       f.style.display = '';
       const top = TOPE - 62 - (k-1-j)*ALTO;
-      const borde = f.querySelector('.borde');
-      borde.setAttribute('y1', -top); borde.setAttribute('y2', -(top + 62));   // abraza las dos cifras
       const vals = f.querySelectorAll('.val');
       vals[0].setAttribute('y', -(top + 44));             // toneladas arriba
       vals[1].setAttribute('y', -(top + 16));             // piezas abajo
       f.querySelector('.lt').setAttribute('y', -(top + 30));
     });
-    const base = k ? TOPE - 62 - (k-1)*ALTO : TOPE;       // donde termina la cadena de cajitas
+    // Un solo trazo por hito, del mismo grueso en los cinco: baja desde el nombre,
+    // pasa junto a las cajitas y sigue un poco más. El radar va justo donde termina.
+    const largo = Math.max(LARGO_LINEA, k*ALTO + 20);
+    const fin = TOPE - largo;
     const lead = g.querySelector('.lead');
-    lead.setAttribute('y2', -base);
-    lead.setAttribute('y1', -Math.max(0, base - LARGO_LINEA));
+    lead.setAttribute('y2', -TOPE);
+    lead.setAttribute('y1', -fin);
+    g.querySelector('.radar').setAttribute('transform', `translate(0,${-fin})`);
   });
   // la cadena vertical del celular esconde los mismos lotes
   document.querySelectorAll('.cadena .fila').forEach(f=>{
