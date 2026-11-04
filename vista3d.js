@@ -139,7 +139,7 @@ const EST = [
    // el encuadre abarca la mina: de ahí baja el mineral, y sin el cerro a la vista
    // las tolvas volvían a parecer salidas de la nada
    enc:{x0:-224, x1:210, z0:-30, z1:200}},
-  {k:'puerto',     n:'Origen · puerto',   x:445, z: 22, y:32,
+  {k:'puerto',     n:'Puerto Origen',     s:'Zhangjiagang, P. R. China',   x:445, z: 22, y:32,
    enc:{x0:330, x1:570, z0:-70, z1:200}},
   {k:'traslado',   n:'Traslado marítimo', x:715, z:-95, y:18,
    enc:{x0:500, x1:930, z0:-190, z1: 40}},
@@ -326,6 +326,9 @@ const CSS = `
   box-shadow:0 2px 10px rgba(20,34,60,.22);padding:7px 14px;text-align:center;white-space:nowrap}
 #riel3d .r3-lab .caja label{display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;
   letter-spacing:.07em;color:var(--r3-ink2)}
+#riel3d .r3-lab .caja label .sub,#riel3d .r3-paso .t label .sub{display:block;margin-top:1px;
+  font-size:9px;font-weight:600;letter-spacing:.01em;text-transform:none;color:var(--r3-ink3);
+  overflow:hidden;text-overflow:ellipsis}
 #riel3d .r3-lab .caja b{font-family:var(--r3-m);font-size:14px;font-weight:700}
 #riel3d .r3-lab .caja b small{font-family:var(--r3-b);font-size:9.5px;font-weight:600;color:var(--r3-ink3)}
 /* La cajita del lote, como en la maqueta plana: las dos cifras, su filo y el
@@ -2441,7 +2444,7 @@ function pintarCadena(){
     const L = lotesDe(e.k, SEG);
     return '<button type="button" class="r3-paso' + (L.length ? '' : ' apagado') + '" data-est="' + i + '">' +
       '<span class="ic">' + iconos[i] + '</span>' +
-      '<span class="t"><label>' + e.n + '</label>' +
+      '<span class="t"><label>' + e.n + (e.s ? '<small class="sub">' + e.s + '</small>' : '') + '</label>' +
       (L.length ? L.map(x=> cajaLote(e.k, x)).join('') : '<b class="r3-nada">—</b>') +
       '</span></button>';
   }).join('');
@@ -2458,6 +2461,7 @@ let labs = [];
 function armarLabs(){
   elLabs.innerHTML = EST.map(e=>
     '<div class="r3-lab" data-k="' + e.k + '"><div class="caja"><label>' + e.n +
+    (e.s ? '<small class="sub">' + e.s + '</small>' : '') +
     '</label><span data-v></span></div><span class="palo"></span><span class="punta"></span></div>').join('');
   labs = EST.map((e,i)=>({e, el: elLabs.children[i]}));
 }
