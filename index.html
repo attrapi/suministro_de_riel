@@ -441,6 +441,13 @@ function filasCSV(texto){                    // separa respetando las comillas: 
 }
 // siempre dos decimales, como en la hoja: así los puntos quedan alineados en la tabla
 const fmt = v => typeof v === 'number' ? v.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : String(v);
+// Lo que viene de una celda se muestra con los decimales de esa celda; lo demás, con dos.
+function fmtDato(k, v){
+  const d = PORTADA_DEC[k];
+  return (d != null && typeof v === 'number')
+    ? v.toLocaleString('es-MX', { minimumFractionDigits:d, maximumFractionDigits:d })
+    : fmt(v);
+}
 /* ---------- Celdas sueltas, pedidas por su dirección ----------
    filasCSV ya respeta los saltos de línea que vienen dentro de comillas, así que
    cada renglón del arreglo es un renglón de la hoja: A1 es filas[0][0].          */
@@ -1162,12 +1169,8 @@ function pintarDatos(){
   document.querySelectorAll('[data-d]').forEach(e=>{
     // data-fase pide el dato de ese lote; sin él, el del lote en curso
     const fuente = e.dataset.fase ? ((DATOS_FASE[e.dataset.fase] || {})[SEG] || SIN_DATOS) : DATOS;
-    const k = e.dataset.d, n = (fuente.notas || {})[k], d = PORTADA_DEC[k];
-    // Si la cifra viene de una celda, se muestra con los decimales que esa celda trae.
-    const txt = (d != null && typeof fuente[k] === 'number')
-      ? fuente[k].toLocaleString('es-MX', { minimumFractionDigits:d, maximumFractionDigits:d })
-      : fmt(fuente[k]);
-    e.textContent = txt + (n ? ' ' + n : '');
+    const k = e.dataset.d, n = (fuente.notas || {})[k];
+    e.textContent = fmtDato(k, fuente[k]) + (n ? ' ' + n : '');
   });
   acomodarHitos();
   pintarTabla();
@@ -1501,7 +1504,7 @@ fit(); addEventListener('resize', fit);
    abierta. Si el 3D no carga, aquí no se rompe nada.
    ============================================================ */
 window.RIEL3D_API = {
-  FASES, TRAMOS, UNIDAD, fmt,
+  FASES, TRAMOS, UNIDAD, fmt, fmtDato,
   get fase(){ return FASE; },
   get proyecto(){ return SEG; },
   datos: (f,t)=> (DATOS_FASE[f || FASE] || {})[t || SEG] || {},
@@ -1517,7 +1520,7 @@ window.RIEL3D_API = {
   },
   pausar2D(v){ PAUSA3D = !!v; if (!v){ last = performance.now(); } },
 };
-const VERSION_3D = '2026-10-09b';     // súbele al cambiar vista3d.js
+const VERSION_3D = '2026-11-03a';     // súbele al cambiar vista3d.js
 {
   const btn = document.getElementById('btn3d');
   const script = src => new Promise((ok, falla)=>{

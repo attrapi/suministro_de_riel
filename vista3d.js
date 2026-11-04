@@ -21,6 +21,24 @@ const FASES  = API.FASES  || [{id:'f1',nombre:'Entrega I'}];
 const TRAMOS = API.TRAMOS || [{id:'x',nombre:'Proyecto'}];
 const fmt = API.fmt || (v => typeof v==='number' ? v.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}) : String(v));
 const datos = (f,t) => (API.datos ? API.datos(f,t) : {});
+// Las cifras se escriben igual que en la plana: con los decimales que trae la celda.
+const fmtD = (k,v) => API.fmtDato ? API.fmtDato(k,v) : fmt(v);
+const SIN_CIFRA = v => typeof v !== 'number';
+// Los lotes de un paso: los que traen cifra, con sus dos unidades. Si no hay ninguno,
+// el paso no nombra lotes, igual que en la maqueta plana.
+function lotesDe(k, seg){
+  return FASES.map(f=>{
+    const d = datos(f.id, seg) || {};
+    return { nombre:f.nombre, tm:d[k], pz:d[k + 'Pz'] };
+  }).filter(L=> !SIN_CIFRA(L.tm) || !SIN_CIFRA(L.pz));
+}
+// La cajita: las dos cifras, su filo y el lote por fuera.
+function cajaLote(k, L){
+  return '<span class="r3-lote"><span class="cifras">' +
+    '<span>' + fmtD(k, L.tm) + ' <small>' + UNIDAD + '</small></span>' +
+    '<span>' + fmtD(k + 'Pz', L.pz) + ' <small>pzas</small></span>' +
+    '</span><i>' + L.nombre + '</i></span>';
+}
 const tabla = (f,t) => (API.tabla ? API.tabla(f,t) : []);
 const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -227,6 +245,9 @@ const CSS = `
   font-size:19px;letter-spacing:-.01em;line-height:1.15;font-variant-numeric:tabular-nums}
 #riel3d .r3-kpi .v small{font-family:var(--r3-b);font-size:10.5px;font-weight:700;color:var(--r3-ink3)}
 #riel3d .r3-kpi .v em{font-style:normal;font-size:13px;color:var(--r3-ink3)}
+#riel3d .r3-kpi .v2{display:flex;align-items:baseline;gap:4px;font-family:var(--r3-d);
+  font-weight:700;font-size:13px;color:var(--r3-ink2);line-height:1.2}
+#riel3d .r3-kpi .v2 small{font-family:var(--r3-b);font-size:9.5px;font-weight:600;color:var(--r3-ink3)}
 #riel3d .r3-medidor{height:4px;border-radius:4px;background:var(--r3-mute);overflow:hidden;margin-top:5px;width:100%}
 #riel3d .r3-medidor i{display:block;height:100%;border-radius:inherit;background:var(--r3-cobalto);transition:width .5s}
 #riel3d .r3-medidor.ok i{background:var(--r3-ok)}
@@ -307,6 +328,15 @@ const CSS = `
   letter-spacing:.07em;color:var(--r3-ink2)}
 #riel3d .r3-lab .caja b{font-family:var(--r3-m);font-size:14px;font-weight:700}
 #riel3d .r3-lab .caja b small{font-family:var(--r3-b);font-size:9.5px;font-weight:600;color:var(--r3-ink3)}
+/* La cajita del lote, como en la maqueta plana: las dos cifras, su filo y el
+   nombre del lote por fuera. Un paso puede llevar varias, una debajo de otra. */
+#riel3d .r3-lote{display:flex;align-items:center;gap:8px;margin-top:3px}
+#riel3d .r3-lote .cifras{display:grid;justify-items:end;gap:0;padding-right:8px;
+  border-right:1px solid var(--r3-guinda);font-family:var(--r3-m);font-size:13px;font-weight:700;line-height:1.3}
+#riel3d .r3-lote .cifras small{font-family:var(--r3-b);font-size:9px;font-weight:600;color:var(--r3-ink3)}
+#riel3d .r3-lote i{font-style:normal;font-size:9.5px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--r3-ink3);white-space:nowrap}
+#riel3d .r3-nada{font-family:var(--r3-m);font-size:14px;color:var(--r3-ink3)}
 #riel3d .r3-lab .palo{width:2px;height:62px;background:var(--r3-guinda)}
 #riel3d .r3-lab .punta{width:11px;height:11px;margin-top:-6px;border-radius:50%;
   background:var(--r3-solid);border:2.5px solid var(--r3-guinda);box-shadow:0 1px 3px rgba(20,34,60,.3)}
@@ -399,7 +429,6 @@ raiz.innerHTML = `
 
   <div class="r3-abajo" id="r3Abajo">
     <div class="r3-mandos r3-glass">
-      <div class="r3-seg" id="r3Fases"></div>
       <div class="r3-seg r3-vel" id="r3Vel" role="group" aria-label="Velocidad">
         <button type="button" data-v="0" title="Pausa" aria-label="Pausa">&#10073;&#10073;</button>
         <button type="button" data-v="0.5">&frac12;&times;</button>
@@ -2310,10 +2339,10 @@ function pintarKpis(){
   const num = v => typeof v === 'number' ? v : 0;
   const contratado = num(d.contratado) || 1;
   const tarjetas = [
-    {k:'contratado', n:'Contratado',       u:UNIDAD,  ic:ICO.riel,     cl:'',      pct:100},
-    {k:'proceso',    n:'En proceso',       u:UNIDAD,  ic:ICO.reloj,    cl:'oro',   pct:num(d.proceso)/contratado*100,   m:'oro'},
-    {k:'entregado',  n:'Entregado',        u:UNIDAD,  ic:ICO.check,    cl:'ok',    pct:num(d.entregado)/contratado*100, m:'ok'},
-    {k:'pendiente',  n:'Por fabricar',     u:UNIDAD,  ic:ICO.falta,    cl:'mal',   pct:num(d.pendiente)/contratado*100, m:'mal'},
+    {k:'contratado', n:'Contratado',       u:UNIDAD,  ic:ICO.riel,     cl:'',      pct:100, pz:'contratadoPz'},
+    {k:'proceso',    n:'En proceso',       u:UNIDAD,  ic:ICO.reloj,    cl:'oro',   pct:num(d.proceso)/contratado*100,   m:'oro', pz:'procesoPz'},
+    {k:'entregado',  n:'Entregado',        u:UNIDAD,  ic:ICO.check,    cl:'ok',    pct:num(d.entregado)/contratado*100, m:'ok',  pz:'entregadoPz'},
+    {k:'pendiente',  n:'Por fabricar',     u:UNIDAD,  ic:ICO.falta,    cl:'mal',   pct:num(d.pendiente)/contratado*100, m:'mal', pz:'pendientePz'},
     {k:'monto',      n:'Monto pagado',     u:'M',     ic:ICO.dinero,   cl:'flama', pct:null},
   ];
   const notas = d.notas || {};
@@ -2322,8 +2351,9 @@ function pintarKpis(){
     return '<div class="r3-kpi r3-glass ' + c.cl + '">' +
       '<span class="ic">' + c.ic + '</span>' +
       '<span class="t"><label>' + c.n + '</label>' +
-      '<span class="v">' + fmt(v) + ' <small>' + c.u + '</small>' +
+      '<span class="v">' + fmtD(c.k, v) + ' <small>' + c.u + '</small>' +
       (notas[c.k] ? ' <em>' + notas[c.k] + '</em>' : '') + '</span>' +
+      (c.pz && !SIN_CIFRA(d[c.pz]) ? '<span class="v2">' + fmtD(c.pz, d[c.pz]) + ' <small>pzas</small></span>' : '') +
       (c.pct == null ? '' : medidor(c.pct, c.m)) +
       '</span></div>';
   }).join('') +
@@ -2374,9 +2404,9 @@ function pintarDona(){
 function pintarPanel(){
   const d = datos(FASE, SEG);
   const filas = tabla(FASE, SEG);
-  const nf = (FASES.find(f=>f.id===FASE) || {}).nombre || '';
   const nt = (TRAMOS.find(t=>t.id===SEG) || {}).nombre || '';
-  $('#r3PanelFase').textContent = nf + ' · ' + UNIDAD;
+  // La tabla del proyecto no cambia con el lote, asi que ya no lo nombra
+  $('#r3PanelFase').textContent = 'Proyecto · ' + UNIDAD;
   $('#r3PanelNom').textContent = nt;
   $('#r3Tot').innerHTML =
     '<div class="r3-mini"><label>Solicitado</label><b>' + fmt(d.solicitado) + '</b></div>' +
@@ -2408,10 +2438,12 @@ function pintarCadena(){
   const d = datos(FASE, SEG);
   const iconos = [ICO.fabrica, ICO.puerto, ICO.barco, ICO.descarga, ICO.acopio];
   $('#r3Chain').innerHTML = EST.map((e,i)=>{
-    const v = d[e.k], vivo = typeof v === 'number';
-    return '<button type="button" class="r3-paso' + (vivo ? '' : ' apagado') + '" data-est="' + i + '">' +
+    const L = lotesDe(e.k, SEG);
+    return '<button type="button" class="r3-paso' + (L.length ? '' : ' apagado') + '" data-est="' + i + '">' +
       '<span class="ic">' + iconos[i] + '</span>' +
-      '<span class="t"><label>' + e.n + '</label><b>' + fmt(v) + ' <small>' + UNIDAD + '</small></b></span></button>';
+      '<span class="t"><label>' + e.n + '</label>' +
+      (L.length ? L.map(x=> cajaLote(e.k, x)).join('') : '<b class="r3-nada">—</b>') +
+      '</span></button>';
   }).join('');
   $('#r3Chain').querySelectorAll('[data-est]').forEach(b=>{
     b.onclick = ()=>{
@@ -2426,15 +2458,15 @@ let labs = [];
 function armarLabs(){
   elLabs.innerHTML = EST.map(e=>
     '<div class="r3-lab" data-k="' + e.k + '"><div class="caja"><label>' + e.n +
-    '</label><b data-v>—</b></div><span class="palo"></span><span class="punta"></span></div>').join('');
+    '</label><span data-v></span></div><span class="palo"></span><span class="punta"></span></div>').join('');
   labs = EST.map((e,i)=>({e, el: elLabs.children[i]}));
 }
 function pintarLabs(){
-  const d = datos(FASE, SEG);
   labs.forEach(L=>{
-    const v = d[L.e.k], vivo = typeof v === 'number';
-    L.el.querySelector('[data-v]').innerHTML = fmt(v) + ' <small>' + UNIDAD + '</small>';
-    L.el.classList.toggle('apagado', !vivo);
+    const lotes = lotesDe(L.e.k, SEG);
+    L.el.querySelector('[data-v]').innerHTML =
+      lotes.length ? lotes.map(x=> cajaLote(L.e.k, x)).join('') : '<b class="r3-nada">—</b>';
+    L.el.classList.toggle('apagado', !lotes.length);
   });
 }
 const _v = new THREE.Vector3();
@@ -2467,17 +2499,6 @@ function pintarTodo(){
 
 /* ---------------------------------------------------------------- controles ---- */
 function armarControles(){
-  const seg = $('#r3Fases');
-  seg.innerHTML = FASES.map(f=>'<button type="button" data-fase="' + f.id + '">' + f.nombre + '</button>').join('');
-  seg.querySelectorAll('[data-fase]').forEach(b=>{
-    b.onclick = ()=>{
-      FASE = b.dataset.fase;
-      if (API.setFase) API.setFase(FASE);             // la maqueta plana queda en la misma entrega
-      marcarFase(); pintarTodo();
-    };
-  });
-  marcarFase();
-
   const pop = $('#r3Pop'), site = $('#r3Site');
   pop.innerHTML = TRAMOS.map(t=>'<button type="button" role="menuitem" data-tramo="' + t.id + '">' + t.nombre + '</button>').join('');
   pop.querySelectorAll('[data-tramo]').forEach(b=>{
@@ -2517,13 +2538,6 @@ function armarControles(){
 function cerrarPop(){
   $('#r3Pop').classList.remove('abierto');
   $('#r3Site').setAttribute('aria-expanded', 'false');
-}
-function marcarFase(){
-  $('#r3Fases').querySelectorAll('[data-fase]').forEach(b=>{
-    const on = b.dataset.fase === FASE;
-    b.classList.toggle('on', on);
-    b.setAttribute('aria-pressed', on);
-  });
 }
 function marcarProyecto(){
   $('#r3Pop').querySelectorAll('[data-tramo]').forEach(b=>b.setAttribute('aria-current', b.dataset.tramo === SEG));
@@ -2659,7 +2673,7 @@ function abrir(){
     }
   } else {
     FASE = API.fase || FASE; SEG = API.proyecto || SEG;
-    marcarFase(); marcarProyecto(); pintarTodo();
+    marcarProyecto(); pintarTodo();
     medir();
   }
   if (API.pausar2D) API.pausar2D(true);               // la maqueta plana no anima a ciegas
