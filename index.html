@@ -283,7 +283,10 @@
         <div class="cnt"><span data-d="contratado">0</span> <small>tm</small></div>
         <div class="cnt sec"><span data-d="contratadoPz">0</span> <small>pzas</small></div>
       </div></div>
-      <div class="st"><div class="ico" id="ico2"></div><div class="num">En proceso</div><div class="cnt"><span data-d="proceso">0</span> <small>tm</small></div></div>
+      <div class="st"><div class="ico" id="ico2"></div><div class="num">En proceso</div><div class="cnts">
+        <div class="cnt"><span data-d="proceso">0</span> <small>tm</small></div>
+        <div class="cnt sec"><span data-d="procesoPz">0</span> <small>pzas</small></div>
+      </div></div>
       <div class="st"><div class="ico" id="ico3"></div><div class="num">Entregado</div><div class="cnt"><span data-d="entregado">0</span> <small>tm</small></div></div>
       <div class="st"><div class="ico" id="ico6"></div><div class="num">Por fabricar</div><div class="cnt"><span data-d="pendiente">0</span> <small>tm</small></div></div>
       <div class="st"><div class="ico" id="ico4"></div><div class="num">Monto pagado</div><div class="cnt"><span data-d="monto">0</span> <small>M</small></div></div>
@@ -328,6 +331,8 @@ const RECARGA_MIN = 5;                       // cada cuánto se vuelve a leer la
 const CELDAS = {
   contratado:   'D17',                       // total contractual en toneladas
   contratadoPz: 'D4',                        // el mismo total, en piezas
+  proceso:      'W22',                       // en proceso, toneladas
+  procesoPz:    'W10',                       // en proceso, piezas
 };
 
 const TRAMOS = [
@@ -340,11 +345,11 @@ const FASES = [
   { id:'f3', nombre:'Lote III' },
 ];
 const UNIDAD = 'tm';
-const SIN_DATOS = { produccion:'—', puerto:'—', traslado:'—', descarga:'—', acopio:'—', contratado:'—', contratadoPz:'—', proceso:'—', entregado:'—', pendiente:'—', monto:'—', solicitado:'—', entregadoP:'—', pendienteP:'—' };
+const SIN_DATOS = { produccion:'—', puerto:'—', traslado:'—', descarga:'—', acopio:'—', contratado:'—', contratadoPz:'—', proceso:'—', procesoPz:'—', entregado:'—', pendiente:'—', monto:'—', solicitado:'—', entregadoP:'—', pendienteP:'—' };
 
 // Así viene la hoja: KPIs de la portada (una sola vez), maqueta por entrega y una tabla por proyecto.
 const RESPALDO = {
-  kpis: { contratado:88559.16, contratadoPz:64019.29, proceso:40028.78, entregado:18014.99, pendiente:30515.39, monto:983.24671196 },
+  kpis: { contratado:88559.16, contratadoPz:64019.29, proceso:30524.34, procesoPz:22066, entregado:18014.99, pendiente:30515.39, monto:983.24671196 },
   maqueta: {
     f1: { produccion:'—',      puerto:'—', traslado:'—', descarga:'—',      acopio:18010.81 },
     f2: { produccion:'—',      puerto:'—', traslado:'—', descarga:30517.28, acopio:'—' },
@@ -432,7 +437,7 @@ function numHoja(v){
 // recorta (que sería redondear) ni le inventa ceros de más.
 function decHoja(v){
   const m = /,([0-9]+)\s*$/.exec((v||'').trim());
-  return m ? m[1].length : null;
+  return m ? m[1].length : 0;              // sin coma, la celda es entera: se muestra entera
 }
 // Lee la hoja publicada y se queda con las celdas de CELDAS. Si una no trae cifra,
 // se deja la que ya había en lugar de borrarla.
