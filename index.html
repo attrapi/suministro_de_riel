@@ -287,7 +287,10 @@
         <div class="cnt"><span data-d="proceso">0</span> <small>tm</small></div>
         <div class="cnt sec"><span data-d="procesoPz">0</span> <small>pzas</small></div>
       </div></div>
-      <div class="st"><div class="ico" id="ico3"></div><div class="num">Entregado</div><div class="cnt"><span data-d="entregado">0</span> <small>tm</small></div></div>
+      <div class="st"><div class="ico" id="ico3"></div><div class="num">Entregado</div><div class="cnts">
+        <div class="cnt"><span data-d="entregado">0</span> <small>tm</small></div>
+        <div class="cnt sec"><span data-d="entregadoPz">0</span> <small>pzas</small></div>
+      </div></div>
       <div class="st"><div class="ico" id="ico6"></div><div class="num">Por fabricar</div><div class="cnt"><span data-d="pendiente">0</span> <small>tm</small></div></div>
       <div class="st"><div class="ico" id="ico4"></div><div class="num">Monto pagado</div><div class="cnt"><span data-d="monto">0</span> <small>M</small></div></div>
       <div class="st"><div class="ico" id="ico5"></div><div class="num">Proyectos</div><div class="cnt"><span id="nTramos">0</span> <small>proyectos</small></div></div>
@@ -333,6 +336,8 @@ const CELDAS = {
   contratadoPz: 'D4',                        // el mismo total, en piezas
   proceso:      'W22',                       // en proceso, toneladas
   procesoPz:    'W10',                       // en proceso, piezas
+  entregado:    'W21',                       // entregado, toneladas
+  entregadoPz:  'W9',                        // entregado, piezas
 };
 
 const TRAMOS = [
@@ -345,11 +350,11 @@ const FASES = [
   { id:'f3', nombre:'Lote III' },
 ];
 const UNIDAD = 'tm';
-const SIN_DATOS = { produccion:'—', puerto:'—', traslado:'—', descarga:'—', acopio:'—', contratado:'—', contratadoPz:'—', proceso:'—', procesoPz:'—', entregado:'—', pendiente:'—', monto:'—', solicitado:'—', entregadoP:'—', pendienteP:'—' };
+const SIN_DATOS = { produccion:'—', puerto:'—', traslado:'—', descarga:'—', acopio:'—', contratado:'—', contratadoPz:'—', proceso:'—', procesoPz:'—', entregado:'—', entregadoPz:'—', pendiente:'—', monto:'—', solicitado:'—', entregadoP:'—', pendienteP:'—' };
 
 // Así viene la hoja: KPIs de la portada (una sola vez), maqueta por entrega y una tabla por proyecto.
 const RESPALDO = {
-  kpis: { contratado:88559.16, contratadoPz:64019.29, proceso:30524.34, procesoPz:22066, entregado:18014.99, pendiente:30515.39, monto:983.24671196 },
+  kpis: { contratado:88559.16, contratadoPz:64019.29, proceso:30524.34, procesoPz:22066, entregado:18014.32, entregadoPz:13023, pendiente:30515.39, monto:983.24671196 },
   maqueta: {
     f1: { produccion:'—',      puerto:'—', traslado:'—', descarga:'—',      acopio:18010.81 },
     f2: { produccion:'—',      puerto:'—', traslado:'—', descarga:30517.28, acopio:'—' },
