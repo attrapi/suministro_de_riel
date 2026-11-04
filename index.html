@@ -80,16 +80,8 @@
   h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,3.4vw,44px);line-height:.95;letter-spacing:-.01em;margin:0;text-wrap:balance;text-shadow:0 2px 12px rgba(0,0,0,.5)}
   h1 span{color:#FF9A4D}
   .fase-rot{font-family:var(--display);font-style:italic;font-weight:600;font-size:19px;letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.8);margin:5px 0 0}
-  /* Control segmentado: las tres fases pegadas, la activa rellena */
-  .fases{display:inline-block;margin:6px 0 0;border:1px solid rgba(255,154,77,.55);border-radius:5px;overflow:hidden;white-space:nowrap;pointer-events:auto;background:rgba(10,15,22,.5)}
-  .fases button{display:inline-block;vertical-align:middle;font:500 11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.7);background:transparent;border:0;border-left:1px solid rgba(255,154,77,.35);padding:5px 12px;cursor:pointer}
-  .fases button:first-child{border-left:0}
-  .fases button.on{background:#FF9A4D;color:#0B1017}
-  .fases button:not(.on){opacity:.4}                       /* siguen a la vista, pero apagadas */
-  .fases button:not(.on):hover{opacity:1;background:rgba(255,154,77,.18);color:#EAEFF5}
-  .fases button:focus-visible{outline:2px solid #FF9A4D;outline-offset:-2px}
-  /* Dona: el reparto del contratado, en el hueco que queda entre los lotes y la maqueta */
-  .dona{margin:14px 0 0;display:flex;align-items:center;gap:13px;pointer-events:auto;
+  /* Dona: el reparto del contratado, justo debajo del título ahora que no hay botones */
+  .dona{margin:9px 0 0;display:flex;align-items:center;gap:13px;pointer-events:auto;
         background:rgba(10,15,22,.72);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.12);
         border-radius:6px;padding:10px 14px 10px 10px;width:max-content;max-width:100%}
   .dona svg{width:96px;height:96px;flex:0 0 auto;overflow:visible}
@@ -109,6 +101,7 @@
   .st .cnts .cnt{grid-column:auto}
   .st .cnt.sec{font-size:15px;color:rgba(255,255,255,.72)}
   .st .cnt.sec small{font-size:10px}
+  .st .cnt .lote{font:10px var(--mono);letter-spacing:.1em;color:rgba(255,255,255,.5);margin-right:6px}
   /* Cadena en vertical: reemplaza la maqueta en pantallas angostas, escalonada para que se lea el avance */
   .cadena{position:fixed;left:10px;right:10px;bottom:10px;z-index:2;display:none;flex-direction:column;gap:5px;overflow:auto;pointer-events:auto}
   .cadena[hidden]{display:none}
@@ -134,9 +127,10 @@
   .tabla .tot-ico{display:inline-block;vertical-align:-6px;width:22px;height:22px;margin-right:9px;color:#FF9A4D}
   .tabla .tot-ico svg{width:100%;height:100%;display:block}
   .lbl .n{font:500 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;fill:rgba(255,255,255,.6)}
-  .lbl .v{font:600 24px var(--display);fill:#FF9A4D}
   .lbl .u{font:11px var(--mono);fill:rgba(255,255,255,.65)}
   .lbl .t{font:600 15px var(--display);text-transform:uppercase;letter-spacing:.02em;fill:#EAEFF5}
+  .lbl .v2{font:600 20px var(--display);fill:#FF9A4D}      /* cifra de cada lote en el hito */
+  .lbl .lt{font:500 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;fill:rgba(255,255,255,.55)}
   .lbl .g{font:700 34px var(--display);letter-spacing:.3em;fill:rgba(255,255,255,.28)}
   .lbl text{paint-order:stroke;stroke:rgba(8,14,22,.85);stroke-width:3px;stroke-linejoin:round}
   .note{position:fixed;left:24px;top:calc(var(--menu-h) + 76px);z-index:2;font:11px/1.5 var(--mono);color:rgba(255,255,255,.55);max-width:44ch}
@@ -157,7 +151,6 @@
     .brand{flex:0 0 auto;width:100%}
     h1{font-size:27px}
     .eyebrow{font-size:10px}
-    .fases button{padding:5px 9px;letter-spacing:.1em}
     .hstack{width:100%;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
     .st .num{font-size:9px}
     .st .cnt{font-size:18px}
@@ -199,11 +192,6 @@
   /* Institucional: las tarjetas, el selector de fase y la tabla también en guinda */
   :root[data-tema="institucional"] .st{background:rgba(105,28,50,.88);border-color:rgba(255,255,255,.22)}
   :root[data-tema="institucional"] .tabla-wrap{background:rgba(105,28,50,.88);border-color:rgba(255,255,255,.22)}
-  :root[data-tema="institucional"] .fases{background:rgba(105,28,50,.88);border-color:rgba(255,255,255,.3)}
-  :root[data-tema="institucional"] .fases button{color:rgba(255,255,255,.75);border-left-color:rgba(255,255,255,.24)}
-  :root[data-tema="institucional"] .fases button.on{background:#FFF;color:#691C32}
-  :root[data-tema="institucional"] .fases button:not(.on):hover{background:rgba(255,255,255,.16);color:#FFF}
-  :root[data-tema="institucional"] .fases button:focus-visible{outline-color:#FFF}
 
   /* Estilo Claro: tinta oscura sobre fondo claro, sin perder la barra de menú del sitio */
   :root[data-tema="claro"]{ --ink-light:#16202B; --accent-light:#B4521A; }
@@ -211,10 +199,6 @@
   :root[data-tema="claro"] h1{color:var(--ink-light);text-shadow:0 1px 8px rgba(255,255,255,.65)}
   :root[data-tema="claro"] h1 span{color:var(--accent-light)}
   :root[data-tema="claro"] .fase-rot{color:rgba(22,32,43,.78)}
-  :root[data-tema="claro"] .fases{border-color:rgba(180,82,26,.55);background:rgba(255,255,255,.7)}
-  :root[data-tema="claro"] .fases button{color:rgba(22,32,43,.72);border-left-color:rgba(180,82,26,.3)}
-  :root[data-tema="claro"] .fases button.on{background:var(--accent-light);color:#FFF}
-  :root[data-tema="claro"] .fases button:not(.on):hover{background:rgba(180,82,26,.14);color:var(--ink-light)}
   :root[data-tema="claro"] .tmenu button{color:var(--accent-light);background:rgba(255,255,255,.86);border-color:var(--accent-light)}
   :root[data-tema="claro"] .tmenu button:hover,
   :root[data-tema="claro"] .tmenu li.open>button{border-color:rgba(22,32,43,.5)}
@@ -241,9 +225,11 @@
   :root[data-tema="claro"] .st .cnt{color:var(--accent-light)}
   :root[data-tema="claro"] .st .cnt small{color:rgba(22,32,43,.6)}
   :root[data-tema="claro"] .st .cnt.sec{color:rgba(22,32,43,.72)}
+  :root[data-tema="claro"] .st .cnt .lote{color:rgba(22,32,43,.55)}
   :root[data-tema="claro"] .lbl .t{fill:var(--ink-light)}
   :root[data-tema="claro"] .lbl .n,:root[data-tema="claro"] .lbl .u{fill:rgba(22,32,43,.65)}
-  :root[data-tema="claro"] .lbl .v{fill:var(--accent-light)}
+  :root[data-tema="claro"] .lbl .v2{fill:var(--accent-light)}
+  :root[data-tema="claro"] .lbl .lt{fill:rgba(22,32,43,.6)}
   :root[data-tema="claro"] .lbl text{stroke:rgba(255,255,255,.88)}
   :root[data-tema="claro"] .lbl .lead{stroke:rgba(22,32,43,.42)}
 
@@ -274,7 +260,6 @@
     <p class="eyebrow">ATTRAPI / ARTF / 076-A-P / 2025</p>
     <h1 id="h1">Adquisición <span>de riel</span></h1>
     <p class="fase-rot">Fase I</p>
-    <div class="fases" id="fases" role="group" aria-label="Lote"></div>
     <div class="dona" id="dona"></div>
   </div>
   <div class="hstack">
@@ -355,7 +340,8 @@ const FASES = [
   { id:'f3', nombre:'Lote III' },
 ];
 const UNIDAD = 'tm';
-const SIN_DATOS = { produccion:'—', puerto:'—', traslado:'—', descarga:'—', acopio:'—', contratado:'—', contratadoPz:'—', proceso:'—', procesoPz:'—', entregado:'—', entregadoPz:'—', pendiente:'—', pendientePz:'—', monto:'—', solicitado:'—', entregadoP:'—', pendienteP:'—' };
+const SIN_DATOS = { produccion:'—', puerto:'—', traslado:'—', descarga:'—', acopio:'—',
+  produccionPz:'—', puertoPz:'—', trasladoPz:'—', descargaPz:'—', acopioPz:'—', contratado:'—', contratadoPz:'—', proceso:'—', procesoPz:'—', entregado:'—', entregadoPz:'—', pendiente:'—', pendientePz:'—', monto:'—', solicitado:'—', entregadoP:'—', pendienteP:'—' };
 
 // Así viene la hoja: KPIs de la portada (una sola vez), maqueta por entrega y una tabla por proyecto.
 const RESPALDO = {
@@ -1074,31 +1060,42 @@ function updateTrucksB(dt){
 }
 
 /* ---------- Rótulos con los datos del Excel ---------- */
+const corto = n => (n||'').replace(/^lote\s*/i,'');      // "Lote II" -> "II"
 const names = ['Por fabricar','Origen · puerto','Traslado marítimo','Descarga','Centro de acopio'];
 const keys  = ['produccion','puerto','traslado','descarga','acopio'];
 PX.forEach((x0,i)=>{
   const [tx,ty] = sc.P(x0+[7,8,SEA_W/2,16,12][i], 0, 2.2);
   const g=sc.el('g',{class:'lbl',transform:`translate(${tx},${ty})`}); g.dataset.tx=tx; g.dataset.ty=ty;
   // todos los rótulos a la misma altura de pantalla; solo cambia el largo de la línea que señala
-  g.innerHTML = `<line class="lead" x1="0" y1="0" x2="0" y2="-34" stroke="rgba(255,255,255,.5)" stroke-width="1"/>
-    <text class="t" x="0" y="-62" text-anchor="middle">${names[i]}</text>
-    <text class="v" x="0" y="-38" text-anchor="middle"><tspan data-d="${keys[i]}">0</tspan><tspan class="u" dx="6" data-u>${UNIDAD}</tspan></text>`;
+  // Un renglón por lote, con sus dos unidades. Las columnas van alineadas a la derecha
+  // para que los puntos decimales queden uno debajo de otro.
+  const XLOTE = -75, XTM = 22, XPZ = 92;
+  const filas = FASES.map((f,n)=>{
+    const dy = -10 - (FASES.length-1-n)*26;             // Lote I arriba, el último pegado a la línea
+    return `<text class="lt" x="${XLOTE}" y="${dy}" data-dy="${dy}" text-anchor="end">${corto(f.nombre)}</text>
+      <text class="v2" x="${XTM}" y="${dy}" data-dy="${dy}" text-anchor="end" data-fase="${f.id}" data-d="${keys[i]}">0</text>
+      <text class="v2" x="${XPZ}" y="${dy}" data-dy="${dy}" text-anchor="end" data-fase="${f.id}" data-d="${keys[i]}Pz">0</text>`;
+  }).join('');
+  const dyCab = -10 - FASES.length*26, dyTit = dyCab - 28;
+  g.innerHTML = `<line class="lead" x1="0" y1="0" x2="0" y2="-16" stroke="rgba(255,255,255,.5)" stroke-width="1"/>
+    <text class="t" x="-4" y="${dyTit}" data-dy="${dyTit}" text-anchor="middle">${names[i]}</text>
+    <text class="lt" x="${XTM}" y="${dyCab}" data-dy="${dyCab}" text-anchor="end">${UNIDAD}</text>
+    <text class="lt" x="${XPZ}" y="${dyCab}" data-dy="${dyCab}" text-anchor="end">pzas</text>${filas}`;
 });
 /* ---------- Fase: la flecha avanza a la siguiente y regresa a la primera ---------- */
 function pintarDatos(){
   DATOS = DATOS_FASE[FASE][SEG];
   const notas = DATOS.notas || {};
   document.querySelectorAll('[data-d]').forEach(e=>{
-    const k = e.dataset.d, n = notas[k], d = PORTADA_DEC[k];
+    // data-fase pide el dato de ese lote; sin él, el del lote en curso
+    const fuente = e.dataset.fase ? ((DATOS_FASE[e.dataset.fase] || {})[SEG] || SIN_DATOS) : DATOS;
+    const k = e.dataset.d, n = (fuente.notas || {})[k], d = PORTADA_DEC[k];
     // Si la cifra viene de una celda, se muestra con los decimales que esa celda trae.
-    const txt = (d != null && typeof DATOS[k] === 'number')
-      ? DATOS[k].toLocaleString('es-MX', { minimumFractionDigits:d, maximumFractionDigits:d })
-      : fmt(DATOS[k]);
+    const txt = (d != null && typeof fuente[k] === 'number')
+      ? fuente[k].toLocaleString('es-MX', { minimumFractionDigits:d, maximumFractionDigits:d })
+      : fmt(fuente[k]);
     e.textContent = txt + (n ? ' ' + n : '');
   });
-  // los pasos de la cadena sí cambian con el lote, así que su unidad lo nombra
-  const laFase = (FASES.find(f=>f.id===FASE) || {}).nombre || '';
-  document.querySelectorAll('[data-u]').forEach(e=>{ e.textContent = UNIDAD + ' / ' + laFase; });
   pintarTabla();
   pintarDona();
   if (window.RIEL3D) window.RIEL3D.refrescar();   // si el 3D está cargado, se entera del mismo cambio
@@ -1162,20 +1159,10 @@ function pintarTabla(){
         return `<tr><td class="c-tramo">${f.tramo}</td>${cel(f.solicitado,n.solicitado)}${cel(f.entregado,n.entregado)}${cel(f.pendiente,n.pendiente)}</tr>`; }).join('') + totales
     : '<tr><td class="c-tramo vacio" colspan="4">Sin datos para este lote</td></tr>';
 }
-const elFases = document.getElementById('fases');
-FASES.forEach(f=>{                                  // un botón por fase: agregar una más aquí basta
-  const b = document.createElement('button');
-  b.type = 'button'; b.dataset.fase = f.id; b.textContent = f.nombre;
-  b.onclick = ()=> setFase(f.id);
-  elFases.appendChild(b);
-});
+// Ya no hay selector: la maqueta muestra los tres lotes a la vez. setFase sigue
+// existiendo porque la vista 3D la llama cuando ahí se elige una entrega.
 function setFase(id){
   FASE = DATOS_FASE[id] ? id : 'f1';
-  elFases.querySelectorAll('button').forEach(b=>{
-    const activa = b.dataset.fase === FASE;
-    b.classList.toggle('on', activa);
-    b.setAttribute('aria-pressed', activa);
-  });
   try { localStorage.setItem('fase', FASE); } catch(e){}
   pintarDatos();
 }
@@ -1187,7 +1174,9 @@ document.getElementById('cadena').innerHTML = names.map((n,i)=>
   `<div class="st">
      <span class="ico" id="icoc${i+1}"></span>
      <span class="num">${n}</span>
-     <span class="cnt"><span data-d="${keys[i]}">0</span> <small data-u>${UNIDAD}</small></span>
+     <div class="cnts">${FASES.map(f=>
+       `<div class="cnt sec"><span class="lote">${corto(f.nombre)}</span><span data-fase="${f.id}" data-d="${keys[i]}">0</span> <small>${UNIDAD}</small> · <span data-fase="${f.id}" data-d="${keys[i]}Pz">0</span> <small>pzas</small></div>`
+     ).join('')}</div>
    </div>`).join('');
 
 /* ---------- Vista: la portada lleva la maqueta; la de proyecto la esconde ---------- */
@@ -1421,8 +1410,8 @@ function fit(){
     g.setAttribute('transform',`translate(${g.dataset.tx},${g.dataset.ty}) scale(${k})`);
     const h = (+g.dataset.ty - topY)/k;                                         // largo de la línea en px
     g.querySelector('.lead').setAttribute('y2', -h);
-    g.querySelector('.t').setAttribute('y', -h-28);
-    g.querySelector('.v').setAttribute('y', -h-4);
+    // cada renglón guarda su distancia a la punta de la línea: la tablita sube entera
+    g.querySelectorAll('[data-dy]').forEach(e=> e.setAttribute('y', -h + (+e.dataset.dy)));
   });
 }
 fit(); addEventListener('resize', fit);
