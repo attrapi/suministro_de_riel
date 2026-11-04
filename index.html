@@ -1142,13 +1142,13 @@ PX.forEach((x0,i)=>{
   // Un renglón por lote, con sus dos unidades. Las columnas van alineadas a la derecha
   // para que los puntos decimales queden uno debajo de otro.
   // Cada lote es una cajita sin recuadro ni trazo propio: se cuelga de la línea del
-  // hito, que le hace de borde. Las dos cifras quedan a su izquierda, una encima de
-  // otra con su unidad pegada, y el nombre del lote al otro lado de la línea.
+  // hito, que le hace de borde. El nombre del lote queda a su izquierda y las dos
+  // cifras a la derecha, una encima de otra con su unidad pegada.
   const filas = FASES.map(f=>
     `<g class="fila" data-fase="${f.id}">
-       <text class="val" x="-11" text-anchor="end"><tspan class="v2" data-fase="${f.id}" data-d="${keys[i]}">0</tspan><tspan class="u" dx="5">${UNIDAD}</tspan></text>
-       <text class="val" x="-11" text-anchor="end"><tspan class="v2" data-fase="${f.id}" data-d="${keys[i]}Pz">0</tspan><tspan class="u" dx="5">pzas</tspan></text>
-       <text class="lt" x="11">${f.nombre}</text>
+       <text class="val" x="11"><tspan class="v2" data-fase="${f.id}" data-d="${keys[i]}">0</tspan><tspan class="u" dx="5">${UNIDAD}</tspan></text>
+       <text class="val" x="11"><tspan class="v2" data-fase="${f.id}" data-d="${keys[i]}Pz">0</tspan><tspan class="u" dx="5">pzas</tspan></text>
+       <text class="lt" x="-11" text-anchor="end">${f.nombre}</text>
      </g>`).join('');
   // La línea ya no baja hasta el punto: se detiene arriba y el último tramo lo
   // ocupa el radar, tres ondas que salen del punto señalado. Así el rótulo y su
@@ -1188,9 +1188,10 @@ function acomodarHitos(){
     // Todo cuelga del nombre hacia abajo: primero las cajitas de los lotes y al final
     // la línea, siempre del mismo largo. Antes crecía desde el punto y en los hitos sin
     // cifras quedaba muy abajo, lejos de su nombre.
-    // arranque, 10 px bajo el último renglón de texto del rótulo (el nombre, o el
-    // puerto si lo trae), para que los cinco dejen el mismo aire
-    const TOPE = (sub ? yNom : yNom + (HAY_SUB ? 15 : 0)) - 10;
+    // Arranque común a los cinco: 10 px bajo el renglón del puerto, lo traiga el
+    // rótulo o no. Los que no lo traen dejan ese hueco vacío, pero así todas las
+    // líneas -y con ellas los radares- quedan al mismo nivel.
+    const TOPE = yNom - 10;
     const k = vis[i].length;
     g.querySelectorAll('.fila').forEach(f=> f.style.display = 'none');
     vis[i].forEach((f,j)=>{                               // j = 0 es la de abajo
