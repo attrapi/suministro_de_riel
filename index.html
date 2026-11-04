@@ -131,6 +131,7 @@
   .lbl .t{font:600 15px var(--display);text-transform:uppercase;letter-spacing:.02em;fill:#EAEFF5}
   .lbl .v2{font:600 20px var(--display);fill:#FF9A4D}      /* cifra de cada lote en el hito */
   .lbl .lt{font:500 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;fill:rgba(255,255,255,.55)}
+  .lbl .borde{stroke:rgba(255,255,255,.32);stroke-width:1}  /* el único trazo de la cajita */
   .lbl .g{font:700 34px var(--display);letter-spacing:.3em;fill:rgba(255,255,255,.28)}
   .lbl text{paint-order:stroke;stroke:rgba(8,14,22,.85);stroke-width:3px;stroke-linejoin:round}
   .note{position:fixed;left:24px;top:calc(var(--menu-h) + 76px);z-index:2;font:11px/1.5 var(--mono);color:rgba(255,255,255,.55);max-width:44ch}
@@ -230,6 +231,7 @@
   :root[data-tema="claro"] .lbl .n,:root[data-tema="claro"] .lbl .u{fill:rgba(22,32,43,.65)}
   :root[data-tema="claro"] .lbl .v2{fill:var(--accent-light)}
   :root[data-tema="claro"] .lbl .lt{fill:rgba(22,32,43,.6)}
+  :root[data-tema="claro"] .lbl .borde{stroke:rgba(22,32,43,.32)}
   :root[data-tema="claro"] .lbl text{stroke:rgba(255,255,255,.88)}
   :root[data-tema="claro"] .lbl .lead{stroke:rgba(22,32,43,.42)}
 
@@ -1080,47 +1082,52 @@ function updateTrucksB(dt){
 const corto = n => (n||'').replace(/^lote\s*/i,'');      // "Lote II" -> "II"
 const names = ['Por fabricar','Origen · puerto','Traslado marítimo','Descarga','Centro de acopio'];
 const keys  = ['produccion','puerto','traslado','descarga','acopio'];
-const XLOTE = -75, XTM = 22, XPZ = 92;                   // columnas de la tablita de cada hito
 PX.forEach((x0,i)=>{
   const [tx,ty] = sc.P(x0+[7,8,SEA_W/2,16,12][i], 0, 2.2);
   const g=sc.el('g',{class:'lbl',transform:`translate(${tx},${ty})`}); g.dataset.tx=tx; g.dataset.ty=ty;
   // todos los rótulos a la misma altura de pantalla; solo cambia el largo de la línea que señala
   // Un renglón por lote, con sus dos unidades. Las columnas van alineadas a la derecha
   // para que los puntos decimales queden uno debajo de otro.
+  // Cada lote es una cajita sin recuadro: solo el borde derecho, que además continúa
+  // la línea que señala el punto. Las dos cifras quedan a su izquierda, una encima de
+  // otra con su unidad pegada, y el nombre del lote afuera, del otro lado del borde.
   const filas = FASES.map(f=>
     `<g class="fila" data-fase="${f.id}">
-       <text class="lt" x="${XLOTE}" text-anchor="end">${corto(f.nombre)}</text>
-       <text class="v2" x="${XTM}" text-anchor="end" data-fase="${f.id}" data-d="${keys[i]}">0</text>
-       <text class="v2" x="${XPZ}" text-anchor="end" data-fase="${f.id}" data-d="${keys[i]}Pz">0</text>
+       <line class="borde" x1="0" x2="0" y1="0" y2="0"/>
+       <text class="val" x="-11" text-anchor="end"><tspan class="v2" data-fase="${f.id}" data-d="${keys[i]}">0</tspan><tspan class="u" dx="5">${UNIDAD}</tspan></text>
+       <text class="val" x="-11" text-anchor="end"><tspan class="v2" data-fase="${f.id}" data-d="${keys[i]}Pz">0</tspan><tspan class="u" dx="5">pzas</tspan></text>
+       <text class="lt" x="11">${f.nombre}</text>
      </g>`).join('');
   g.innerHTML = `<line class="lead" x1="0" y1="0" x2="0" y2="-16" stroke="rgba(255,255,255,.5)" stroke-width="1"/>
-    <text class="t" x="-4" text-anchor="middle">${names[i]}</text>
-    <g class="cab"><text class="lt" x="${XTM}" text-anchor="end">${UNIDAD}</text>
-      <text class="lt" x="${XPZ}" text-anchor="end">pzas</text></g>${filas}`;
+    <text class="t" x="-9" text-anchor="middle">${names[i]}</text>${filas}`;
 });
 /* ---------- Acomodo de los rótulos ----------
    Un lote sin cifra ni en toneladas ni en piezas no se nombra siquiera: su renglón
    desaparece y los que quedan se recorren hacia la línea, para que el hito muestre
    solo lo que de verdad tiene.                                                      */
 const SIN = v => !v || v.trim() === '—';
+const ALTO = 60;                                          // alto de la cajita de un lote
 function acomodarHitos(){
-  document.querySelectorAll('.lbl').forEach(g=>{
+  const lbls = [...document.querySelectorAll('.lbl')];
+  const conCifra = f => [...f.querySelectorAll('[data-d]')].some(t=> !SIN(t.textContent));
+  const vis = lbls.map(g => [...g.querySelectorAll('.fila')].filter(conCifra));
+  // El nombre del paso va a la misma altura en los cinco: se reserva el espacio del
+  // hito más cargado, no el de cada uno, que es lo que antes los dejaba disparejos.
+  const maxK = Math.max(1, ...vis.map(v=> v.length));
+  lbls.forEach((g,i)=>{
     const h = +g.dataset.h || 16;
-    const filas = [...g.querySelectorAll('.fila')];
-    let k = 0;
-    for (let i = filas.length-1; i >= 0; i--){            // de abajo hacia arriba
-      const f = filas[i];
-      const hay = [...f.querySelectorAll('.v2')].some(t=> !SIN(t.textContent));
-      f.style.display = hay ? '' : 'none';
-      if (!hay) continue;
-      const y = -h - 10 - k*26;
-      f.querySelectorAll('text').forEach(t=> t.setAttribute('y', y));
-      k++;
-    }
-    const cab = g.querySelector('.cab'), yCab = -h - 10 - k*26;
-    cab.style.display = k ? '' : 'none';                  // sin renglones tampoco van las unidades
-    cab.querySelectorAll('text').forEach(t=> t.setAttribute('y', yCab));
-    g.querySelector('.t').setAttribute('y', (k ? yCab : -h - 10) - 28);
+    g.querySelectorAll('.fila').forEach(f=> f.style.display = 'none');
+    vis[i].forEach((f,j)=>{                               // la primera pegada a la línea
+      f.style.display = '';
+      const top = h + j*ALTO;
+      const borde = f.querySelector('.borde');
+      borde.setAttribute('y1', -top); borde.setAttribute('y2', -(top + 62));   // abraza las dos cifras
+      const vals = f.querySelectorAll('.val');
+      vals[0].setAttribute('y', -(top + 44));             // toneladas arriba
+      vals[1].setAttribute('y', -(top + 16));             // piezas abajo
+      f.querySelector('.lt').setAttribute('y', -(top + 30));
+    });
+    g.querySelector('.t').setAttribute('y', -(h + maxK*ALTO + 26));
   });
   // la cadena vertical del celular esconde los mismos lotes
   document.querySelectorAll('.cadena .fila').forEach(f=>{
