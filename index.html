@@ -101,7 +101,14 @@
   .st .cnts .cnt{grid-column:auto}
   .st .cnt.sec{font-size:15px;color:rgba(255,255,255,.72)}
   .st .cnt.sec small{font-size:10px}
-  .st .cnt .lote{font:10px var(--mono);letter-spacing:.1em;color:rgba(255,255,255,.5);margin-right:6px}
+  .st .cnt .lote{font:10px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.5)}
+  /* En celular la cadena repite la cajita de la maqueta: las dos cifras, el borde
+     derecho como único trazo, y el lote por fuera. */
+  .cadena .fila{display:flex;align-items:center;justify-content:flex-end;gap:9px}
+  .cadena .fila .caja{display:grid;justify-items:end;gap:1px;padding-right:9px;
+                      border-right:1px solid rgba(255,255,255,.32)}
+  .cadena .fila .lin{white-space:nowrap;line-height:1.25}
+  .cadena .fila .lote{flex:0 0 auto;min-width:52px;text-align:left}
   /* Cadena en vertical: reemplaza la maqueta en pantallas angostas, escalonada para que se lea el avance */
   .cadena{position:fixed;left:10px;right:10px;bottom:10px;z-index:2;display:none;flex-direction:column;gap:5px;overflow:auto;pointer-events:auto}
   .cadena[hidden]{display:none}
@@ -227,6 +234,7 @@
   :root[data-tema="claro"] .st .cnt small{color:rgba(22,32,43,.6)}
   :root[data-tema="claro"] .st .cnt.sec{color:rgba(22,32,43,.72)}
   :root[data-tema="claro"] .st .cnt .lote{color:rgba(22,32,43,.55)}
+  :root[data-tema="claro"] .cadena .fila .caja{border-right-color:rgba(22,32,43,.32)}
   :root[data-tema="claro"] .lbl .t{fill:var(--ink-light)}
   :root[data-tema="claro"] .lbl .n,:root[data-tema="claro"] .lbl .u{fill:rgba(22,32,43,.65)}
   :root[data-tema="claro"] .lbl .v2{fill:var(--accent-light)}
@@ -1228,7 +1236,13 @@ document.getElementById('cadena').innerHTML = names.map((n,i)=>
      <span class="ico" id="icoc${i+1}"></span>
      <span class="num">${n}</span>
      <div class="cnts">${FASES.map(f=>
-       `<div class="cnt sec fila" data-fase="${f.id}"><span class="lote">${corto(f.nombre)}</span><span data-fase="${f.id}" data-d="${keys[i]}">0</span> <small>${UNIDAD}</small> · <span data-fase="${f.id}" data-d="${keys[i]}Pz">0</span> <small>pzas</small></div>`
+       `<div class="cnt sec fila" data-fase="${f.id}">
+          <span class="caja">
+            <span class="lin"><span data-fase="${f.id}" data-d="${keys[i]}">0</span> <small>${UNIDAD}</small></span>
+            <span class="lin"><span data-fase="${f.id}" data-d="${keys[i]}Pz">0</span> <small>pzas</small></span>
+          </span>
+          <span class="lote">${f.nombre}</span>
+        </div>`
      ).join('')}</div>
    </div>`).join('');
 
