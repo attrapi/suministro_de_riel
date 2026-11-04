@@ -329,6 +329,14 @@ const CELDAS = {
   pendiente:    'W23',                       // por fabricar, toneladas
   pendientePz:  'W11',                       // por fabricar, piezas
 };
+// Cada lote va en un paso de la cadena y ahí muestra sus dos cifras. La hoja las
+// tiene en el mismo renglón que ya alimenta la tarjeta de arriba: la columna Z las
+// nombra Entregado, En proceso y Por fabricar, que son los lotes I, II y III.
+const LOTES = {
+  f1: { etapa:'acopio',     tm:'W21', pz:'W9'  },   // Lote I   — entregado
+  f2: { etapa:'descarga',   tm:'W22', pz:'W10' },   // Lote II  — en proceso
+  f3: { etapa:'produccion', tm:'W23', pz:'W11' },   // Lote III — por fabricar
+};
 
 const TRAMOS = [
   { id:'qro-ira', nombre:'Querétaro – Irapuato', segmentos:[] },
@@ -370,7 +378,7 @@ let DATOS_FASE = {}, TABLA = {};
 // Lo último que se leyó (al principio, el respaldo) y las cifras que vienen de celdas
 // con dirección fija, que se imponen a lo demás porque son la fuente más directa.
 let HOJA_VIGENTE = null;
-const PORTADA = {}, PORTADA_DEC = {};
+const PORTADA = {}, PORTADA_DEC = {}, PORTADA_ETAPA = {};
 // Arma lo que consume la página: cada entrega lleva su maqueta, los KPIs de la portada
 // (que la hoja da una sola vez) y los totales por proyecto, sumados de su propia tabla.
 function armar(h){
@@ -381,7 +389,8 @@ function armar(h){
     DATOS_FASE[f.id] = {}; TABLA[f.id] = {};
     for (const t of TRAMOS){
       const lista = h.tramos[t.id] || [];
-      const maq = h.maqueta[f.id] || {};
+      // lo que la hoja diga del lote manda sobre el respaldo, en su propio paso
+      const maq = Object.assign({}, h.maqueta[f.id] || {}, PORTADA_ETAPA[f.id] || {});
       DATOS_FASE[f.id][t.id] = Object.assign({}, SIN_DATOS, maq, h.kpis, PORTADA, {
         solicitado:  suma(lista,'solicitado'),
         entregadoP:  suma(lista,'entregado'),
@@ -447,6 +456,14 @@ async function cargarHoja(){
       const txt = celda(filas, CELDAS[k]);
       const n = numHoja(txt);
       if (n !== null){ PORTADA[k] = n; PORTADA_DEC[k] = decHoja(txt); alguna = true; }
+    }
+    for (const id in LOTES){                 // las dos cifras de cada lote, en su paso
+      const L = LOTES[id];
+      PORTADA_ETAPA[id] = PORTADA_ETAPA[id] || {};
+      [['tm', L.etapa], ['pz', L.etapa + 'Pz']].forEach(([cual, clave])=>{
+        const txt = celda(filas, L[cual]), n = numHoja(txt);
+        if (n !== null){ PORTADA_ETAPA[id][clave] = n; PORTADA_DEC[clave] = decHoja(txt); alguna = true; }
+      });
     }
     if (!alguna) return false;
     armar(HOJA_VIGENTE || RESPALDO); pintarDatos();
@@ -1063,26 +1080,54 @@ function updateTrucksB(dt){
 const corto = n => (n||'').replace(/^lote\s*/i,'');      // "Lote II" -> "II"
 const names = ['Por fabricar','Origen · puerto','Traslado marítimo','Descarga','Centro de acopio'];
 const keys  = ['produccion','puerto','traslado','descarga','acopio'];
+const XLOTE = -75, XTM = 22, XPZ = 92;                   // columnas de la tablita de cada hito
 PX.forEach((x0,i)=>{
   const [tx,ty] = sc.P(x0+[7,8,SEA_W/2,16,12][i], 0, 2.2);
   const g=sc.el('g',{class:'lbl',transform:`translate(${tx},${ty})`}); g.dataset.tx=tx; g.dataset.ty=ty;
   // todos los rótulos a la misma altura de pantalla; solo cambia el largo de la línea que señala
   // Un renglón por lote, con sus dos unidades. Las columnas van alineadas a la derecha
   // para que los puntos decimales queden uno debajo de otro.
-  const XLOTE = -75, XTM = 22, XPZ = 92;
-  const filas = FASES.map((f,n)=>{
-    const dy = -10 - (FASES.length-1-n)*26;             // Lote I arriba, el último pegado a la línea
-    return `<text class="lt" x="${XLOTE}" y="${dy}" data-dy="${dy}" text-anchor="end">${corto(f.nombre)}</text>
-      <text class="v2" x="${XTM}" y="${dy}" data-dy="${dy}" text-anchor="end" data-fase="${f.id}" data-d="${keys[i]}">0</text>
-      <text class="v2" x="${XPZ}" y="${dy}" data-dy="${dy}" text-anchor="end" data-fase="${f.id}" data-d="${keys[i]}Pz">0</text>`;
-  }).join('');
-  const dyCab = -10 - FASES.length*26, dyTit = dyCab - 28;
+  const filas = FASES.map(f=>
+    `<g class="fila" data-fase="${f.id}">
+       <text class="lt" x="${XLOTE}" text-anchor="end">${corto(f.nombre)}</text>
+       <text class="v2" x="${XTM}" text-anchor="end" data-fase="${f.id}" data-d="${keys[i]}">0</text>
+       <text class="v2" x="${XPZ}" text-anchor="end" data-fase="${f.id}" data-d="${keys[i]}Pz">0</text>
+     </g>`).join('');
   g.innerHTML = `<line class="lead" x1="0" y1="0" x2="0" y2="-16" stroke="rgba(255,255,255,.5)" stroke-width="1"/>
-    <text class="t" x="-4" y="${dyTit}" data-dy="${dyTit}" text-anchor="middle">${names[i]}</text>
-    <text class="lt" x="${XTM}" y="${dyCab}" data-dy="${dyCab}" text-anchor="end">${UNIDAD}</text>
-    <text class="lt" x="${XPZ}" y="${dyCab}" data-dy="${dyCab}" text-anchor="end">pzas</text>${filas}`;
+    <text class="t" x="-4" text-anchor="middle">${names[i]}</text>
+    <g class="cab"><text class="lt" x="${XTM}" text-anchor="end">${UNIDAD}</text>
+      <text class="lt" x="${XPZ}" text-anchor="end">pzas</text></g>${filas}`;
 });
-/* ---------- Fase: la flecha avanza a la siguiente y regresa a la primera ---------- */
+/* ---------- Acomodo de los rótulos ----------
+   Un lote sin cifra ni en toneladas ni en piezas no se nombra siquiera: su renglón
+   desaparece y los que quedan se recorren hacia la línea, para que el hito muestre
+   solo lo que de verdad tiene.                                                      */
+const SIN = v => !v || v.trim() === '—';
+function acomodarHitos(){
+  document.querySelectorAll('.lbl').forEach(g=>{
+    const h = +g.dataset.h || 16;
+    const filas = [...g.querySelectorAll('.fila')];
+    let k = 0;
+    for (let i = filas.length-1; i >= 0; i--){            // de abajo hacia arriba
+      const f = filas[i];
+      const hay = [...f.querySelectorAll('.v2')].some(t=> !SIN(t.textContent));
+      f.style.display = hay ? '' : 'none';
+      if (!hay) continue;
+      const y = -h - 10 - k*26;
+      f.querySelectorAll('text').forEach(t=> t.setAttribute('y', y));
+      k++;
+    }
+    const cab = g.querySelector('.cab'), yCab = -h - 10 - k*26;
+    cab.style.display = k ? '' : 'none';                  // sin renglones tampoco van las unidades
+    cab.querySelectorAll('text').forEach(t=> t.setAttribute('y', yCab));
+    g.querySelector('.t').setAttribute('y', (k ? yCab : -h - 10) - 28);
+  });
+  // la cadena vertical del celular esconde los mismos lotes
+  document.querySelectorAll('.cadena .fila').forEach(f=>{
+    const hay = [...f.querySelectorAll('[data-d]')].some(t=> !SIN(t.textContent));
+    f.style.display = hay ? '' : 'none';
+  });
+}
 function pintarDatos(){
   DATOS = DATOS_FASE[FASE][SEG];
   const notas = DATOS.notas || {};
@@ -1096,6 +1141,7 @@ function pintarDatos(){
       : fmt(fuente[k]);
     e.textContent = txt + (n ? ' ' + n : '');
   });
+  acomodarHitos();
   pintarTabla();
   pintarDona();
   if (window.RIEL3D) window.RIEL3D.refrescar();   // si el 3D está cargado, se entera del mismo cambio
@@ -1175,7 +1221,7 @@ document.getElementById('cadena').innerHTML = names.map((n,i)=>
      <span class="ico" id="icoc${i+1}"></span>
      <span class="num">${n}</span>
      <div class="cnts">${FASES.map(f=>
-       `<div class="cnt sec"><span class="lote">${corto(f.nombre)}</span><span data-fase="${f.id}" data-d="${keys[i]}">0</span> <small>${UNIDAD}</small> · <span data-fase="${f.id}" data-d="${keys[i]}Pz">0</span> <small>pzas</small></div>`
+       `<div class="cnt sec fila" data-fase="${f.id}"><span class="lote">${corto(f.nombre)}</span><span data-fase="${f.id}" data-d="${keys[i]}">0</span> <small>${UNIDAD}</small> · <span data-fase="${f.id}" data-d="${keys[i]}Pz">0</span> <small>pzas</small></div>`
      ).join('')}</div>
    </div>`).join('');
 
@@ -1409,10 +1455,10 @@ function fit(){
   lbls.forEach(g=>{
     g.setAttribute('transform',`translate(${g.dataset.tx},${g.dataset.ty}) scale(${k})`);
     const h = (+g.dataset.ty - topY)/k;                                         // largo de la línea en px
+    g.dataset.h = h;
     g.querySelector('.lead').setAttribute('y2', -h);
-    // cada renglón guarda su distancia a la punta de la línea: la tablita sube entera
-    g.querySelectorAll('[data-dy]').forEach(e=> e.setAttribute('y', -h + (+e.dataset.dy)));
   });
+  acomodarHitos();                                                             // la tablita sube con la línea
 }
 fit(); addEventListener('resize', fit);
 /* ============================================================
