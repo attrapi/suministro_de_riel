@@ -923,11 +923,12 @@ const gShips  = sc.g();
 // que es justo donde lo deja el viraje desde el muelle: así no hay que maniobrar para enfilar la bocana.
 platePortTop(PX[1], 5.7); platePortTop(PX[3], 19.7);   // las estructuras del muelle quedan delante del buque
 /* ---------- Banderas: China en el puerto de origen, México en el de destino ---------- */
-function flag(x,y,draw){
+function flag(x,y,draw,hacia=1){
   const H=6.5, g=sc.g(null,{class:'flag'});
   sc.box(x-0.1,y-0.1,Z0,0.2,0.2,H,'#D9DEE5',g,{t:0.3});
   const top=sc.P(x,y,Z0+H), w=34, h=22;                 // la tela se dibuja en pantalla, ondeando en x
-  const f=sc.el('g',{transform:`translate(${top[0]},${top[1]})`},g);
+  // hacia = 1 la tela cuelga a la derecha del mástil; hacia = -1 a la izquierda, para que ondee hacia el estrecho
+  const f=sc.el('g',{transform:`translate(${top[0]+(hacia<0?-w:0)},${top[1]})`},g);
   draw(f, w, h);
   return g;
 }
@@ -941,12 +942,12 @@ flag(PX[1]+PLATE-2.4, 11.2, (f,w,h)=>{                   // Bandera de la Repúb
   sc.poly(star(6,6,4),'#FFDE00',f);
   [[13,2.5],[15.5,5],[15.5,8.5],[13,11]].forEach(([x,y])=>sc.poly(star(x,y,1.4),'#FFDE00',f));
 });
-flag(PX[3]+2.4, 11.2, (f,w,h)=>{                         // Bandera de México
+flag(PX[3]+0.6, 11.2, (f,w,h)=>{                         // Bandera de México: al filo del muelle y ondeando sobre el estrecho
   sc.el('rect',{x:0,y:0,width:w/3,height:h,fill:'#006847'},f);
   sc.el('rect',{x:w/3,y:0,width:w/3,height:h,fill:'#FFFFFF'},f);
   sc.el('rect',{x:2*w/3,y:0,width:w/3,height:h,fill:'#CE1126'},f);
   sc.el('circle',{cx:w/2,cy:h/2,r:3.2,fill:'#8C6A2E'},f);
-});
+}, -1);
 }
 drawFlags();                                  // banderas encima de las estructuras del muelle
 const gCranes = sc.g();
