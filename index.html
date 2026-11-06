@@ -95,13 +95,15 @@
            font:11px var(--mono);color:rgba(255,255,255,.7);white-space:nowrap}
   .dona .l i{width:9px;height:9px;border-radius:2px}
   .dona .l b{font-weight:600;color:#EAEFF5;font-variant-numeric:tabular-nums;letter-spacing:.02em}
-  .st{background:rgba(10,15,22,.72);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:8px 12px;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:10px;align-items:center;align-self:stretch}
+  .st{background:rgba(10,15,22,.72);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:8px 12px;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:10px;align-items:center;align-self:stretch;container-type:inline-size}
   .st .ico{grid-row:1/3;width:50px;height:36px}
   .st .ico svg{width:100%;height:100%;overflow:visible}
   .st .num{font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.06em}
   .st .num .sub{display:block;font-size:9.5px;letter-spacing:.02em;text-transform:none;color:rgba(255,255,255,.5)}
-  .st .cnt{font-family:var(--display);font-weight:600;font-size:24px;line-height:1;color:#FF9A4D;font-variant-numeric:tabular-nums;grid-column:2;white-space:nowrap}
+  .st .cnt{font-family:var(--display);font-weight:600;--cifra:24px;font-size:var(--cifra);line-height:1;color:#FF9A4D;font-variant-numeric:tabular-nums;grid-column:2;white-space:nowrap}
   .st .cnt small{font:11px var(--mono);color:rgba(255,255,255,.6)}
+  /* El monto pagado trae muchos digitos: su cifra se encoge para no salirse del cuadro */
+  .st .cnt.larga{font-size:min(var(--cifra),11cqw)}
   /* Tarjeta con dos cifras (p. ej. Contratado en tm y en pzas): se apilan en la misma celda */
   .st .cnts{grid-column:2;display:grid;grid-template-columns:minmax(0,1fr);gap:1px}
   .st .cnts .cnt{grid-column:auto}
@@ -157,7 +159,7 @@
   @media (max-width:1180px){ header{flex-wrap:wrap;gap:12px} .brand{flex:1 1 100%} .st .ico{display:none} }
   /* de seis columnas a tres y luego a dos: seis tarjetas no caben en una pantalla angosta */
   @media (max-width:1040px){ .hstack{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px} .tramo{grid-column:1 / -1} .tmenu{flex-direction:row;flex-wrap:wrap} .tmenu>li{flex:1 1 200px} }
-  @media (max-width:900px){ .st{padding:6px 8px} .st .cnt{grid-column:1;font-size:18px} .st .cnts{grid-column:1} .st .cnt.sec{font-size:13px} .note{display:none} }
+  @media (max-width:900px){ .st{padding:6px 8px} .st .cnt{grid-column:1;--cifra:18px} .st .cnts{grid-column:1} .st .cnt.sec{font-size:13px} .note{display:none} }
 
   /* Celular */
   @media (max-width:760px){
@@ -173,7 +175,7 @@
     .eyebrow{font-size:10px}
     .hstack{width:100%;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
     .st .num{font-size:9px}
-    .st .cnt{font-size:18px}
+    .st .cnt{--cifra:18px}
     .st .cnt.sec{font-size:13px}
     .tramo{gap:6px}
     .tmenu>li{flex:1 1 100%}
@@ -203,7 +205,7 @@
     .hstack{grid-template-columns:1fr;gap:5px}
     .st{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:8px 11px}
     .st .num{font-size:10px}
-    .st .cnt{font-size:18px}
+    .st .cnt{--cifra:18px}
     .st .cnt.sec{font-size:13px}
     .st .cnts{justify-items:end;text-align:right}
     .tramo{grid-column:1}
@@ -318,7 +320,7 @@
         <div class="cnt"><span data-d="pendiente">0</span> <small>tm</small></div>
         <div class="cnt sec"><span data-d="pendientePz">0</span> <small>pzas</small></div>
       </div></div>
-      <div class="st"><div class="ico" id="ico4"></div><div class="num">Monto pagado</div><div class="cnt"><span data-d="monto">0</span> <small>M</small></div></div>
+      <div class="st"><div class="ico" id="ico4"></div><div class="num">Monto pagado</div><div class="cnt larga"><span data-d="monto">0</span> <small>M</small></div></div>
       <div class="st"><div class="ico" id="ico5"></div><div class="num">Proyectos</div><div class="cnt"><span id="nTramos">0</span> <small>proyectos</small></div></div>
     </div>
     <div class="chain" id="chainProyecto" hidden>
@@ -416,7 +418,10 @@ let DATOS_FASE = {}, TABLA = {};
 // Lo último que se leyó (al principio, el respaldo) y las cifras que vienen de celdas
 // con dirección fija, que se imponen a lo demás porque son la fuente más directa.
 let HOJA_VIGENTE = null;
-const PORTADA = {}, PORTADA_DEC = {}, PORTADA_ETAPA = {};
+const PORTADA = {}, PORTADA_ETAPA = {};
+// El monto pagado no sale de una celda, asi que aqui se dice con cuantos decimales
+// se escribe: ninguno, que es como se lee una cifra en pesos.
+const PORTADA_DEC = { monto:0 };
 // Arma lo que consume la página: cada entrega lleva su maqueta, los KPIs de la portada
 // (que la hoja da una sola vez) y los totales por proyecto, sumados de su propia tabla.
 function armar(h){
