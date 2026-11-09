@@ -17,7 +17,7 @@
     --display:"Barlow Condensed","Arial Narrow",Impact,sans-serif;
     --body:"IBM Plex Sans","Segoe UI",Helvetica,Arial,sans-serif;
     --mono:"IBM Plex Mono",Consolas,"Courier New",monospace;
-    --menu-h:56px;
+    --gap-top:16px;                       /* separación estándar: todo arranca a esta altura */
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
@@ -37,27 +37,19 @@
   *{box-sizing:border-box}
   html,body{height:100%;overflow:hidden}
   body{margin:0;background:var(--stage);color:#EAEFF5;font-family:var(--body);font-size:15px;line-height:1.5}
-  /* La franja de arriba toma el color del mar que tiene justo debajo (lo pone el
-     estilo, más abajo, para que siga al tema) y se queda sin filo: así no corta la vista. */
-  .menu{position:fixed;left:0;right:0;top:0;height:var(--menu-h);z-index:3;background:var(--menu-bg,#0B1017);border-bottom:1px solid transparent;padding-top:env(safe-area-inset-top,0px)}
-  .menu{display:flex;align-items:center;justify-content:flex-end;gap:6px;padding-inline:20px}
-  .menu .mtitle{font:11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-right:6px}
-  /* Blancos y sólidos: sobre el mar un botón de contorno se perdía */
-  .menu button{font:12px var(--mono);color:#16202B;background:#FFF;border:1px solid #FFF;border-radius:4px;padding:5px 10px;cursor:pointer;box-shadow:0 1px 3px rgba(8,16,26,.22)}
-  .menu button.on{background:#FF9A4D;border-color:#FF9A4D;color:#0B1017}
-  /* El 3D es otra maqueta, no un estilo de esta: va aparte y conserva el acento,
-     en el naranja oscuro que sí se lee sobre blanco */
-  .menu .v3d{margin-left:16px;color:#B4521A;font-weight:700;letter-spacing:.1em}
-  .menu .v3d:hover{background:#FFF3E9}
-  .menu .v3d[disabled]{opacity:.6;cursor:default}
-  .menu .dl{margin-left:16px}
-  .menu .dl:hover{color:#B4521A}
-  .menu .dl[disabled]{opacity:.55;cursor:default}
-  .menu button:focus-visible{outline:2px solid #FF9A4D;outline-offset:2px}
-  .stage{position:fixed;left:0;right:0;top:var(--menu-h);bottom:0;background:#0F1A2A}
+  /* Los dos botones flotan abajo a la derecha, sobre la maqueta: guinda institucional
+     translúcida para que se vea el mar por detrás y no le quiten sitio al encabezado. */
+  .acciones{position:fixed;right:16px;bottom:16px;z-index:5;display:flex;align-items:center;gap:8px;padding-bottom:env(safe-area-inset-bottom,0px)}
+  .acciones button{font:12px var(--mono);color:#FFF;background:rgba(105,28,50,.72);border:1px solid rgba(255,255,255,.2);border-radius:5px;padding:8px 13px;cursor:pointer;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:0 2px 10px rgba(8,16,26,.35)}
+  .acciones button:hover{background:rgba(105,28,50,.9);border-color:rgba(255,255,255,.38)}
+  .acciones button[disabled]{opacity:.55;cursor:default}
+  /* El 3D es otra maqueta, no un estilo de esta: conserva el acento naranja */
+  .acciones .v3d{color:#FF9A4D;font-weight:700;letter-spacing:.1em}
+  .acciones button:focus-visible{outline:2px solid #FF9A4D;outline-offset:2px}
+  .stage{position:fixed;left:0;right:0;top:0;bottom:0;background:#0F1A2A}
   .stage svg{width:100%;height:100%;display:block}
   .stage.oculta svg{display:none}
-  header{position:fixed;left:16px;right:16px;top:calc(var(--menu-h) + 2px);z-index:4;pointer-events:none;display:flex;align-items:flex-start;gap:24px}
+  header{position:fixed;left:16px;right:16px;top:var(--gap-top);z-index:4;pointer-events:none;display:flex;align-items:flex-start;gap:24px}
   .brand{flex:0 0 auto}
   /* rejilla de seis columnas: las tarjetas en el primer renglón y los proyectos bajo la última */
   /* Cinco columnas iguales y dos desparejas al final: la cifra del monto pagado es la
@@ -154,7 +146,7 @@
   .lbl .centro{fill:#FF9A4D}
   .lbl .g{font:700 34px var(--display);letter-spacing:.3em;fill:rgba(255,255,255,.28)}
   .lbl text{paint-order:stroke;stroke:rgba(8,14,22,.85);stroke-width:3px;stroke-linejoin:round}
-  .note{position:fixed;left:24px;top:calc(var(--menu-h) + 76px);z-index:2;font:11px/1.5 var(--mono);color:rgba(255,255,255,.55);max-width:44ch}
+  .note{position:fixed;left:24px;top:calc(var(--gap-top) + 76px);z-index:2;font:11px/1.5 var(--mono);color:rgba(255,255,255,.55);max-width:44ch}
   @media (max-width:1400px){ .st{padding:8px 10px} .st .ico{width:36px;height:26px} }
   @media (max-width:1180px){ header{flex-wrap:wrap;gap:12px} .brand{flex:1 1 100%} .st .ico{display:none} }
   /* de seis columnas a tres y luego a dos: seis tarjetas no caben en una pantalla angosta */
@@ -163,13 +155,10 @@
 
   /* Celular */
   @media (max-width:760px){
-    .menu{justify-content:flex-start;gap:5px;padding-inline:12px;overflow-x:auto;overflow-y:hidden;white-space:nowrap}
-    .menu .mtitle{display:none}
-    .menu button{flex:0 0 auto;font-size:11px;padding:4px 9px}
-    .menu{background:var(--stage-bg,#16283A);border-bottom-color:rgba(255,255,255,.14)}
-    .menu .dl{margin-left:8px}
+    .acciones{right:10px;bottom:10px;gap:6px}
+    .acciones button{font-size:11px;padding:6px 10px}
 
-    header{left:10px;right:10px;top:calc(var(--menu-h) + 10px);flex-direction:column;flex-wrap:nowrap;gap:10px}
+    header{left:10px;right:10px;top:var(--gap-top);flex-direction:column;flex-wrap:nowrap;gap:10px}
     .brand{flex:0 0 auto;width:100%}
     h1{font-size:27px}
     .eyebrow{font-size:10px}
@@ -183,7 +172,6 @@
     /* En celular nada va fijo: la página se desplaza como documento normal, así el
        encabezado deja de comerse la pantalla y la cadena no queda en una franja. */
     html,body{height:auto;overflow:visible}
-    body{padding-top:var(--menu-h)}
     .stage{display:none}                      /* la maqueta isométrica no cabe: la sustituye la cadena */
     header{position:static;left:auto;right:auto;top:auto;padding:12px 10px 0}
     .cadena{position:static;display:flex;margin:10px 10px 0;bottom:auto;overflow:visible}
@@ -288,10 +276,6 @@
 <body>
 
 
-<div id="menu" class="menu"><!-- espacio reservado para el menú del sitio (100 % de ancho) -->
-  <button type="button" id="btn3d" class="v3d" title="Abrir la maqueta en 3D (otra vista, aparte de esta)">3D</button>
-  <button type="button" id="btnDescargar" class="dl">Descargar</button>
-</div>
 <div class="stage">
   <svg id="scene" viewBox="0 0 1560 950" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Maqueta isométrica de la cadena de suministro del riel: producción, puerto de origen, travesía, descarga y centro de acopio"></svg>
 </div>
@@ -334,6 +318,12 @@
     </div>
   </div>
 </header>
+
+<!-- Acciones: flotan abajo a la derecha, encima de la maqueta -->
+<div class="acciones">
+  <button type="button" id="btn3d" class="v3d" title="Abrir la maqueta en 3D (otra vista, aparte de esta)">3D</button>
+  <button type="button" id="btnDescargar" class="dl">Descargar</button>
+</div>
 <div class="cadena" id="cadena"></div>
 <div class="panel" id="panelProyecto" hidden>
   <h2 class="panel-t" id="panelTitulo"></h2>
@@ -610,9 +600,6 @@ const THEME = 'marino';
 const T = THEMES[THEME];
 document.querySelector('.stage').style.background = T.stage;
 document.body.style.background = T.stage;     // en celular la maqueta se oculta y el fondo lo pone el cuerpo
-// El mar que queda bajo la franja de arriba es el agua apenas aclarada, igual que la
-// lámina del fondo: así la franja se funde con la vista en vez de cortarla.
-document.documentElement.style.setProperty('--menu-bg', shade(T.water, 0.12));
 document.documentElement.style.setProperty('--stage-bg', T.stage);
 document.documentElement.dataset.tema = THEME;
 
@@ -735,7 +722,6 @@ function ship(sc, parent){
    Disposición: cinco placas de 24 u sobre el eje x, separadas 1.6 u
    ============================================================ */
 const svgAll = document.getElementById('scene');
-const MENU_H = 56;                                    // alto de la barra de menú (coincide con --menu-h)
 const S=12, OX0=170, OY0=118, PLATE=24, GAP=1.6, PD=13.2;
 const SEA_W = 34;                                       // ancho del estrecho entre puertos
 const PX = [];                                          // origen x de cada placa
@@ -1447,7 +1433,8 @@ let elegirProyecto = null;              // lo llena el bloque de abajo; lo usa l
       setVista('inicio'); await esperar(500);
       // con la pestaña en segundo plano la captura puede quedarse colgada; se le pone un tope
       const lienzo = await Promise.race([
-        html2canvas(document.body, { backgroundColor: getComputedStyle(elStage).backgroundColor, scale: 1.5, logging: false }),
+        html2canvas(document.body, { backgroundColor: getComputedStyle(elStage).backgroundColor, scale: 1.5, logging: false,
+          ignoreElements: el => el.classList && el.classList.contains('acciones') }),   // los botones flotantes no van en la portada
         new Promise((_, no)=>setTimeout(()=>no(new Error('La captura tardó demasiado')), 60000)),
       ]);
 
@@ -1532,7 +1519,7 @@ requestAnimationFrame(loop);
 const GRASS_Y = 20;                            // hasta dónde llega el pasto visible por delante de las placas
 const ANCHO_MIN = 1100;                        // por debajo de esto la maqueta se desplaza en vez de encogerse hasta ser ilegible
 function fit(){
-  const W=Math.max(innerWidth, ANCHO_MIN), H=innerHeight-MENU_H;
+  const W=Math.max(innerWidth, ANCHO_MIN), H=innerHeight;
   const hdr=document.querySelector('header');
   const bajoEncabezado = (hdr.offsetTop + hdr.offsetHeight + 18) + 'px';
   document.getElementById('panelProyecto').style.top = bajoEncabezado;
@@ -1541,14 +1528,13 @@ function fit(){
   let x0=Math.min(...pts.map(p=>p[0])), x1=Math.max(...pts.map(p=>p[0]));
   let y0=Math.min(...pts.map(p=>p[1]))-10, y1=Math.max(...pts.map(p=>p[1]));
   const padB = 14, padX = 24;                                                     // abajo, apenas una franja de pasto
-  const padT = Math.max(120, Math.min(H-padB-120, hdr.offsetTop + hdr.offsetHeight + 16 - MENU_H));
+  const padT = Math.max(120, Math.min(H-padB-120, hdr.offsetTop + hdr.offsetHeight + 16));
   let k=Math.max((x1-x0)/(W-2*padX),(y1-y0)/(H-padT-padB));
   y0 -= 130*k;                                                                     // sitio para los rótulos encima de las placas
   k=Math.max((x1-x0)/(W-2*padX),(y1-y0)/(H-padT-padB));                            // unidades svg por px
   const vw=W*k, vh=H*k;
   const cx=(x0+x1)/2, cy=sc.P(0,GRASS_Y,0)[1] - vh/2 + padB*k;                     // el pasto queda pegado al borde inferior
   svgAll.setAttribute('viewBox', `${cx-vw/2} ${cy-vh/2} ${vw} ${vh}`);
-  document.documentElement.style.setProperty('--menu-h', MENU_H+'px');
   // los rótulos se escalan para conservar su tamaño en píxeles
   const lbls=[...document.querySelectorAll('.lbl')];
   const topY = Math.min(...lbls.map(g=>+g.dataset.ty)) - 92*k;                   // altura común (en unidades svg)
