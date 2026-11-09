@@ -40,11 +40,11 @@
   /* Los dos botones flotan abajo a la derecha, sobre la maqueta: guinda institucional
      translúcida para que se vea el mar por detrás y no le quiten sitio al encabezado. */
   .acciones{position:fixed;right:16px;bottom:16px;z-index:5;display:flex;align-items:center;gap:8px;padding-bottom:env(safe-area-inset-bottom,0px)}
-  .acciones button{font:12px var(--mono);color:#FFF;background:rgba(105,28,50,.72);border:1px solid rgba(255,255,255,.2);border-radius:5px;padding:8px 13px;cursor:pointer;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:0 2px 10px rgba(8,16,26,.35)}
+  .acciones button{font:12px var(--mono);color:#FF9A4D;background:rgba(105,28,50,.72);border:1px solid rgba(255,255,255,.2);border-radius:5px;padding:8px 13px;cursor:pointer;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:0 2px 10px rgba(8,16,26,.35)}
   .acciones button:hover{background:rgba(105,28,50,.9);border-color:rgba(255,255,255,.38)}
   .acciones button[disabled]{opacity:.55;cursor:default}
-  /* El 3D es otra maqueta, no un estilo de esta: conserva el acento naranja */
-  .acciones .v3d{color:#FF9A4D;font-weight:700;letter-spacing:.1em}
+  /* Los dos van en el naranja del acento; el 3D además en negrita y espaciado */
+  .acciones .v3d{font-weight:700;letter-spacing:.1em}
   .acciones button:focus-visible{outline:2px solid #FF9A4D;outline-offset:2px}
   .stage{position:fixed;left:0;right:0;top:0;bottom:0;background:#0F1A2A}
   .stage svg{width:100%;height:100%;display:block}
