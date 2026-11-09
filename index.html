@@ -155,8 +155,9 @@
 
   /* Celular */
   @media (max-width:760px){
-    .acciones{right:10px;bottom:10px;gap:6px}
-    .acciones button{font-size:11px;padding:6px 10px}
+    /* Dedo, no cursor: todo lo que se toca mide al menos 44 px de alto */
+    .acciones{right:10px;bottom:10px;gap:8px}
+    .acciones button{font-size:12px;padding:0 15px;min-height:44px}
 
     header{left:10px;right:10px;top:var(--gap-top);flex-direction:column;flex-wrap:nowrap;gap:10px}
     .brand{flex:0 0 auto;width:100%}
@@ -166,14 +167,18 @@
     .st .num{font-size:9px}
     .st .cnt{font-size:18px}
     .st .cnt.sec{font-size:13px}
-    .tramo{gap:6px}
+    .tramo{gap:8px}
     .tmenu>li{flex:1 1 100%}
+    .tmenu button,.volver{min-height:44px;font-size:12px}
+    /* A lo ancho como las tarjetas: con width:max-content la dona quedaba corta y descuadraba la columna */
+    .dona{width:auto;margin-top:0;padding:12px 14px}
 
     /* En celular nada va fijo: la página se desplaza como documento normal, así el
        encabezado deja de comerse la pantalla y la cadena no queda en una franja. */
     html,body{height:auto;overflow:visible}
+    body{padding-bottom:84px}                 /* hueco para los botones flotantes: nunca tapan el último renglón */
     .stage{display:none}                      /* la maqueta isométrica no cabe: la sustituye la cadena */
-    header{position:static;left:auto;right:auto;top:auto;padding:12px 10px 0}
+    header{position:static;left:auto;right:auto;top:auto;padding:var(--gap-top) 10px 0}
     .cadena{position:static;display:flex;margin:10px 10px 0;bottom:auto;overflow:visible}
     .panel{position:static;margin:10px 10px 0;bottom:auto;overflow:visible;padding-bottom:16px}
 
@@ -190,8 +195,12 @@
   /* Celular angosto: cada tarjeta es un renglón, con el rótulo a la izquierda y la cifra a la derecha.
      Con dos columnas la cifra no cabía y se salía de su recuadro. */
   @media (max-width:560px){
-    .hstack{grid-template-columns:1fr;gap:5px}
-    .st{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:8px 11px}
+    .hstack{grid-template-columns:1fr;gap:6px}
+    /* Mismo alto en todas: con el contenido al natural unas traían dos cifras y otras una,
+       y la columna quedaba como una escalera. */
+    .st{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 11px;min-height:56px}
+    .cadena{gap:6px}
+    .cadena .st{min-height:66px}              /* los pasos con dos cifras marcan el alto; los demás lo igualan */
     .st .num{font-size:10px}
     .st .cnt{font-size:18px}
     .st .cnt.sec{font-size:13px}
