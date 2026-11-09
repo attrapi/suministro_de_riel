@@ -713,12 +713,13 @@ function ship(sc, parent){
   sc.poly([sc.P(bx,0,H),sc.P(bx+bl,D/2,H),sc.P(bx,D,H)], shade(C.hull,0.35), gg);
   sc.poly([sc.P(bx,D,0),sc.P(bx+bl,D/2,0),sc.P(bx+bl,D/2,0.35),sc.P(bx,D,0.35)], shade(C.hullRed,-0.05), gg);
   const hatches = [], loads = [];
+  const STOW = 1;                                   // la grúa del muelle es fija: todo se estiba en la bodega central
   for (let k=0;k<3;k++){
     const hx = 2.6+k*3.0, hy = 0.6, hw = 2.5, hd = D-1.2;
     hatches.push({x:hx+hw/2, y:hy+hd/2});
     sc.poly([sc.P(hx,hy,H),sc.P(hx+hw,hy,H),sc.P(hx+hw,hy+hd,H),sc.P(hx,hy+hd,H)],'#3A4552',gg);            // brocal de la bodega
     sc.box(hx,hy-0.35,H,hw,0.3,0.18,'#7C8998',gg,{t:0.2});
-    const b = bundle(sc, gg, 5.2); sc.tr(b, hx+hw/2-2.6, hy+hd/2-0.45, H); b.setAttribute('opacity',0); loads.push(b);   // atado estibado sobre cubierta, visible
+    const b = bundle(sc, gg, 5.2); sc.tr(b, 2.6+STOW*3.0+hw/2-2.6, hy+hd/2-0.45, H+k*0.55); b.setAttribute('opacity',0); loads.push(b);   // atados apilados sobre la bodega central
   }
   sc.box(0.5,0.5,H,1.9,D-1.0,1.5,C.house,gg,{t:0.1,l:-0.08,r:-0.3});
   sc.box(0.7,0.8,H+1.5,1.5,D-1.6,0.7,C.house,gg,{t:0.1,l:-0.08,r:-0.3});
@@ -727,7 +728,7 @@ function ship(sc, parent){
   const sm = sc.g(gg,{class:'smoke'}); const tc = sc.P(1.3,D/2,H+3.0);
   for (let p=0;p<3;p++) sc.el('circle',{cx:tc[0],cy:tc[1],r:5,fill:'rgba(200,210,225,.5)',style:`animation-delay:${-p*1.6}s`},sm);
   sc.box(L-0.6,D/2-0.1,H,0.2,0.2,1.6,'#C8D0DA',gg);
-  return {g:gg, hatches, loads, deckZ:H};
+  return {g:gg, hatches, loads, deckZ:H, stow:STOW};
 }
 
 /* ============================================================
@@ -953,11 +954,11 @@ const gCranes = sc.g();
 const gTrucks = sc.g();
 
 
-const SPEED = { truck:4.0, ship:2.6, craneXY:3.0, craneZ:2.2 };
+const SPEED = { truck:4.0, ship:2.6, craneY:3.0, craneZ:2.2 };   // craneY: el carro por la viga; craneZ: el gancho
 const SHIP_CAP = 3;                       // atados por travesía
 const step = (v,target,rate,dt)=> Math.abs(target-v)<=rate*dt ? target : v + Math.sign(target-v)*rate*dt;
 
-/* Grúa pórtico con trabajos de "tomar en A y dejar en B" */
+/* Grúa pórtico fija: toma en A y deja en B moviendo solo el carro y el gancho */
 class Crane {
   constructor(y0,y1,h,spanFrom,spanTo,x,homeY){
     const gg = gantry(sc,gCranes,y0,y1,h,spanFrom,spanTo);
@@ -971,14 +972,15 @@ class Crane {
   update(dt){
     const j=this.job;
     if (!j){ this.render(); return; }
-    const arrive=(tx,ty)=>{ this.x=step(this.x,tx,SPEED.craneXY,dt); this.y=step(this.y,ty,SPEED.craneXY,dt); return this.x===tx&&this.y===ty; };
+    // El pórtico no se traslada: el atado va del camión al buque con el carro, que corre por la viga (eje y)
+    const cross=(ty)=>{ this.y=step(this.y,ty,SPEED.craneY,dt); return this.y===ty; };
     const lift=(tz)=>{ this.z=step(this.z,tz,SPEED.craneZ,dt); return this.z===tz; };
     switch(this.phase){
-      case 0: if (arrive(j.px,j.py)) this.phase=1; break;
+      case 0: if (cross(j.py)) this.phase=1; break;
       case 1: if (lift(j.pz)) { this.phase=2; this.wait=0.4; } break;
       case 2: this.wait-=dt; if (this.wait<=0){ j.onPick&&j.onPick(); this.bundle.setAttribute('opacity',1); this.phase=3; } break;
       case 3: if (lift(this.top)) this.phase=4; break;
-      case 4: if (arrive(j.dx,j.dy)) this.phase=5; break;
+      case 4: if (cross(j.dy)) this.phase=5; break;
       case 5: if (lift(j.dz)) { this.phase=6; this.wait=0.4; } break;
       case 6: this.wait-=dt; if (this.wait<=0){ j.onDrop&&j.onDrop(); this.bundle.setAttribute('opacity',0); this.phase=7; } break;
       case 7: if (lift(this.top)) this.job=null; break;
@@ -995,10 +997,12 @@ const cranes = {
   yard: new Crane(5.2, 11.6, 5.6, 5.2, 13.0, PX[4]+12.9, 7.5),
 };
 const FAB_STACK = {x:PX[0]+18.5, y:8.6, z:Z0+0.12+3*0.34+0.55};
-const FAB_STOP = PX[0]+9.0, ORI_STOP = PX[1]+9.45, DES_STOP = PX[3]+9.45, YARD_STOP = PX[4]+10.0;
+// Cada parada deja el centro del atado del camión justo bajo el eje de su grúa, que ya no se traslada
+const FAB_STOP = PX[0]+15.6, ORI_STOP = PX[1]+9.45, DES_STOP = PX[3]+9.45, YARD_STOP = PX[4]+10.0;
 const YARD_DROP = {x:PX[4]+12.9, y:7.6, z:Z0+0.1+3*0.34+0.55};
 const bundleCenter = X => X+2.9;          // centro del atado sobre un camión con origen X
-const hatchWorld = (sh,k) => ({x:sh.cx-SHIP_LEN/2+sh.o.hatches[k].x, y:sh.cy-1.6+sh.o.hatches[k].y, z:0.25+sh.o.deckZ+0.55});
+// Punto de estiba del atado k: siempre la bodega central -bajo la viga de la grúa- y un piso más arriba por cada atado ya estibado
+const hatchWorld = (sh,k) => ({x:sh.cx-SHIP_LEN/2+sh.o.hatches[sh.o.stow].x, y:sh.cy-1.6+sh.o.hatches[sh.o.stow].y, z:0.25+sh.o.deckZ+k*0.55+0.55});
 
 const HEADINGS = [0,30,60,90,120,150,180,210,240,270,300,330];
 const scHead = {}; HEADINGS.forEach(h=>{ const r=h*Math.PI/180, c=Math.cos(r), sn=Math.sin(r); scHead[h]=makeScene(svgAll,S,OX0,OY0,(x,y)=>[x*c - y*sn, x*sn + y*c]); });
@@ -1093,10 +1097,10 @@ function updateTrucksA(dt){
     if (t.turn){ if (updateTurn(t,dt)) t.state = t.state==='turn1' ? 'out_y' : 'back_x'; truckRender(t); continue; }
     switch(t.state){
       case 'in': if (drive(t,FAB_C,dt)) t.state='wait_load'; break;
-      case 'wait_load': if (!cranes.fab.busy){ t.state='loading'; cranes.fab.start({px:FAB_STACK.x,py:FAB_STACK.y,pz:FAB_STACK.z, dx:loadX(t),dy:t.cy,dz:LOADZ, onDrop:()=>{ setLoad(t,true); t.state='to_port'; }}); } break;
+      case 'wait_load': if (!cranes.fab.busy){ t.state='loading'; cranes.fab.start({py:FAB_STACK.y,pz:FAB_STACK.z, dy:t.cy,dz:LOADZ, onDrop:()=>{ setLoad(t,true); t.state='to_port'; }}); } break;
       case 'loading': break;
       case 'to_port': { const target = ORI_C - 8.5*queue.indexOf(t); drive(t,target,dt); if (t.cx===ORI_C) t.state='wait_unload'; break; }
-      case 'wait_unload': { const s=originShip(); if (s && s.load<SHIP_CAP && !cranes.pOri.busy){ const k=s.load, h=hatchWorld(s,k); t.state='unloading'; cranes.pOri.start({px:loadX(t),py:t.cy,pz:LOADZ, dx:h.x,dy:h.y,dz:h.z, onPick:()=>{ setLoad(t,false); t.state='out'; }, onDrop:()=>{ s.load=Math.min(SHIP_CAP,s.load+1); }}); } break; }
+      case 'wait_unload': { const s=originShip(); if (s && s.load<SHIP_CAP && !cranes.pOri.busy){ const k=s.load, h=hatchWorld(s,k); t.state='unloading'; cranes.pOri.start({py:t.cy,pz:LOADZ, dy:h.y,dz:h.z, onPick:()=>{ setLoad(t,false); t.state='out'; }, onDrop:()=>{ s.load=Math.min(SHIP_CAP,s.load+1); }}); } break; }
       case 'unloading': break;
       case 'out': if (drive(t,A_TURN_C-TURN_R,dt)){ t.state='turn1'; startTurn(t,A_TURN_C,LANE_C,90); } break;
       case 'out_y': if (drive(t,RET_C-TURN_R,dt)){ t.state='turn2'; startTurn(t,A_TURN_C,RET_C,180); } break;
@@ -1121,10 +1125,10 @@ function updateTrucksB(dt){
       case 'in_x': if (drive(t,B_ROAD_C+TURN_R,dt)){ t.state='turn_in1'; startTurn(t,B_ROAD_C,RET_C,270); } break;
       case 'in_y': if (drive(t,LANE_C+TURN_R,dt)){ t.state='turn_in2'; startTurn(t,B_ROAD_C,LANE_C,0); } break;
       case 'in': { const target = DES_C - 8.5*inQueue.indexOf(t); drive(t,target,dt); if (t.cx===DES_C) t.state='wait_load'; break; }
-      case 'wait_load': if (s && s.load>0 && !cranes.pDes.busy){ const k=s.load-1, h=hatchWorld(s,k); t.state='loading'; t.ship=s; cranes.pDes.start({px:h.x,py:h.y,pz:h.z, dx:loadX(t),dy:t.cy,dz:LOADZ, onPick:()=>{ s.load=k; }, onDrop:()=>{ setLoad(t,true); t.state='to_yard2'; }}); } break;
+      case 'wait_load': if (s && s.load>0 && !cranes.pDes.busy){ const k=s.load-1, h=hatchWorld(s,k); t.state='loading'; t.ship=s; cranes.pDes.start({py:h.y,pz:h.z, dy:t.cy,dz:LOADZ, onPick:()=>{ s.load=k; }, onDrop:()=>{ setLoad(t,true); t.state='to_yard2'; }}); } break;
       case 'loading': break;
       case 'to_yard2': { const target = YARD_C - 8.5*queue.indexOf(t); drive(t,target,dt); if (t.cx===YARD_C) t.state='wait_unload'; break; }
-      case 'wait_unload': if (!cranes.yard.busy){ t.state='unloading'; cranes.yard.start({px:loadX(t),py:t.cy,pz:LOADZ, dx:YARD_DROP.x,dy:YARD_DROP.y,dz:YARD_DROP.z, onPick:()=>{ setLoad(t,false); t.state='out'; }}); } break;
+      case 'wait_unload': if (!cranes.yard.busy){ t.state='unloading'; cranes.yard.start({py:t.cy,pz:LOADZ, dy:YARD_DROP.y,dz:YARD_DROP.z, onPick:()=>{ setLoad(t,false); t.state='out'; }}); } break;
       case 'unloading': break;
       case 'out': if (drive(t,B_EAST_X,dt)) t.dead=true; break;
     }
