@@ -139,6 +139,7 @@
   .lbl .s{font:500 11px var(--mono);letter-spacing:.04em;fill:rgba(255,255,255,.62)}
   .lbl .v2{font:600 20px var(--display);fill:#FF9A4D}      /* cifra de cada lote en el hito */
   .lbl .lt{font:500 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;fill:rgba(255,255,255,.55)}
+  .lbl .vacia,.cadena .vacia{opacity:.45}                   /* sitio reservado: aún no hay cifras */
   /* Radar: el punto que señala el rótulo late con tres ondas. Son elipses de ry = rx/2
      para que se acuesten en el suelo isométrico, como la retícula de las placas. */
   .lbl .onda{fill:none;stroke:#FF9A4D;stroke-width:1.1;transform-box:fill-box;transform-origin:center;
@@ -1145,13 +1146,14 @@ PX.forEach((x0,i)=>{
   // todos los rótulos a la misma altura de pantalla; solo cambia el largo de la línea que señala
   // Un renglón por lote, con sus dos unidades. Las columnas van alineadas a la derecha
   // para que los puntos decimales queden uno debajo de otro.
-  // Cada lote se escribe en columna y centrado sobre la línea: primero su nombre,
-  // bajo el del paso -y bajo el puerto, donde lo hay-, y debajo sus dos cifras.
+  // Cada lote se escribe en columna: primero su nombre, bajo el del paso -y bajo el
+  // puerto, donde lo hay-, y debajo sus dos cifras. Los tres renglones arrancan en el
+  // mismo filo izquierdo, y el bloque entero se centra sobre la línea.
   const filas = FASES.map(f=>
     `<g class="fila" data-fase="${f.id}">
-       <text class="lt" x="0" text-anchor="middle">${f.nombre}</text>
-       <text class="val" x="0" text-anchor="middle"><tspan class="v2" data-fase="${f.id}" data-d="${keys[i]}">0</tspan><tspan class="u" dx="5">${UNIDAD}</tspan></text>
-       <text class="val" x="0" text-anchor="middle"><tspan class="v2" data-fase="${f.id}" data-d="${keys[i]}Pz">0</tspan><tspan class="u" dx="5">pzas</tspan></text>
+       <text class="lt" x="0">${f.nombre}</text>
+       <text class="val" x="0"><tspan class="v2" data-fase="${f.id}" data-d="${keys[i]}">0</tspan><tspan class="u" dx="5">${UNIDAD}</tspan></text>
+       <text class="val" x="0"><tspan class="v2" data-fase="${f.id}" data-d="${keys[i]}Pz">0</tspan><tspan class="u" dx="5">pzas</tspan></text>
      </g>`).join('');
   // La línea ya no baja hasta el punto: se detiene arriba y el último tramo lo
   // ocupa el radar, tres ondas que salen del punto señalado. Así el rótulo y su
@@ -1163,6 +1165,12 @@ PX.forEach((x0,i)=>{
       <ellipse class="centro" rx="1.8" ry=".9"/>
     </g>
     <line class="lead" x1="0" y1="0" x2="0" y2="0" stroke="rgba(255,255,255,.5)" stroke-width="1"/>
+    <!-- El paso que todavía no tiene cifras guarda el sitio con rayas: se ve que ahí van valores -->
+    <g class="fila vacia">
+       <text class="lt" x="0">—</text>
+       <text class="val" x="0"><tspan class="v2">—</tspan><tspan class="u" dx="5">${UNIDAD}</tspan></text>
+       <text class="val" x="0"><tspan class="v2">—</tspan><tspan class="u" dx="5">pzas</tspan></text>
+     </g>
     <text class="t" x="0" text-anchor="middle">${names[i]}</text>
     ${subs[i] ? `<text class="s" x="0" text-anchor="middle">${subs[i]}</text>` : ''}${filas}`;
 });
@@ -1178,6 +1186,16 @@ const SIN = v => !v || v.trim() === '—';
 const R = { sub:15, lote:21, tm:19, pz:18, bloque:24, linea:13 };
 const LINEA_MIN = 34;                                     // tramo de línea del hito más cargado
 const pilaAlto = k => R.sub + (k ? k*(R.lote+R.tm+R.pz) + (k-1)*R.bloque : 0);
+/* Los tres renglones del lote comparten filo izquierdo -así las cifras caen una bajo
+   otra- y el bloque se centra sobre la línea: se mide el más ancho y se corre medio. */
+function alinearIzq(f){
+  const ts = [f.querySelector('.lt'), ...f.querySelectorAll('.val')];
+  try {
+    ts.forEach(t=> t.setAttribute('x', 0));
+    const w = Math.max(...ts.map(t=> t.getBBox().width));
+    ts.forEach(t=> t.setAttribute('x', -w/2));
+  } catch(e){ /* sin layout todavía: se reacomoda en el siguiente fit() */ }
+}
 function acomodarHitos(){
   const lbls = [...document.querySelectorAll('.lbl')];
   const conCifra = f => [...f.querySelectorAll('[data-d]')].some(t=> !SIN(t.textContent));
@@ -1196,15 +1214,19 @@ function acomodarHitos(){
     y -= R.sub;
     const sub = g.querySelector('.s');
     if (sub) sub.setAttribute('y', -y);
-    const k = vis[i].length;
+    // Sin un solo lote con cifras, sale el marcador de rayas en su lugar: el hueco
+    // queda ocupado y se entiende que ahí van valores, no que el paso no lleve.
+    const reales = vis[i], k = Math.max(1, reales.length);
+    const filas = reales.length ? reales : [g.querySelector('.vacia')];
     g.querySelectorAll('.fila').forEach(f=> f.style.display = 'none');
-    vis[i].forEach((f,j)=>{
+    filas.forEach((f,j)=>{
       f.style.display = '';
       const vals = f.querySelectorAll('.val');
       y -= R.lote; f.querySelector('.lt').setAttribute('y', -y);
       y -= R.tm;   vals[0].setAttribute('y', -y);           // toneladas
       y -= R.pz;   vals[1].setAttribute('y', -y);           // piezas
       if (j < k-1) y -= R.bloque;
+      alinearIzq(f);
     });
     y -= R.linea;
     const lead = g.querySelector('.lead');
@@ -1212,10 +1234,17 @@ function acomodarHitos(){
     lead.setAttribute('y2', -hito);                         // y baja hasta el punto
     g.querySelector('.radar').setAttribute('transform', `translate(0,${-hito})`);
   });
-  // la cadena vertical del celular esconde los mismos lotes
-  document.querySelectorAll('.cadena .fila').forEach(f=>{
-    const hay = [...f.querySelectorAll('[data-d]')].some(t=> !SIN(t.textContent));
-    f.style.display = hay ? '' : 'none';
+  // La cadena vertical del celular esconde los mismos lotes y, cuando al paso no le
+  // queda ninguno, saca el mismo marcador de rayas que el rótulo de la maqueta.
+  document.querySelectorAll('.cadena .st').forEach(st=>{
+    let alguna = false;
+    st.querySelectorAll('.fila:not(.vacia)').forEach(f=>{
+      const hay = [...f.querySelectorAll('[data-d]')].some(t=> !SIN(t.textContent));
+      f.style.display = hay ? '' : 'none';
+      if (hay) alguna = true;
+    });
+    const vacia = st.querySelector('.vacia');
+    if (vacia) vacia.style.display = alguna ? 'none' : '';
   });
 }
 function pintarDatos(){
@@ -1314,7 +1343,13 @@ document.getElementById('cadena').innerHTML = names.map((n,i)=>
           </span>
           <span class="lote">${f.nombre}</span>
         </div>`
-     ).join('')}</div>
+     ).join('')}<div class="cnt sec fila vacia">
+          <span class="caja">
+            <span class="lin">— <small>${UNIDAD}</small></span>
+            <span class="lin">— <small>pzas</small></span>
+          </span>
+          <span class="lote">—</span>
+        </div></div>
    </div>`).join('');
 
 /* ---------- Vista: la portada lleva la maqueta; la de proyecto la esconde ---------- */
