@@ -138,7 +138,7 @@
   .lbl .t{font:600 15px var(--display);text-transform:uppercase;letter-spacing:.02em;fill:#EAEFF5}
   .lbl .s{font:500 11px var(--mono);letter-spacing:.04em;fill:rgba(255,255,255,.62)}
   .lbl .v2{font:600 20px var(--display);fill:#FF9A4D}      /* cifra de cada lote en el hito */
-  .lbl .lt{font:500 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;fill:rgba(255,255,255,.55)}
+  .lbl .lt{font:500 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;fill:rgba(255,255,255,.55)}
   /* Radar: el punto que señala el rótulo late con tres ondas. Son elipses de ry = rx/2
      para que se acuesten en el suelo isométrico, como la retícula de las placas. */
   .lbl .onda{fill:none;stroke:#FF9A4D;stroke-width:1.1;transform-box:fill-box;transform-origin:center;
@@ -1138,7 +1138,6 @@ const corto = n => (n||'').replace(/^lote\s*/i,'');      // "Lote II" -> "II"
 const names = ['Por fabricar','Puerto Origen','Traslado marítimo','Puerto Destino','Centro de acopio'];
 // Segundo renglón, más chico, bajo el nombre del paso: los dos puertos llevan el suyo
 const subs  = ['', 'Zhangjiagang, P. R. China', '', 'Altamira, Tamaulipas', ''];
-const HAY_SUB = subs.some(Boolean);
 const keys  = ['produccion','puerto','traslado','descarga','acopio'];
 PX.forEach((x0,i)=>{
   const [tx,ty] = sc.P(x0+[7,8,SEA_W/2,16,12][i], 0, 2.2);
@@ -1146,14 +1145,13 @@ PX.forEach((x0,i)=>{
   // todos los rótulos a la misma altura de pantalla; solo cambia el largo de la línea que señala
   // Un renglón por lote, con sus dos unidades. Las columnas van alineadas a la derecha
   // para que los puntos decimales queden uno debajo de otro.
-  // Cada lote es una cajita sin recuadro ni trazo propio: se cuelga de la línea del
-  // hito, que le hace de borde. El nombre del lote queda a su izquierda y las dos
-  // cifras a la derecha, una encima de otra con su unidad pegada.
+  // Cada lote se escribe en columna y centrado sobre la línea: primero su nombre,
+  // bajo el del paso -y bajo el puerto, donde lo hay-, y debajo sus dos cifras.
   const filas = FASES.map(f=>
     `<g class="fila" data-fase="${f.id}">
-       <text class="val" x="11"><tspan class="v2" data-fase="${f.id}" data-d="${keys[i]}">0</tspan><tspan class="u" dx="5">${UNIDAD}</tspan></text>
-       <text class="val" x="11"><tspan class="v2" data-fase="${f.id}" data-d="${keys[i]}Pz">0</tspan><tspan class="u" dx="5">pzas</tspan></text>
-       <text class="lt" x="-11" text-anchor="end">${f.nombre}</text>
+       <text class="lt" x="0" text-anchor="middle">${f.nombre}</text>
+       <text class="val" x="0" text-anchor="middle"><tspan class="v2" data-fase="${f.id}" data-d="${keys[i]}">0</tspan><tspan class="u" dx="5">${UNIDAD}</tspan></text>
+       <text class="val" x="0" text-anchor="middle"><tspan class="v2" data-fase="${f.id}" data-d="${keys[i]}Pz">0</tspan><tspan class="u" dx="5">pzas</tspan></text>
      </g>`).join('');
   // La línea ya no baja hasta el punto: se detiene arriba y el último tramo lo
   // ocupa el radar, tres ondas que salen del punto señalado. Así el rótulo y su
@@ -1165,56 +1163,54 @@ PX.forEach((x0,i)=>{
       <ellipse class="centro" rx="1.8" ry=".9"/>
     </g>
     <line class="lead" x1="0" y1="0" x2="0" y2="0" stroke="rgba(255,255,255,.5)" stroke-width="1"/>
-    <text class="t" x="-9" text-anchor="middle">${names[i]}</text>
-    ${subs[i] ? `<text class="s" x="-9" text-anchor="middle">${subs[i]}</text>` : ''}${filas}`;
+    <text class="t" x="0" text-anchor="middle">${names[i]}</text>
+    ${subs[i] ? `<text class="s" x="0" text-anchor="middle">${subs[i]}</text>` : ''}${filas}`;
 });
 /* ---------- Acomodo de los rótulos ----------
    Un lote sin cifra ni en toneladas ni en piezas no se nombra siquiera: su renglón
    desaparece y los que quedan se recorren hacia la línea, para que el hito muestre
    solo lo que de verdad tiene.                                                      */
 const SIN = v => !v || v.trim() === '—';
-const ALTO = 60;                                          // alto de la cajita de un lote
-const LARGO_LINEA = 80;                                   // la línea señala con este largo fijo
+/* Ritmo vertical del rótulo, en píxeles y de arriba abajo: el nombre del paso, el
+   renglón del puerto -se reserva en los cinco aunque solo dos lo traigan, para que
+   los renglones de abajo queden al mismo nivel- y, por cada lote, su nombre y sus
+   dos cifras. Todo centrado sobre la línea. */
+const R = { sub:15, lote:21, tm:19, pz:18, bloque:24, linea:13 };
+const LINEA_MIN = 34;                                     // tramo de línea del hito más cargado
+const pilaAlto = k => R.sub + (k ? k*(R.lote+R.tm+R.pz) + (k-1)*R.bloque : 0);
 function acomodarHitos(){
   const lbls = [...document.querySelectorAll('.lbl')];
   const conCifra = f => [...f.querySelectorAll('[data-d]')].some(t=> !SIN(t.textContent));
   const vis = lbls.map(g => [...g.querySelectorAll('.fila')].filter(conCifra));
-  // El nombre del paso va a la misma altura en los cinco: se reserva el espacio del
-  // hito más cargado, no el de cada uno, que es lo que antes los dejaba disparejos.
+  // Se reserva la altura del hito más cargado: así el nombre del paso sale al mismo
+  // nivel en los cinco, no al que le tocaría a cada uno por su cuenta.
   const maxK = Math.max(1, ...vis.map(v=> v.length));
+  const ALTO_PILA = pilaAlto(maxK) + R.linea + LINEA_MIN;   // del nombre al hito
   lbls.forEach((g,i)=>{
     const h = +g.dataset.h || 16;
-    // el nombre sube el renglón del subtítulo en los cinco, no sólo en el que lo trae,
-    // para que los títulos sigan todos a la misma altura
-    const yNom = h + maxK*ALTO + 26;
-    g.querySelector('.t').setAttribute('y', -(yNom + (HAY_SUB ? 15 : 0)));
+    // El hito cae en el mismo renglón en los cinco; lo que cambia es el largo de la
+    // línea, que se estira cuando el rótulo trae menos lotes que escribir.
+    const hito = h - 4;
+    let y = hito + ALTO_PILA;                               // cursor: baja restando
+    g.querySelector('.t').setAttribute('y', -y);
+    y -= R.sub;
     const sub = g.querySelector('.s');
-    if (sub) sub.setAttribute('y', -yNom);
-    // Todo cuelga del nombre hacia abajo: primero las cajitas de los lotes y al final
-    // la línea, siempre del mismo largo. Antes crecía desde el punto y en los hitos sin
-    // cifras quedaba muy abajo, lejos de su nombre.
-    // Arranque común a los cinco: 10 px bajo el renglón del puerto, lo traiga el
-    // rótulo o no. Los que no lo traen dejan ese hueco vacío, pero así todas las
-    // líneas -y con ellas los radares- quedan al mismo nivel.
-    const TOPE = yNom - 10;
+    if (sub) sub.setAttribute('y', -y);
     const k = vis[i].length;
     g.querySelectorAll('.fila').forEach(f=> f.style.display = 'none');
-    vis[i].forEach((f,j)=>{                               // j = 0 es la de abajo
+    vis[i].forEach((f,j)=>{
       f.style.display = '';
-      const top = TOPE - 62 - (k-1-j)*ALTO;
       const vals = f.querySelectorAll('.val');
-      vals[0].setAttribute('y', -(top + 44));             // toneladas arriba
-      vals[1].setAttribute('y', -(top + 16));             // piezas abajo
-      f.querySelector('.lt').setAttribute('y', -(top + 30));
+      y -= R.lote; f.querySelector('.lt').setAttribute('y', -y);
+      y -= R.tm;   vals[0].setAttribute('y', -y);           // toneladas
+      y -= R.pz;   vals[1].setAttribute('y', -y);           // piezas
+      if (j < k-1) y -= R.bloque;
     });
-    // Un solo trazo por hito, del mismo grueso en los cinco: baja desde el nombre,
-    // pasa junto a las cajitas y sigue un poco más. El radar va justo donde termina.
-    const largo = Math.max(LARGO_LINEA, k*ALTO + 20);
-    const fin = TOPE - largo;
+    y -= R.linea;
     const lead = g.querySelector('.lead');
-    lead.setAttribute('y2', -TOPE);
-    lead.setAttribute('y1', -fin);
-    g.querySelector('.radar').setAttribute('transform', `translate(0,${-fin})`);
+    lead.setAttribute('y1', -y);                            // arranca bajo el último renglón
+    lead.setAttribute('y2', -hito);                         // y baja hasta el punto
+    g.querySelector('.radar').setAttribute('transform', `translate(0,${-hito})`);
   });
   // la cadena vertical del celular esconde los mismos lotes
   document.querySelectorAll('.cadena .fila').forEach(f=>{
@@ -1540,7 +1536,7 @@ function fit(){
   const padB = 14, padX = 24;                                                     // abajo, apenas una franja de pasto
   const padT = Math.max(120, Math.min(H-padB-120, hdr.offsetTop + hdr.offsetHeight + 16));
   let k=Math.max((x1-x0)/(W-2*padX),(y1-y0)/(H-padT-padB));
-  y0 -= 130*k;                                                                     // sitio para los rótulos encima de las placas
+  y0 -= 148*k;                                                                     // sitio para los rótulos encima de las placas
   k=Math.max((x1-x0)/(W-2*padX),(y1-y0)/(H-padT-padB));                            // unidades svg por px
   const vw=W*k, vh=H*k;
   const cx=(x0+x1)/2, cy=sc.P(0,GRASS_Y,0)[1] - vh/2 + padB*k;                     // el pasto queda pegado al borde inferior
