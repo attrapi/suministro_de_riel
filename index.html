@@ -855,26 +855,25 @@ function gapRoad(x0,w=GAP){ const g=sc.g(); sc.box(x0,ROAD_Y,0,w,PD-ROAD_Y,0.4,C
 function gapWater(x0, d){}
 
 /* ---------- Paisaje de fondo: China a la izquierda, México a la derecha, el océano al fondo y en el estrecho ----------
-   Los bordes del estrecho son verticales en pantalla: en el mundo son rectas x + DEPTH_X·y = const. */
+   Las orillas del estrecho corren por el eje x del mundo, igual que el muelle y la carretera,
+   así que en pantalla se recuestan hacia la izquierda con el mismo ángulo y el corte casa. */
 const WX0=-420, WX1=560, WY0=-200, WY1=160;
 const LAND=C.land, LAND2=C.land2, SAND=C.sand;
 const COAST_Y = -2;
 const XC = PX[1]+PLATE+4.5, XM = PX[3]-3;                                   // costas del estrecho a la altura del muelle
-const chinaEdge  = y => XC - DEPTH_X*(y-QY);                              // x del borde chino para cada y
-const mexicoEdge = y => XM - DEPTH_X*(y-QY);
-const inChina  = (x,y)=> x <= chinaEdge(y) && y >= COAST_Y;
+const inChina  = (x,y)=> x <= XC && y >= COAST_Y;
 const MX_STEP = PX[3]+PLATE+6;                                            // pasado el puerto la costa retrocede: el acopio queda en tierra
-const inMexico = (x,y)=> x >= mexicoEdge(y) && y >= (x>=MX_STEP ? COAST_Y : QY);
+const inMexico = (x,y)=> x >= XM && y >= (x>=MX_STEP ? COAST_Y : QY);
 const inChannel = (x,y)=> (x>=PX[1]-1 && x<=XC+6 && y<QY) || (x>=PX[3]-1 && y<QY);
 {
   sc.box(WX0,WY0,0,WX1-WX0,WY1-WY0,0.25,C.water,null,{t:0.12,l:-0.2,r:-0.4});                       // océano (color plano)
   const sea = water(sc, -160, -90, 420, 180, 1.0, true); updaters.push(now=>sc.tr(sea.waves,0,((now/1000)*0.4)%1,0)); // olas en la zona visible
   const landPoly=(pts,z,fill)=>sc.poly(pts.map(p=>sc.P(p[0],p[1],z)),fill);
-  // China: costa trasera horizontal (y = COAST_Y) y borde vertical en pantalla hacia el estrecho
-  const chinaPts = o => [[WX0,COAST_Y-o],[chinaEdge(COAST_Y)+o,COAST_Y-o],[chinaEdge(WY1)+o,WY1],[WX0,WY1]];
+  // China: costa trasera horizontal (y = COAST_Y) y orilla del estrecho paralela al borde del muelle
+  const chinaPts = o => [[WX0,COAST_Y-o],[XC+o,COAST_Y-o],[XC+o,WY1],[WX0,WY1]];
   landPoly(chinaPts(0.6),0.2,SAND); landPoly(chinaPts(0),0.32,LAND);
-  // México: empieza en y = QY (la costa queda navegable) y su borde hacia el estrecho también es vertical
-  const mexPts = o => [[mexicoEdge(QY)-o,QY-o],[MX_STEP-o,QY-o],[MX_STEP-o,COAST_Y-o],[WX1,COAST_Y-o],[WX1,WY1],[mexicoEdge(WY1)-o,WY1]];
+  // México: empieza en y = QY (la costa queda navegable) y su orilla también sigue el eje x
+  const mexPts = o => [[XM-o,QY-o],[MX_STEP-o,QY-o],[MX_STEP-o,COAST_Y-o],[WX1,COAST_Y-o],[WX1,WY1],[XM-o,WY1]];
   landPoly(mexPts(0.6),0.2,SAND); landPoly(mexPts(0),0.32,LAND);
   // bocana del puerto chino (agua dentro del muelle) e islotes
   const chan=(x0,y0,x1,y1)=>{ const w=water(sc,x0,y0,x1-x0,y1-y0,1.0,true); updaters.push(now=>sc.tr(w.waves,0,((now/1000)*0.4)%1,0)); };
