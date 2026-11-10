@@ -325,9 +325,9 @@
       <div class="st"><div class="ico" id="ico5"></div><div class="num">Proyectos</div><div class="cnt"><span id="nTramos">0</span> <small>proyectos</small></div></div>
     </div>
     <div class="chain" id="chainProyecto" hidden>
-      <div class="st"><div class="ico" id="ico7"></div><div class="num">Solicitado</div><div class="cnt"><span data-d="solicitado">0</span> <small>tm</small></div></div>
-      <div class="st"><div class="ico" id="ico8"></div><div class="num">Entregado</div><div class="cnt"><span data-d="entregadoP">0</span> <small>tm</small></div></div>
-      <div class="st"><div class="ico" id="ico9"></div><div class="num">Pendiente</div><div class="cnt"><span data-d="pendienteP">0</span> <small>tm</small></div></div>
+      <div class="st"><div class="ico" id="ico7"></div><div class="num">Solicitado</div><div class="cnt"><span data-d="solicitado">0</span> <small>pzas</small></div></div>
+      <div class="st"><div class="ico" id="ico8"></div><div class="num">Entregado</div><div class="cnt"><span data-d="entregadoP">0</span> <small>pzas</small></div></div>
+      <div class="st"><div class="ico" id="ico9"></div><div class="num">Por entregar</div><div class="cnt"><span data-d="pendienteP">0</span> <small>pzas</small></div></div>
     </div>
     <div class="tramo" id="tramo">
       <button type="button" class="volver" id="btnVolver" hidden>&larr; Volver</button>
@@ -385,15 +385,15 @@ const BLOQUES = { tm: /^ENTREGAS? \(TONELADAS\)$/, pz: /^ENTREGAS? \(PIEZAS\)$/ 
    -la que lleva un TOTAL pegado a la derecha- y la del detalle, que a su derecha trae
    los nombres de los centros. De esa segunda sale la tabla del panel de cada proyecto.
    Cada cifra se busca por el nombre del renglón, nunca por su altura. */
-/* Un mismo renglón se llama distinto en cada bloque: el lote I es "1" en toneladas y
-   "Piezas entregas lote 1" en piezas, y en la hoja se van a agregar los "entrega 1",
-   "entrega 2" y "entrega 3". Las tres maneras valen, así ninguno se queda sin leer. */
+/* El renglón de cada lote se llama "1", "2" y "3", y también vale que lo escriban
+   "entrega 1" o "Piezas entregas lote 1": las tres maneras se leen igual. De la hoja
+   salen las entregas y lo solicitado; "por entregar" no se lee de ninguna celda, se
+   saca restando, porque el TOTAL de la hoja es el total entregado, no el faltante. */
 const RENGLONES = {
-  solicitado: /^SOLICITADAS$/,                  // el renglón completo; el "Piezas solicitadas" de arriba viene a medias
-  entregado:  /(?:^|ENTREGAS? |LOTE )1$/,       // entrega del lote I; conserva el nombre "entregado" porque así lo piden la vista 3D y el PDF
-  lote2:      /(?:^|ENTREGAS? |LOTE )2$/,       // entrega del lote II
-  lote3:      /(?:^|ENTREGAS? |LOTE )3$/,       // entrega del lote III
-  pendiente:  /^(?:POR ENTREGAR|TOTAL)$/,       // en piezas se llama "Por entregar"; en toneladas, "TOTAL"
+  solicitado: /^SOLICITADAS$/,                  // lo que pidió cada centro
+  entregado:  /(?:^|ENTREGAS? |LOTE )1$/,       // entregado en el lote I; conserva el nombre "entregado" porque así lo piden la vista 3D y el PDF
+  lote2:      /(?:^|ENTREGAS? |LOTE )2$/,       // entregado en el lote II
+  lote3:      /(?:^|ENTREGAS? |LOTE )3$/,       // entregado en el lote III
 };
 // Cada lote llena una tarjeta de la portada y un paso de la cadena. En la hoja es el
 // renglón que se llama 1, 2 o 3 dentro de cada bloque de resumen.
@@ -426,44 +426,33 @@ const RESPALDO = {
     f3: { produccion:40020.50, produccionPz:28930, puerto:'—', traslado:'—', descarga:'—',      acopio:'—' },
   },
   // Un renglón por centro de acopio, con el nombre completo como lo escribe la hoja.
-  // Sin sufijo son toneladas; con Pz, piezas. "entregado" es la entrega del lote I.
+  // Todo en piezas: lo solicitado, lo entregado en cada lote y, restando, lo que falta.
   tramos: {
     'qro-ira': [
       { tramo:'CENTRO DE ACOPIO 1 (MOTA ENGIL) VILLAGRAN, GUANAJUATO. TI P.K. 27+000',
-        solicitado: 6986,    entregado:   0,       lote2:    0,       lote3:'—',   pendiente:    0,
-        solicitadoPz: 5050,  entregadoPz: 0,       lote2Pz:  0,       lote3Pz:  0, pendientePz:  0 },
+        solicitadoPz: 5050,  entregadoPz:   0, lote2Pz:   0, lote3Pz:  0, pendientePz: 5050 },
       { tramo:'CENTRO DE ACOPIO 2 (MOTA ENGIL) VILLAGRAN, GUANAJUATO. T2 P.K. 27+000',
-        solicitado:16047,    entregado:2151.06,    lote2: 8692.78,    lote3:'—',   pendiente:10843.85,
-        solicitadoPz:11600,  entregadoPz:1555,     lote2Pz:6284,      lote3Pz:'—', pendientePz:7839 },
+        solicitadoPz:11600,  entregadoPz:1555, lote2Pz:6284, lote3Pz:'—', pendientePz: 3761 },
       { tramo:'TRAMO III',
-        solicitado:    0,    entregado:   0,       lote2:    0,       lote3:'—',   pendiente:    0,
-        solicitadoPz:   0,   entregadoPz: 0,       lote2Pz:  0,       lote3Pz:'—', pendientePz:  0 },
+        solicitadoPz:    0,  entregadoPz:   0, lote2Pz:   0, lote3Pz:'—', pendientePz:    0 },
       { tramo:'TALLERES Y COCHERAS',
-        solicitado: 1231.15, entregado:   0,       lote2: 1231.15,    lote3:'—',   pendiente: 1231.15,
-        solicitadoPz:  890,  entregadoPz: 0,       lote2Pz: 890,      lote3Pz:'—', pendientePz: 890 },
+        solicitadoPz:  890,  entregadoPz:   0, lote2Pz: 890, lote3Pz:'—', pendientePz:    0 },
       { tramo:'REPOSTAJE',
-        solicitado:  226.86, entregado:'—',        lote2:  226.86,    lote3:'—',   pendiente:  226.86,
-        solicitadoPz:  164,  entregadoPz:'—',      lote2Pz: 164,      lote3Pz:'—', pendientePz: 164 },
+        solicitadoPz:  164,  entregadoPz:'—', lote2Pz: 164, lote3Pz:'—', pendientePz:    0 },
       { tramo:'ESTACION CELAYA',
-        solicitado:  143.87, entregado:'—',        lote2:  143.87,    lote3:'—',   pendiente:  143.87,
-        solicitadoPz:  104,  entregadoPz:'—',      lote2Pz: 104,      lote3Pz:'—', pendientePz: 104 },
+        solicitadoPz:  104,  entregadoPz:'—', lote2Pz: 104, lote3Pz:'—', pendientePz:    0 },
     ],
     'sal-nl': [
       { tramo:'BASE DE MONTAJE 1 SALTILLO, COAHUILA (CICSA). TI (Seg. 13 y 14) P.K. 40+000',
-        solicitado:13029,    entregado:13029.49,   lote2:    0,       lote3:'—',   pendiente:13029.49,
-        solicitadoPz: 9419,  entregadoPz:9419,     lote2Pz:  0,       lote3Pz:'—', pendientePz:9419 },
+        solicitadoPz: 9419,  entregadoPz:9419, lote2Pz:   0, lote3Pz:'—', pendientePz:    0 },
       { tramo:'BASE DE MONTAJE 2 GARCIA, NUEVO LEON (CICSA).T II (Seg. 13 y 14) P.K. 100+300',
-        solicitado:13029,    entregado:   0,       lote2: 3004.57,    lote3:'—',   pendiente: 3004.57,
-        solicitadoPz: 9419,  entregadoPz:   0,     lote2Pz:2172,      lote3Pz:'—', pendientePz:2172 },
+        solicitadoPz: 9419,  entregadoPz:   0, lote2Pz:2172, lote3Pz:'—', pendientePz: 7247 },
       { tramo:'SAN JAVIER, NUEVO LEON (P.L.N.). T IV (Seg. 15B) P.K. 159+700',
-        solicitado: 8510,    entregado:   0,       lote2: 5743.54,    lote3:'—',   pendiente: 5743.54,
-        solicitadoPz: 6152,  entregadoPz:   0,     lote2Pz:4152,      lote3Pz:'—', pendientePz:2000 },
+        solicitadoPz: 6152,  entregadoPz:   0, lote2Pz:4152, lote3Pz:'—', pendientePz: 2000 },
       { tramo:'VILLALDAMA, NUEVO LEON (LOGICA FERROVIARIA). T V (Seg. 16 y 17) P.K. 217+900',
-        solicitado: 7848,    entregado:2833.77,    lote2: 5013.15,    lote3:'—',   pendiente: 7846.92,
-        solicitadoPz: 5673,  entregadoPz:2049,     lote2Pz:3624,      lote3Pz:'—', pendientePz:   0 },
+        solicitadoPz: 5673,  entregadoPz:2049, lote2Pz:3624, lote3Pz:'—', pendientePz:    0 },
       { tramo:'DON MARTIN ANAHUAC, NUEVO LEON (GAMI). T VI (Seg 18, 19 y 20)',
-        solicitado:16419,    entregado:   0,       lote2: 6468.40,    lote3:'—',   pendiente: 6468.40,
-        solicitadoPz:11869,  entregadoPz:   0,     lote2Pz:4676,      lote3Pz:'—', pendientePz:7193 },
+        solicitadoPz:11869,  entregadoPz:   0, lote2Pz:4676, lote3Pz:'—', pendientePz: 7193 },
     ],
   },
 };
@@ -477,7 +466,7 @@ const PORTADA = {}, PORTADA_ETAPA = {};
 let PORTADA_TRAMOS = {};
 // El monto pagado no sale de una celda, asi que aqui se dice con cuantos decimales
 // se escribe: ninguno, que es como se lee una cifra en pesos.
-const PORTADA_DEC = { monto:0 };
+const PORTADA_DEC = { monto:0, solicitado:0, entregadoP:0, pendienteP:0 };
 // Arma lo que consume la página: cada entrega lleva su maqueta, los KPIs de la portada
 // (que la hoja da una sola vez) y los totales por proyecto, sumados de su propia tabla.
 function armar(h){
@@ -491,9 +480,10 @@ function armar(h){
       // lo que la hoja diga del lote manda sobre el respaldo, en su propio paso
       const maq = Object.assign({}, h.maqueta[f.id] || {}, PORTADA_ETAPA[f.id] || {});
       DATOS_FASE[f.id][t.id] = Object.assign({}, SIN_DATOS, maq, h.kpis, PORTADA, {
-        solicitado:  suma(lista,'solicitado'),
-        entregadoP:  suma(lista,'entregado'),
-        pendienteP:  suma(lista,'pendiente'),
+        // en piezas, igual que la tabla: lo entregado son los tres lotes juntos
+        solicitado:  suma(lista,'solicitadoPz'),
+        entregadoP:  suma(lista,'entregadoPz') + suma(lista,'lote2Pz') + suma(lista,'lote3Pz'),
+        pendienteP:  suma(lista,'pendientePz'),
         notas: Object.assign({}, maq.notas || {}, h.notas || {}),
       });
       TABLA[f.id][t.id] = lista;
@@ -613,27 +603,22 @@ function detallePorCentro(filas, re, sufijo){
         const n = numHoja(reng[k] ? reng[k][c] : null);
         fila[k + sufijo] = n === null ? '—' : n;     // celda vacía: se muestra como raya, no como cero
       }
+      // Por entregar = lo solicitado menos las tres entregas. Si no hay solicitado no
+      // hay faltante que calcular; una entrega vacía cuenta como cero, no como nada.
+      const sol = fila['solicitado' + sufijo];
+      const dado = ['entregado', 'lote2', 'lote3'].reduce((a,k)=>{
+        const v = fila[k + sufijo]; return a + (typeof v === 'number' ? v : 0);
+      }, 0);
+      fila['pendiente' + sufijo] = typeof sol === 'number' ? sol - dado : '—';
       return fila;
     });
   }
   return Object.keys(salida).length ? salida : null;
 }
-// Los dos bloques en una sola tabla: toneladas sin sufijo, piezas con Pz. Se emparejan
-// por el nombre del centro, no por el orden en que vengan.
+// Adentro de los dos proyectos todo se maneja en piezas, así que de la hoja se lee
+// nada más el bloque de piezas; el de toneladas queda para la portada y la maqueta.
 function tramosDeHoja(filas){
-  const tm = detallePorCentro(filas, BLOQUES.tm, ''), pz = detallePorCentro(filas, BLOQUES.pz, 'Pz');
-  if (!tm && !pz) return null;
-  const salida = {};
-  for (const t of TRAMOS){
-    const a = (tm || {})[t.id] || [], b = (pz || {})[t.id] || [];
-    if (!a.length && !b.length) continue;
-    const base = a.length ? a : b, otros = a.length ? b : a;
-    salida[t.id] = base.map(f=>{
-      const par = otros.find(g => rotulo(g.tramo) === rotulo(f.tramo)) || {};
-      return Object.assign({}, par, f);
-    });
-  }
-  return Object.keys(salida).length ? salida : null;
+  return detallePorCentro(filas, BLOQUES.pz, 'Pz');
 }
 // La hoja escribe las cifras a la mexicana: el punto agrupa los miles y la coma es el
 // decimal, así que "88.559,16" son 88 559.16 y no ochenta y ocho con pico.
@@ -1502,8 +1487,10 @@ function pintarTabla(){
     return typeof v === 'number' ? `<td>${txt}</td>` : `<td class="vacio">${txt}</td>`;
   };
   const COLS = ['solicitadoPz', 'entregadoPz', 'lote2Pz', 'lote3Pz', 'pendientePz'];
-  // el renglón de total suma cada columna de esta misma tabla
-  const suma = k => filas.reduce((a,f)=> a + (typeof f[k]==='number' ? f[k] : 0), 0);
+  // el renglón de total suma cada columna de esta misma tabla; si en esa columna no hay
+  // una sola cifra -el lote que todavía no empieza- va raya, no un cero que no existe
+  const suma = k => filas.some(f=> typeof f[k]==='number')
+    ? filas.reduce((a,f)=> a + (typeof f[k]==='number' ? f[k] : 0), 0) : '—';
   const totales = `<tr class="total"><td class="c-tramo"><span class="tot-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M4 6.5h16M4 11h16M4 15.5h10" stroke-width="1.6"/><path d="M4 20h16" stroke-width="2.6"/></svg></span>Total</td>` +
                   COLS.map(k=> cel(suma(k))).join('') + '</tr>';
   document.getElementById('tablaBody').innerHTML = filas.length
@@ -1616,14 +1603,15 @@ let elegirProyecto = null;              // lo llena el bloque de abajo; lo usa l
   function hojaProyecto(pdf, seg){
     const d = DATOS_FASE[FASE][seg], filas = (TABLA[FASE] || {})[seg] || [];
     let y = M + CABEZA + 8;
-    // los tres totales del proyecto
-    const kpis = [['Solicitado', d.solicitado], ['Entregado', d.entregadoP], ['Pendiente', d.pendienteP]];
+    // los tres totales del proyecto, en piezas como la tabla de abajo
+    const enteroPz = v => typeof v === 'number' ? v.toLocaleString('es-MX', { maximumFractionDigits:0 }) : String(v);
+    const kpis = [['Solicitado', d.solicitado], ['Entregado', d.entregadoP], ['Por entregar', d.pendienteP]];
     kpis.forEach(([rot, val], k)=>{
       const x = M + k*62;
       pdf.setFont('helvetica','normal').setFontSize(8).setTextColor(...SUAVE);
       pdf.text(rot.toUpperCase(), x, y);
       pdf.setFont('helvetica','bold').setFontSize(16).setTextColor(...TINTA);
-      pdf.text(fmt(val) + ' ' + UNIDAD, x, y + 7);
+      pdf.text(enteroPz(val) + ' pzas', x, y + 7);
     });
     y += 18;
     // tabla de centros de acopio, en piezas y con el nombre completo, igual que el panel
@@ -1658,7 +1646,8 @@ let elegirProyecto = null;              // lo llena el bloque de abajo; lo usa l
       dibujaFila([f.tramo].concat(COLS.map(k=> con(f[k], n[k]))), false, 8);
     }
     pdf.setTextColor(...TINTA);              // el total cierra la tabla, sumado de estos mismos renglones
-    const sumaPz = k => filas.reduce((a,f)=> a + (typeof f[k]==='number' ? f[k] : 0), 0);
+    const sumaPz = k => filas.some(f=> typeof f[k]==='number')
+      ? filas.reduce((a,f)=> a + (typeof f[k]==='number' ? f[k] : 0), 0) : '—';
     dibujaFila(['Total'].concat(COLS.map(k=> fmtPz(sumaPz(k)))), true, 9);
   }
 
