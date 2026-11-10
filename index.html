@@ -1094,13 +1094,15 @@ function star(cx,cy,r,rot=0){ const p=[]; for (let i=0;i<10;i++){ const a=rot+Ma
 function drawFlags(){
 // Cada bandera se arrima a la orilla que da al estrecho -la china por la derecha de su
 // muelle, la mexicana por la izquierda del suyo- para que las dos queden sobre el mar,
-// sin edificios detrás, y se lean de lejos.
-flag(PX[1]+PLATE-2.4, 11.2, (f,w,h)=>{                   // Bandera de la República Popular China
+// sin edificios detrás, y se lean de lejos. Y se despegan de la carretera, que corre al
+// frente de la placa a partir de y=11.6: se quedan en y=10.2, con el muelle de por medio,
+// pero sin subir tanto que la tela se encime al buque atracado.
+flag(PX[1]+PLATE-0.8, 10.2, (f,w,h)=>{                    // Bandera de la República Popular China
   sc.el('rect',{x:0,y:0,width:w,height:h,fill:'#DE2910'},f);
   sc.poly(star(6,6,4),'#FFDE00',f);
   [[13,2.5],[15.5,5],[15.5,8.5],[13,11]].forEach(([x,y])=>sc.poly(star(x,y,1.4),'#FFDE00',f));
 });
-flag(PX[3]+0.6, 11.2, (f,w,h)=>{                         // Bandera de México: al filo del muelle y ondeando sobre el estrecho
+flag(PX[3]+0.2, 10.2, (f,w,h)=>{                          // Bandera de México: al filo del muelle y ondeando sobre el estrecho
   sc.el('rect',{x:0,y:0,width:w/3,height:h,fill:'#006847'},f);
   sc.el('rect',{x:w/3,y:0,width:w/3,height:h,fill:'#FFFFFF'},f);
   sc.el('rect',{x:2*w/3,y:0,width:w/3,height:h,fill:'#CE1126'},f);
@@ -1300,6 +1302,22 @@ const corto = n => (n||'').replace(/^lote\s*/i,'');      // "Lote II" -> "II"
 const names = ['Por fabricar','Puerto Origen','Traslado marítimo','Puerto Destino','Centro de acopio'];
 // Segundo renglón, más chico, bajo el nombre del paso: los dos puertos llevan el suyo
 const subs  = ['', 'Zhangjiagang, P. R. China', '', 'Altamira, Tamaulipas', ''];
+/* La banderita que cierra el nombre del puerto va dibujada, no puesta como emoji:
+   Windows no pinta las banderas emoji -saca las dos letras del país- y además así
+   mide lo mismo que la letra y usa los colores de la bandera grande del muelle. */
+const MINI_W = 12, MINI_H = 8;
+const ptsStr = a => a.map(p=>p.map(n=>n.toFixed(2)).join(',')).join(' ');
+const MINI = [];
+MINI[1] = `<rect width="${MINI_W}" height="${MINI_H}" fill="#DE2910"/>
+  <polygon points="${ptsStr(star(2.8,2.6,1.8))}" fill="#FFDE00"/>
+  ${[[5.6,1.1],[6.8,2.3],[6.8,3.9],[5.6,5.1]].map(([x,y])=>`<polygon points="${ptsStr(star(x,y,0.65))}" fill="#FFDE00"/>`).join('')}`;
+MINI[3] = `<rect width="${MINI_W/3}" height="${MINI_H}" fill="#006847"/>
+  <rect x="${MINI_W/3}" width="${MINI_W/3}" height="${MINI_H}" fill="#FFFFFF"/>
+  <rect x="${2*MINI_W/3}" width="${MINI_W/3}" height="${MINI_H}" fill="#CE1126"/>
+  <circle cx="${MINI_W/2}" cy="${MINI_H/2}" r="1.4" fill="#8C6A2E"/>`;
+const mini = i => MINI[i]
+  ? `<g class="mini">${MINI[i]}<rect width="${MINI_W}" height="${MINI_H}" fill="none" stroke="rgba(0,0,0,.35)" stroke-width=".6"/></g>`
+  : '';
 const keys  = ['produccion','puerto','traslado','descarga','acopio'];
 PX.forEach((x0,i)=>{
   const [tx,ty] = sc.P(x0+[7,8,SEA_W/2,16,12][i], 0, 2.2);
@@ -1333,7 +1351,7 @@ PX.forEach((x0,i)=>{
        <text class="val" x="0"><tspan class="v2">—</tspan><tspan class="u" dx="5">pzas</tspan></text>
      </g>
     <text class="t" x="0" text-anchor="middle">${names[i]}</text>
-    ${subs[i] ? `<text class="s" x="0" text-anchor="middle">${subs[i]}</text>` : ''}${filas}`;
+    ${subs[i] ? `<text class="s" x="0" text-anchor="middle">${subs[i]}</text>${mini(i)}` : ''}${filas}`;
 });
 /* ---------- Acomodo de los rótulos ----------
    Un lote sin cifra ni en toneladas ni en piezas no se nombra siquiera: su renglón
@@ -1375,6 +1393,12 @@ function acomodarHitos(){
     y -= R.sub;
     const sub = g.querySelector('.s');
     if (sub) sub.setAttribute('y', -y);
+    // La banderita se pega al final del nombre del puerto, que va centrado en x=0:
+    // su orilla derecha cae en la mitad del ancho del texto.
+    const mb = g.querySelector('.mini');
+    if (sub && mb){
+      try { mb.setAttribute('transform', `translate(${sub.getBBox().width/2 + 4},${-y - MINI_H + 0.6})`); } catch(e){}
+    }
     // Sin un solo lote con cifras, sale el marcador de rayas en su lugar: el hueco
     // queda ocupado y se entiende que ahí van valores, no que el paso no lleve.
     const reales = vis[i], k = Math.max(1, reales.length);
