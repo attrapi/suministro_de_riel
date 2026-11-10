@@ -122,10 +122,13 @@
   .tabla th{padding:13px 16px;border-bottom:1px solid rgba(255,255,255,.16)}
   .tabla .th-in{display:flex;align-items:center;justify-content:flex-end;gap:9px;font:500 10px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.62);white-space:nowrap}
   .tabla th.c-tramo{text-align:left}
+  .tabla th:not(.c-tramo), .tabla td:not(.c-tramo){width:1%}
+  .tabla .th-izq{justify-content:flex-start}
+  .panel-u{font:500 10px var(--mono);letter-spacing:.1em;color:rgba(255,255,255,.5);margin-left:8px}
   .tabla .th-ico{flex:0 0 auto;width:24px;height:24px;color:#FF9A4D}
   .tabla .th-ico svg{width:100%;height:100%;display:block}
   .tabla td{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.07);text-align:right;font:13px var(--mono);color:#EAEFF5;font-variant-numeric:tabular-nums;white-space:nowrap}
-  .tabla td.c-tramo{text-align:left;font:14px var(--body);color:rgba(255,255,255,.9)}
+  .tabla td.c-tramo{text-align:left;font:14px var(--body);color:rgba(255,255,255,.9);white-space:normal;min-width:240px;line-height:1.35}
   .tabla tbody tr:last-child td{border-bottom:0}
   .tabla .vacio{color:rgba(255,255,255,.4)}
   .tabla .nota{font-size:11px;color:rgba(255,255,255,.55)}
@@ -188,7 +191,7 @@
     .panel-t{font-size:14px}
     .tabla th{padding:9px 6px}
     .tabla td{padding:8px 6px;font-size:11px}
-    .tabla td.c-tramo{font-size:11px}
+    .tabla td.c-tramo{font-size:11px;min-width:120px}
     .tabla .th-in{font-size:8px;gap:4px;letter-spacing:.06em}
     .tabla .th-ico{width:16px;height:16px}
     .tabla .tot-ico{width:16px;height:16px;vertical-align:-3px;margin-right:5px}
@@ -244,6 +247,7 @@
   :root[data-tema="claro"] .tabla td.c-tramo{color:var(--ink-light)}
   :root[data-tema="claro"] .tabla .vacio{color:rgba(22,32,43,.45)}
   :root[data-tema="claro"] .tabla .nota{color:rgba(22,32,43,.55)}
+  :root[data-tema="claro"] .panel-u{color:rgba(22,32,43,.5)}
   :root[data-tema="claro"] .tabla tr.total td{border-top-color:rgba(22,32,43,.3);color:var(--accent-light)}
   :root[data-tema="claro"] .tabla tr.total td.c-tramo{color:var(--ink-light)}
   :root[data-tema="claro"] .tabla .tot-ico{color:var(--accent-light)}
@@ -341,10 +345,12 @@
   <div class="tabla-wrap">
     <table class="tabla">
       <thead><tr>
-        <th class="c-tramo"></th>
+        <th class="c-tramo"><span class="th-in th-izq">Centro de acopio</span></th>
         <th><span class="th-in"><span class="th-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M7.6 6.2h4.6l1.6 2.2H20.5v7.4"/><path d="M3.5 19.8V9.1h4.6l1.6 2.2h6.4v8.5z"/></svg></span>Solicitado</span></th>
-        <th><span class="th-in"><span class="th-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7 3.5v17M17 3.5v17"/><path d="M3.5 7h17M3.5 12h17M3.5 17h17"/></svg></span>Entregado</span></th>
-        <th><span class="th-in"><span class="th-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 16.8h19.5"/><path d="M15.3 16.8v-5.4h2.9l3 3.1v2.3"/><path d="M2.6 13.4h12.2"/><path d="M3.4 11.2h10.8M3.4 8.8h10.8"/><circle cx="7" cy="18.7" r="1.8"/><circle cx="17.8" cy="18.7" r="1.8"/></svg></span>Pendiente</span></th>
+        <th><span class="th-in"><span class="th-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7 3.5v17M17 3.5v17"/><path d="M3.5 7h17M3.5 12h17M3.5 17h17"/></svg></span>Entrega Lote I</span></th>
+        <th><span class="th-in"><span class="th-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7 3.5v17M17 3.5v17"/><path d="M3.5 7h17M3.5 12h17M3.5 17h17"/></svg></span>Entrega Lote II</span></th>
+        <th><span class="th-in"><span class="th-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7 3.5v17M17 3.5v17"/><path d="M3.5 7h17M3.5 12h17M3.5 17h17"/></svg></span>Entrega Lote III</span></th>
+        <th><span class="th-in"><span class="th-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 16.8h19.5"/><path d="M15.3 16.8v-5.4h2.9l3 3.1v2.3"/><path d="M2.6 13.4h12.2"/><path d="M3.4 11.2h10.8M3.4 8.8h10.8"/><circle cx="7" cy="18.7" r="1.8"/><circle cx="17.8" cy="18.7" r="1.8"/></svg></span>Por entregar</span></th>
       </tr></thead>
       <tbody id="tablaBody"></tbody>
     </table>
@@ -357,7 +363,7 @@
    tiene celda asignada se queda con el respaldo de abajo, que también es
    lo que se ve si la hoja no se puede alcanzar.
    ============================================================ */
-const HOJA = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjWDwrja2oSt_FrI2qKGDl7luhZljGFuGWXoZSfj41zpctuMcUFrWzB_yYsoKj7Q/pub?output=csv';
+const HOJA = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjWDwrja2oSt_FrI2qKGDl7luhZljGFuGWXoZSfj41zpctuMcUFrWzB_yYsoKj7Q/pub?gid=2055225836&single=true&output=csv';
 const RECARGA_MIN = 5;                       // cada cuánto se vuelve a leer la hoja, con la página abierta
 // Qué cifra de la portada sale de qué celda. Para sumar otra, basta un renglón más.
 /* ---------- Dónde está cada cifra en la hoja ----------
@@ -372,6 +378,21 @@ const ROTULOS = {
   contratadoPz: /^TOTAL CONTRACTUAL \(PZAS/,    // el mismo total, en piezas
 };
 const BLOQUES = { tm: /^ENTREGAS? \(TONELADAS\)$/, pz: /^ENTREGAS? \(PIEZAS\)$/ };
+/* ---------- El detalle por centro de acopio ----------
+   El mismo rótulo ("ENTREGA (TONELADAS)") encabeza dos tablas: la de resumen por lote
+   -la que lleva un TOTAL pegado a la derecha- y la del detalle, que a su derecha trae
+   los nombres de los centros. De esa segunda sale la tabla del panel de cada proyecto.
+   Cada cifra se busca por el nombre del renglón, nunca por su altura. */
+/* Un mismo renglón se llama distinto en cada bloque: el lote I es "1" en toneladas y
+   "Piezas entregas lote 1" en piezas, y en la hoja se van a agregar los "entrega 1",
+   "entrega 2" y "entrega 3". Las tres maneras valen, así ninguno se queda sin leer. */
+const RENGLONES = {
+  solicitado: /^SOLICITADAS$/,                  // el renglón completo; el "Piezas solicitadas" de arriba viene a medias
+  entregado:  /(?:^|ENTREGAS? |LOTE )1$/,       // entrega del lote I; conserva el nombre "entregado" porque así lo piden la vista 3D y el PDF
+  lote2:      /(?:^|ENTREGAS? |LOTE )2$/,       // entrega del lote II
+  lote3:      /(?:^|ENTREGAS? |LOTE )3$/,       // entrega del lote III
+  pendiente:  /^(?:POR ENTREGAR|TOTAL)$/,       // en piezas se llama "Por entregar"; en toneladas, "TOTAL"
+};
 // Cada lote llena una tarjeta de la portada y un paso de la cadena. En la hoja es el
 // renglón que se llama 1, 2 o 3 dentro de cada bloque de resumen.
 const LOTES = {
@@ -380,9 +401,10 @@ const LOTES = {
   f3: { etapa:'produccion', kpi:'pendiente', fila:'3' },   // Lote III — por fabricar
 };
 
+// "hoja" es cómo se llama el proyecto allá: con eso se hallan sus columnas de centros.
 const TRAMOS = [
-  { id:'qro-ira', nombre:'Querétaro – Irapuato', segmentos:[] },
-  { id:'sal-nl',  nombre:'Saltillo – Nuevo Laredo', segmentos:[] },
+  { id:'qro-ira', nombre:'Querétaro – Irapuato',    hoja:/^QUERETARO *- *IRAPUATO$/,    segmentos:[] },
+  { id:'sal-nl',  nombre:'Saltillo – Nuevo Laredo', hoja:/^SALTILLO *- *NUEVO LAREDO$/, segmentos:[] },
 ];
 const FASES = [
   { id:'f1', nombre:'Lote I'   },
@@ -395,23 +417,51 @@ const SIN_DATOS = { produccion:'—', puerto:'—', traslado:'—', descarga:'�
 
 // Así viene la hoja: KPIs de la portada (una sola vez), maqueta por entrega y una tabla por proyecto.
 const RESPALDO = {
-  kpis: { contratado:88559.16, contratadoPz:64019.29, proceso:30524.34, procesoPz:22066, entregado:18014.32, entregadoPz:13023, pendiente:40020.50, pendientePz:0, monto:419311397 },
+  kpis: { contratado:88559.16, contratadoPz:64019.29, proceso:30524.34, procesoPz:22066, entregado:18014.32, entregadoPz:13023, pendiente:40020.50, pendientePz:28930, monto:419311397 },
   maqueta: {
-    f1: { produccion:'—',      puerto:'—', traslado:'—', descarga:'—',      acopio:18010.81 },
-    f2: { produccion:'—',      puerto:'—', traslado:'—', descarga:30517.28, acopio:'—' },
-    f3: { produccion:40028.78, puerto:'—', traslado:'—', descarga:'—',      acopio:'—' },
+    f1: { produccion:'—',      puerto:'—', traslado:'—', descarga:'—',      acopio:18014.32, acopioPz:13023 },
+    f2: { produccion:'—',      puerto:'—', traslado:'—', descarga:30524.34, descargaPz:22066, acopio:'—' },
+    f3: { produccion:40020.50, produccionPz:28930, puerto:'—', traslado:'—', descarga:'—',      acopio:'—' },
   },
+  // Un renglón por centro de acopio, con el nombre completo como lo escribe la hoja.
+  // Sin sufijo son toneladas; con Pz, piezas. "entregado" es la entrega del lote I.
   tramos: {
     'qro-ira': [
-      { tramo:'T I',  solicitado: 6917,  entregado:    0,    pendiente:    0 },
-      { tramo:'T II', solicitado:16600,  entregado: 2150.56, pendiente: 7462.67 },
+      { tramo:'CENTRO DE ACOPIO 1 (MOTA ENGIL) VILLAGRAN, GUANAJUATO. TI P.K. 27+000',
+        solicitado: 6986,    entregado:   0,       lote2:    0,       lote3:'—',   pendiente:    0,
+        solicitadoPz: 5050,  entregadoPz: 0,       lote2Pz:  0,       lote3Pz:  0, pendientePz:  0 },
+      { tramo:'CENTRO DE ACOPIO 2 (MOTA ENGIL) VILLAGRAN, GUANAJUATO. T2 P.K. 27+000',
+        solicitado:16047,    entregado:2151.06,    lote2: 8692.78,    lote3:'—',   pendiente:10843.85,
+        solicitadoPz:11600,  entregadoPz:1555,     lote2Pz:6284,      lote3Pz:'—', pendientePz:7839 },
+      { tramo:'TRAMO III',
+        solicitado:    0,    entregado:   0,       lote2:    0,       lote3:'—',   pendiente:    0,
+        solicitadoPz:   0,   entregadoPz: 0,       lote2Pz:  0,       lote3Pz:'—', pendientePz:  0 },
+      { tramo:'TALLERES Y COCHERAS',
+        solicitado: 1231.15, entregado:   0,       lote2: 1231.15,    lote3:'—',   pendiente: 1231.15,
+        solicitadoPz:  890,  entregadoPz: 0,       lote2Pz: 890,      lote3Pz:'—', pendientePz: 890 },
+      { tramo:'REPOSTAJE',
+        solicitado:  226.86, entregado:'—',        lote2:  226.86,    lote3:'—',   pendiente:  226.86,
+        solicitadoPz:  164,  entregadoPz:'—',      lote2Pz: 164,      lote3Pz:'—', pendientePz: 164 },
+      { tramo:'ESTACION CELAYA',
+        solicitado:  143.87, entregado:'—',        lote2:  143.87,    lote3:'—',   pendiente:  143.87,
+        solicitadoPz:  104,  entregadoPz:'—',      lote2Pz: 104,      lote3Pz:'—', pendientePz: 104 },
     ],
     'sal-nl': [
-      { tramo:'T I, seg. 13 y 14',      solicitado:12774.97, entregado:13026.47, pendiente:   0 },
-      { tramo:'T V, seg. 16 y 17',      solicitado: 4088,    entregado: 2829.62, pendiente:7845.76 },
-      { tramo:'T II, seg. 13 y 14',     solicitado: 1000,    entregado:    0,    pendiente:1000 },
-      { tramo:'T IV, seg. 15B',         solicitado: 4422,    entregado:    0,    pendiente:5742.22 },
-      { tramo:'T VI, seg. 18, 19 y 20', solicitado:16418.64, entregado:    0,    pendiente:8466.73 },
+      { tramo:'BASE DE MONTAJE 1 SALTILLO, COAHUILA (CICSA). TI (Seg. 13 y 14) P.K. 40+000',
+        solicitado:13029,    entregado:13029.49,   lote2:    0,       lote3:'—',   pendiente:13029.49,
+        solicitadoPz: 9419,  entregadoPz:9419,     lote2Pz:  0,       lote3Pz:'—', pendientePz:9419 },
+      { tramo:'BASE DE MONTAJE 2 GARCIA, NUEVO LEON (CICSA).T II (Seg. 13 y 14) P.K. 100+300',
+        solicitado:13029,    entregado:   0,       lote2: 3004.57,    lote3:'—',   pendiente: 3004.57,
+        solicitadoPz: 9419,  entregadoPz:   0,     lote2Pz:2172,      lote3Pz:'—', pendientePz:2172 },
+      { tramo:'SAN JAVIER, NUEVO LEON (P.L.N.). T IV (Seg. 15B) P.K. 159+700',
+        solicitado: 8510,    entregado:   0,       lote2: 5743.54,    lote3:'—',   pendiente: 5743.54,
+        solicitadoPz: 6152,  entregadoPz:   0,     lote2Pz:4152,      lote3Pz:'—', pendientePz:2000 },
+      { tramo:'VILLALDAMA, NUEVO LEON (LOGICA FERROVIARIA). T V (Seg. 16 y 17) P.K. 217+900',
+        solicitado: 7848,    entregado:2833.77,    lote2: 5013.15,    lote3:'—',   pendiente: 7846.92,
+        solicitadoPz: 5673,  entregadoPz:2049,     lote2Pz:3624,      lote3Pz:'—', pendientePz:   0 },
+      { tramo:'DON MARTIN ANAHUAC, NUEVO LEON (GAMI). T VI (Seg 18, 19 y 20)',
+        solicitado:16419,    entregado:   0,       lote2: 6468.40,    lote3:'—',   pendiente: 6468.40,
+        solicitadoPz:11869,  entregadoPz:   0,     lote2Pz:4676,      lote3Pz:'—', pendientePz:7193 },
     ],
   },
 };
@@ -421,6 +471,8 @@ let DATOS_FASE = {}, TABLA = {};
 // con dirección fija, que se imponen a lo demás porque son la fuente más directa.
 let HOJA_VIGENTE = null;
 const PORTADA = {}, PORTADA_ETAPA = {};
+// La tabla por proyecto, ya leída de la hoja; mientras esté vacía manda el respaldo.
+let PORTADA_TRAMOS = {};
 // El monto pagado no sale de una celda, asi que aqui se dice con cuantos decimales
 // se escribe: ninguno, que es como se lee una cifra en pesos.
 const PORTADA_DEC = { monto:0 };
@@ -433,7 +485,7 @@ function armar(h){
   for (const f of FASES){
     DATOS_FASE[f.id] = {}; TABLA[f.id] = {};
     for (const t of TRAMOS){
-      const lista = h.tramos[t.id] || [];
+      const lista = PORTADA_TRAMOS[t.id] || h.tramos[t.id] || [];
       // lo que la hoja diga del lote manda sobre el respaldo, en su propio paso
       const maq = Object.assign({}, h.maqueta[f.id] || {}, PORTADA_ETAPA[f.id] || {});
       DATOS_FASE[f.id][t.id] = Object.assign({}, SIN_DATOS, maq, h.kpis, PORTADA, {
@@ -506,6 +558,81 @@ function enBloque(filas, b, cual){
   }
   return null;
 }
+/* ---------- El detalle por centro, vaciado completo ----------
+   Nada de esto cuenta renglones ni columnas: el bloque se halla por su rótulo, los
+   centros por su nombre y cada cifra por el nombre de su renglón. Si mañana insertan
+   una columna o mueven un centro, sigue cayendo donde debe. */
+// El encabezado del detalle: el que a su derecha NO trae un TOTAL, sino un centro.
+function bloqueDetalle(filas, re){
+  for (let r=0; r<filas.length; r++)
+    for (let c=0; c<filas[r].length; c++){
+      const vecino = rotulo((filas[r]||[])[c+1]);
+      if (re.test(rotulo(filas[r][c])) && vecino && !/^TOTAL/.test(vecino)) return { r, c };
+    }
+  return null;
+}
+// Los centros, en grupos: cada proyecto ocupa columnas seguidas y cierra con su TOTAL.
+function gruposDetalle(filas, b){
+  const enc = filas[b.r] || [], grupos = []; let act = null;
+  for (let c=b.c+1; c<enc.length; c++){
+    const t = rotulo(enc[c]);
+    if (/^TOTAL/.test(t) || /^%/.test(t) || /^ENTREGAS? \(/.test(t)){ if (act){ grupos.push(act); act = null; } continue; }
+    if (!t) continue;                        // hueco entre proyectos: no es centro ni cierra nada
+    (act = act || []).push({ c, nombre: String(enc[c]).replace(/\s+/g,' ').trim() });
+  }
+  if (act) grupos.push(act);
+  return grupos;
+}
+// A qué proyecto pertenece un grupo: su nombre está escrito arriba del encabezado.
+function esDelProyecto(filas, b, grupo, re){
+  if (!re) return false;
+  const ini = grupo[0].c - 1, fin = grupo[grupo.length-1].c;
+  for (let r=Math.max(0,b.r-3); r<b.r; r++)
+    for (let c=ini; c<=fin; c++)
+      if (re.test(rotulo((filas[r]||[])[c]))) return true;
+  return false;
+}
+// Dentro del bloque, el renglón que se llama así (se busca en la columna del rótulo).
+function renglonDetalle(filas, b, re){
+  for (let r=b.r+1; r<filas.length && r<=b.r+12; r++)
+    if (re.test(rotulo((filas[r]||[])[b.c]))) return filas[r] || [];
+  return null;
+}
+// Un bloque entero: por proyecto, un renglón por centro. El sufijo distingue unidades.
+function detallePorCentro(filas, re, sufijo){
+  const b = bloqueDetalle(filas, re); if (!b) return null;
+  const reng = {}; for (const k in RENGLONES) reng[k] = renglonDetalle(filas, b, RENGLONES[k]);
+  const salida = {};
+  for (const grupo of gruposDetalle(filas, b)){
+    const t = TRAMOS.find(t => esDelProyecto(filas, b, grupo, t.hoja)); if (!t) continue;
+    salida[t.id] = grupo.map(({ c, nombre })=>{
+      const fila = { tramo: nombre };
+      for (const k in reng){
+        const n = numHoja(reng[k] ? reng[k][c] : null);
+        fila[k + sufijo] = n === null ? '—' : n;     // celda vacía: se muestra como raya, no como cero
+      }
+      return fila;
+    });
+  }
+  return Object.keys(salida).length ? salida : null;
+}
+// Los dos bloques en una sola tabla: toneladas sin sufijo, piezas con Pz. Se emparejan
+// por el nombre del centro, no por el orden en que vengan.
+function tramosDeHoja(filas){
+  const tm = detallePorCentro(filas, BLOQUES.tm, ''), pz = detallePorCentro(filas, BLOQUES.pz, 'Pz');
+  if (!tm && !pz) return null;
+  const salida = {};
+  for (const t of TRAMOS){
+    const a = (tm || {})[t.id] || [], b = (pz || {})[t.id] || [];
+    if (!a.length && !b.length) continue;
+    const base = a.length ? a : b, otros = a.length ? b : a;
+    salida[t.id] = base.map(f=>{
+      const par = otros.find(g => rotulo(g.tramo) === rotulo(f.tramo)) || {};
+      return Object.assign({}, par, f);
+    });
+  }
+  return Object.keys(salida).length ? salida : null;
+}
 // La hoja escribe las cifras a la mexicana: el punto agrupa los miles y la coma es el
 // decimal, así que "88.559,16" son 88 559.16 y no ochenta y ocho con pico.
 function numHoja(v){
@@ -546,6 +673,8 @@ async function cargarHoja(){
         PORTADA_ETAPA[id][etapa] = PORTADA[kpi]; PORTADA_DEC[etapa] = PORTADA_DEC[kpi];
       });
     }
+    const tr = tramosDeHoja(filas);          // la tabla de cada proyecto, centro por centro
+    if (tr){ PORTADA_TRAMOS = tr; alguna = true; }
     if (!alguna) return false;
     armar(HOJA_VIGENTE || RESPALDO); pintarDatos();
     return true;
@@ -1337,18 +1466,24 @@ function pintarDona(){
 }
 function pintarTabla(){
   const filas = (TABLA[FASE] || {})[SEG] || [];
-  document.getElementById('panelTitulo').textContent = (TRAMOS.find(t=>t.id===SEG) || {}).nombre || '';
+  document.getElementById('panelTitulo').innerHTML = ((TRAMOS.find(t=>t.id===SEG) || {}).nombre || '') + ' <small class="panel-u">PIEZAS</small>';
+  // Dentro de los dos proyectos se maneja la pieza y nada más; las toneladas se siguen
+  // leyendo y viven en los mismos renglones, pero esta tabla no las muestra. La pieza
+  // es entera, así que aquí no se escriben decimales.
+  const fmtPz = v => typeof v === 'number' ? v.toLocaleString('es-MX', { maximumFractionDigits:0 }) : String(v);
   const cel = (v, nota) => {
-    const txt = fmt(v) + (nota ? ` <span class="nota">${nota}</span>` : '');
+    const txt = fmtPz(v) + (nota ? ` <span class="nota">${nota}</span>` : '');
     return typeof v === 'number' ? `<td>${txt}</td>` : `<td class="vacio">${txt}</td>`;
   };
-  // el renglón de total suma cada columna; son las mismas cifras de las tres tarjetas de arriba
+  const COLS = ['solicitadoPz', 'entregadoPz', 'lote2Pz', 'lote3Pz', 'pendientePz'];
+  // el renglón de total suma cada columna de esta misma tabla
+  const suma = k => filas.reduce((a,f)=> a + (typeof f[k]==='number' ? f[k] : 0), 0);
   const totales = `<tr class="total"><td class="c-tramo"><span class="tot-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M4 6.5h16M4 11h16M4 15.5h10" stroke-width="1.6"/><path d="M4 20h16" stroke-width="2.6"/></svg></span>Total</td>` +
-                  cel(DATOS.solicitado) + cel(DATOS.entregadoP) + cel(DATOS.pendienteP) + '</tr>';
+                  COLS.map(k=> cel(suma(k))).join('') + '</tr>';
   document.getElementById('tablaBody').innerHTML = filas.length
     ? filas.map(f=>{ const n = f.notas || {};
-        return `<tr><td class="c-tramo">${f.tramo}</td>${cel(f.solicitado,n.solicitado)}${cel(f.entregado,n.entregado)}${cel(f.pendiente,n.pendiente)}</tr>`; }).join('') + totales
-    : '<tr><td class="c-tramo vacio" colspan="4">Sin datos para este lote</td></tr>';
+        return `<tr><td class="c-tramo">${f.tramo}</td>${COLS.map(k=> cel(f[k], n[k])).join('')}</tr>`; }).join('') + totales
+    : '<tr><td class="c-tramo vacio" colspan="6">Sin datos para este lote</td></tr>';
 }
 // Ya no hay selector: la maqueta muestra los tres lotes a la vez. setFase sigue
 // existiendo porque la vista 3D la llama cuando ahí se elige una entrega.
@@ -1465,15 +1600,21 @@ let elegirProyecto = null;              // lo llena el bloque de abajo; lo usa l
       pdf.text(fmt(val) + ' ' + UNIDAD, x, y + 7);
     });
     y += 18;
-    // tabla de tramos
-    const cols = [{ t:'Tramo / segmento', w:108, der:false }, { t:'Solicitado', w:55, der:true },
-                  { t:'Entregado', w:55, der:true }, { t:'Pendiente', w:55, der:true }];
+    // tabla de centros de acopio, en piezas y con el nombre completo, igual que el panel
+    const cols = [{ t:'Centro de acopio', w:93, der:false }, { t:'Solicitado (pzas)', w:36, der:true },
+                  { t:'Entrega Lote I', w:36, der:true }, { t:'Entrega Lote II', w:36, der:true },
+                  { t:'Entrega Lote III', w:36, der:true }, { t:'Por entregar', w:36, der:true }];
+    const COLS = ['solicitadoPz', 'entregadoPz', 'lote2Pz', 'lote3Pz', 'pendientePz'];
+    const fmtPz = v => typeof v === 'number' ? v.toLocaleString('es-MX', { maximumFractionDigits:0 }) : String(v);
     const dibujaFila = (celdas, negrita, alto)=>{
       let x = M;
       pdf.setFont('helvetica', negrita ? 'bold' : 'normal').setFontSize(negrita ? 8 : 9.5);
-      celdas.forEach((txt, k)=>{
+      // el nombre del centro va completo: se parte en renglones y la fila crece lo que haga falta
+      const trozos = celdas.map((txt, k)=> cols[k].der ? [String(txt)] : pdf.splitTextToSize(String(txt), cols[k].w - 3));
+      alto = Math.max(alto, trozos.reduce((m,t)=> Math.max(m, t.length), 1) * 4.2 + 2.2);
+      trozos.forEach((lineas, k)=>{
         const c = cols[k];
-        pdf.text(String(txt), c.der ? x + c.w - 2 : x, y + alto - 2.6, { align: c.der ? 'right' : 'left' });
+        pdf.text(lineas, c.der ? x + c.w - 2 : x, y + 4.4, { align: c.der ? 'right' : 'left' });
         x += c.w;
       });
       y += alto;
@@ -1482,16 +1623,17 @@ let elegirProyecto = null;              // lo llena el bloque de abajo; lo usa l
     };
     pdf.setTextColor(...SUAVE); dibujaFila(cols.map(c=>c.t.toUpperCase()), true, 7);
     if (!filas.length){
-      pdf.setTextColor(...SUAVE); dibujaFila(['Sin datos para este lote','','',''], false, 8);
+      pdf.setTextColor(...SUAVE); dibujaFila(['Sin datos para este lote','','','','',''], false, 8);
       return;
     }
     for (const f of filas){
       pdf.setTextColor(...TINTA);
-      const n = f.notas || {}, con = (v,t)=> fmt(v) + (t ? ' ' + t : '');
-      dibujaFila([f.tramo, con(f.solicitado,n.solicitado), con(f.entregado,n.entregado), con(f.pendiente,n.pendiente)], false, 8);
+      const n = f.notas || {}, con = (v,t)=> fmtPz(v) + (t ? ' ' + t : '');
+      dibujaFila([f.tramo].concat(COLS.map(k=> con(f[k], n[k]))), false, 8);
     }
-    pdf.setTextColor(...TINTA);              // el total cierra la tabla, con las mismas cifras de los tres totales de arriba
-    dibujaFila(['Total', fmt(d.solicitado), fmt(d.entregadoP), fmt(d.pendienteP)], true, 9);
+    pdf.setTextColor(...TINTA);              // el total cierra la tabla, sumado de estos mismos renglones
+    const sumaPz = k => filas.reduce((a,f)=> a + (typeof f[k]==='number' ? f[k] : 0), 0);
+    dibujaFila(['Total'].concat(COLS.map(k=> fmtPz(sumaPz(k)))), true, 9);
   }
 
   btn.onclick = async ()=>{
