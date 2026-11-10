@@ -1344,7 +1344,7 @@ const SIN = v => !v || v.trim() === '—';
    renglón del puerto -se reserva en los cinco aunque solo dos lo traigan, para que
    los renglones de abajo queden al mismo nivel- y, por cada lote, su nombre y sus
    dos cifras. Todo centrado sobre la línea. */
-const R = { sub:15, lote:21, tm:19, pz:18, bloque:24, linea:13 };
+const R = { sub:15, lote:21, tm:25, pz:22, bloque:28, linea:13 };
 const LINEA_MIN = 34;                                     // tramo de línea del hito más cargado
 const pilaAlto = k => R.sub + (k ? k*(R.lote+R.tm+R.pz) + (k-1)*R.bloque : 0);
 /* Los tres renglones del lote comparten filo izquierdo -así las cifras caen una bajo
