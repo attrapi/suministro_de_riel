@@ -109,6 +109,7 @@
                       border-right:1px solid rgba(255,255,255,.32)}
   .cadena .fila .lin{white-space:nowrap;line-height:1.25}
   .cadena .fila .lote{flex:0 0 auto;min-width:52px;text-align:left}
+  .cadena .fila .lin > span{color:#FF9A4D}  /* la cifra, del mismo naranja que en la maqueta */
   /* Cadena en vertical: reemplaza la maqueta en pantallas angostas, escalonada para que se lea el avance */
   .cadena{position:fixed;left:10px;right:10px;bottom:10px;z-index:2;display:none;flex-direction:column;gap:5px;overflow:auto;pointer-events:auto}
   .cadena[hidden]{display:none}
@@ -265,6 +266,7 @@
   :root[data-tema="claro"] .st .cnt.sec{color:rgba(22,32,43,.72)}
   :root[data-tema="claro"] .st .cnt .lote{color:rgba(22,32,43,.55)}
   :root[data-tema="claro"] .cadena .fila .caja{border-right-color:rgba(22,32,43,.32)}
+  :root[data-tema="claro"] .cadena .fila .lin > span{color:var(--accent-light)}
   :root[data-tema="claro"] .lbl .t{fill:var(--ink-light)}
   :root[data-tema="claro"] .lbl .n,:root[data-tema="claro"] .lbl .u{fill:rgba(22,32,43,.65)}
   :root[data-tema="claro"] .lbl .s{fill:rgba(22,32,43,.62)}
