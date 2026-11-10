@@ -360,23 +360,24 @@
 const HOJA = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjWDwrja2oSt_FrI2qKGDl7luhZljGFuGWXoZSfj41zpctuMcUFrWzB_yYsoKj7Q/pub?output=csv';
 const RECARGA_MIN = 5;                       // cada cuánto se vuelve a leer la hoja, con la página abierta
 // Qué cifra de la portada sale de qué celda. Para sumar otra, basta un renglón más.
-const CELDAS = {
-  contratado:   'D17',                       // total contractual en toneladas
-  contratadoPz: 'D4',                        // el mismo total, en piezas
-  proceso:      'W22',                       // en proceso, toneladas
-  procesoPz:    'W10',                       // en proceso, piezas
-  entregado:    'W21',                       // entregado, toneladas
-  entregadoPz:  'W9',                        // entregado, piezas
-  pendiente:    'W23',                       // por fabricar, toneladas
-  pendientePz:  'W11',                       // por fabricar, piezas
+/* ---------- Dónde está cada cifra en la hoja ----------
+   La hoja se edita y se mueve: basta que inserten un renglón para que una dirección
+   fija como W21 deje de apuntar a donde creía, y lo peor es que no truena -la página
+   sigue mostrando cifras, pero las del renglón de al lado-. Así que aquí no se piden
+   celdas: se piden rótulos. El bloque de resumen se reconoce porque su encabezado
+   lleva un "TOTAL" pegado a la derecha, cosa que el bloque de detalle por centro no
+   tiene, y dentro del bloque cada lote se halla por su número. */
+const ROTULOS = {
+  contratado:   /^TOTAL CONTRACTUAL \(TON/,     // total contractual en toneladas
+  contratadoPz: /^TOTAL CONTRACTUAL \(PZAS/,    // el mismo total, en piezas
 };
-// Cada lote va en un paso de la cadena y ahí muestra sus dos cifras. La hoja las
-// tiene en el mismo renglón que ya alimenta la tarjeta de arriba: la columna Z las
-// nombra Entregado, En proceso y Por fabricar, que son los lotes I, II y III.
+const BLOQUES = { tm: /^ENTREGAS? \(TONELADAS\)$/, pz: /^ENTREGAS? \(PIEZAS\)$/ };
+// Cada lote llena una tarjeta de la portada y un paso de la cadena. En la hoja es el
+// renglón que se llama 1, 2 o 3 dentro de cada bloque de resumen.
 const LOTES = {
-  f1: { etapa:'acopio',     tm:'W21', pz:'W9'  },   // Lote I   — entregado
-  f2: { etapa:'descarga',   tm:'W22', pz:'W10' },   // Lote II  — en proceso
-  f3: { etapa:'produccion', tm:'W23', pz:'W11' },   // Lote III — por fabricar
+  f1: { etapa:'acopio',     kpi:'entregado', fila:'1' },   // Lote I   — entregado
+  f2: { etapa:'descarga',   kpi:'proceso',   fila:'2' },   // Lote II  — en proceso
+  f3: { etapa:'produccion', kpi:'pendiente', fila:'3' },   // Lote III — por fabricar
 };
 
 const TRAMOS = [
@@ -469,16 +470,41 @@ function fmtDato(k, v){
     ? v.toLocaleString('es-MX', { minimumFractionDigits:d, maximumFractionDigits:d })
     : fmt(v);
 }
-/* ---------- Celdas sueltas, pedidas por su dirección ----------
-   filasCSV ya respeta los saltos de línea que vienen dentro de comillas, así que
-   cada renglón del arreglo es un renglón de la hoja: A1 es filas[0][0].          */
-function celda(filas, ref){
-  const m = /^([A-Za-z]+)([0-9]+)$/.exec((ref||'').trim());
-  if (!m) return '';
-  let col = 0;
-  for (const ch of m[1].toUpperCase()) col = col*26 + (ch.charCodeAt(0) - 64);
-  const f = filas[Number(m[2]) - 1];
-  return f ? (f[col-1] || '') : '';
+/* ---------- Buscar por rótulo, no por dirección ----------
+   filasCSV ya respeta los saltos de línea que vienen dentro de comillas, así que cada
+   renglón del arreglo es un renglón de la hoja. Nada de aquí sabe en qué fila está
+   algo: todo se localiza leyendo lo que la hoja dice de sí misma. */
+// Los textos se comparan sin acentos, en mayúsculas y con un solo espacio: da igual
+// cómo venga escrito el encabezado.
+const rotulo = t => (t==null ? '' : String(t)).normalize('NFD').replace(/\p{M}/gu,'')
+                      .toUpperCase().replace(/\s+/g,' ').trim();
+// Primera cifra a la derecha de una columna; se salta las celdas vacías de en medio.
+function cifraDerecha(fila, c){
+  for (let i=c+1; i<fila.length; i++) if (numHoja(fila[i]) !== null) return fila[i];
+  return null;
+}
+// La cifra que acompaña a un rótulo suelto, p. ej. "Total contractual (Ton):"
+function porRotulo(filas, re){
+  for (const f of filas)
+    for (let c=0; c<f.length; c++)
+      if (re.test(rotulo(f[c]))){ const v = cifraDerecha(f, c); if (v !== null) return v; }
+  return null;
+}
+// Encabezado del bloque de resumen: el que lleva un "TOTAL" en la celda de al lado.
+function bloque(filas, re){
+  for (let r=0; r<filas.length; r++)
+    for (let c=0; c<filas[r].length; c++)
+      if (re.test(rotulo(filas[r][c])) && /^TOTAL/.test(rotulo(filas[r][c+1]))) return { r, c };
+  return null;
+}
+// Dentro del bloque, el renglón que se llama 1, 2 o 3; su cifra va en la columna de al lado.
+function enBloque(filas, b, cual){
+  if (!b) return null;
+  for (let r=b.r+1; r<filas.length && r<=b.r+15; r++){
+    const f = filas[r] || [];
+    if (rotulo(f[b.c]) === cual) return f[b.c+1];
+  }
+  return null;
 }
 // La hoja escribe las cifras a la mexicana: el punto agrupa los miles y la coma es el
 // decimal, así que "88.559,16" son 88 559.16 y no ochenta y ocho con pico.
@@ -495,25 +521,29 @@ function decHoja(v){
   const m = /,([0-9]+)\s*$/.exec((v||'').trim());
   return m ? m[1].length : 0;              // sin coma, la celda es entera: se muestra entera
 }
-// Lee la hoja publicada y se queda con las celdas de CELDAS. Si una no trae cifra,
-// se deja la que ya había en lugar de borrarla.
+// Lee la hoja publicada. Si un rótulo no aparece o su celda no trae cifra, se deja
+// la que ya había en lugar de borrarla.
 async function cargarHoja(){
   try {
     const r = await fetch(HOJA + '&_=' + Date.now(), { cache:'no-store' });
     if (!r.ok) return false;
     const filas = filasCSV(await r.text());
     let alguna = false;
-    for (const k in CELDAS){
-      const txt = celda(filas, CELDAS[k]);
+    const anotar = (clave, txt)=>{
       const n = numHoja(txt);
-      if (n !== null){ PORTADA[k] = n; PORTADA_DEC[k] = decHoja(txt); alguna = true; }
-    }
-    for (const id in LOTES){                 // las dos cifras de cada lote, en su paso
+      if (n === null) return false;
+      PORTADA[clave] = n; PORTADA_DEC[clave] = decHoja(txt); alguna = true; return true;
+    };
+    for (const k in ROTULOS) anotar(k, porRotulo(filas, ROTULOS[k]));
+    const bTm = bloque(filas, BLOQUES.tm), bPz = bloque(filas, BLOQUES.pz);
+    for (const id in LOTES){
       const L = LOTES[id];
       PORTADA_ETAPA[id] = PORTADA_ETAPA[id] || {};
-      [['tm', L.etapa], ['pz', L.etapa + 'Pz']].forEach(([cual, clave])=>{
-        const txt = celda(filas, L[cual]), n = numHoja(txt);
-        if (n !== null){ PORTADA_ETAPA[id][clave] = n; PORTADA_DEC[clave] = decHoja(txt); alguna = true; }
+      // la misma cifra alimenta la tarjeta de la portada y el lote en la maqueta
+      [[enBloque(filas, bTm, L.fila), L.kpi,        L.etapa       ],
+       [enBloque(filas, bPz, L.fila), L.kpi + 'Pz', L.etapa + 'Pz']].forEach(([txt, kpi, etapa])=>{
+        if (!anotar(kpi, txt)) return;
+        PORTADA_ETAPA[id][etapa] = PORTADA[kpi]; PORTADA_DEC[etapa] = PORTADA_DEC[kpi];
       });
     }
     if (!alguna) return false;
