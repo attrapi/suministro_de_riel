@@ -62,8 +62,8 @@
      que miden lo que miden y no dejan hueco debajo de la cifra. */
   #chainProyecto .st{align-self:start;padding:7px 12px}
   .tramo{grid-column:6;min-width:0;display:flex;flex-direction:column;gap:6px}
-  .volver{font:11px var(--mono);letter-spacing:.06em;color:rgba(255,255,255,.72);background:transparent;border:1px solid rgba(255,255,255,.22);border-radius:5px;padding:6px 9px;cursor:pointer;width:100%}
-  .volver:hover{color:#EAEFF5;border-color:rgba(255,255,255,.5)}
+  .volver{font:11px var(--mono);letter-spacing:.06em;color:#FF9A4D;background:rgba(10,15,22,.72);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.22);border-radius:5px;padding:6px 9px;cursor:pointer;width:100%}
+  .volver:hover{background:rgba(255,154,77,.18);border-color:rgba(255,255,255,.5)}
   .volver:focus-visible{outline:2px solid #FF9A4D;outline-offset:2px}
   .volver[hidden]{display:none}
   .tlabel{font:11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.6);margin-right:4px}
@@ -232,8 +232,8 @@
      ============================================================ */
   .st, .dona, .tabla-wrap{background:rgba(105,28,50,.92);border-color:rgba(255,255,255,.26)}
   .st .num, .dona .l{color:rgba(255,255,255,.78)}   /* respiran mejor sobre el guinda */
-  .tmenu button{background:rgba(105,28,50,.92);border-color:rgba(255,255,255,.34);color:#FF9A4D}
-  .tmenu button:hover, .tmenu li.open>button{background:var(--guinda)}
+  .tmenu button, .volver{background:rgba(105,28,50,.92);border-color:rgba(255,255,255,.34);color:#FF9A4D}
+  .tmenu button:hover, .tmenu li.open>button, .volver:hover{background:var(--guinda)}
 
   /* Institucional: las tarjetas, el selector de fase y la tabla también en guinda */
   :root[data-tema="institucional"] .st{background:rgba(105,28,50,.88);border-color:rgba(255,255,255,.22)}
@@ -261,8 +261,8 @@
   :root[data-tema="claro"] .tabla tr.total td{border-top-color:rgba(22,32,43,.3);color:var(--accent-light)}
   :root[data-tema="claro"] .tabla tr.total td.c-tramo{color:var(--ink-light)}
   :root[data-tema="claro"] .tabla .tot-ico{color:var(--accent-light)}
-  :root[data-tema="claro"] .volver{color:rgba(22,32,43,.72);border-color:rgba(22,32,43,.24)}
-  :root[data-tema="claro"] .volver:hover{color:var(--ink-light);border-color:rgba(22,32,43,.5)}
+  :root[data-tema="claro"] .volver{color:var(--accent-light);background:rgba(255,255,255,.86);border-color:rgba(22,32,43,.24)}
+  :root[data-tema="claro"] .volver:hover{border-color:rgba(22,32,43,.5)}
   :root[data-tema="claro"] .tsub{background:rgba(255,255,255,.97);border-color:rgba(22,32,43,.18)}
   :root[data-tema="claro"] .tsub button{color:var(--ink-light)}
   :root[data-tema="claro"] .tsub button:hover{background:rgba(22,32,43,.07)}
