@@ -57,6 +57,10 @@
   .hstack{flex:1 1 auto;min-width:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) 1.12fr .88fr;gap:8px;align-items:start;pointer-events:auto}
   .chain{display:contents}
   .chain[hidden]{display:none}   /* display:contents le gana al [hidden] del navegador */
+  /* Las tarjetas de la portada se estiran para quedar parejas; las tres del proyecto
+     no tienen con quién emparejarse -al lado solo está el menú, que es más alto-, así
+     que miden lo que miden y no dejan hueco debajo de la cifra. */
+  #chainProyecto .st{align-self:start;padding:7px 12px}
   .tramo{grid-column:6;min-width:0;display:flex;flex-direction:column;gap:6px}
   .volver{font:11px var(--mono);letter-spacing:.06em;color:rgba(255,255,255,.72);background:transparent;border:1px solid rgba(255,255,255,.22);border-radius:5px;padding:6px 9px;cursor:pointer;width:100%}
   .volver:hover{color:#EAEFF5;border-color:rgba(255,255,255,.5)}
@@ -80,6 +84,7 @@
   h1 span{color:#FF9A4D}
   .fase-rot{font-family:var(--display);font-style:italic;font-weight:600;font-size:19px;letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.8);margin:5px 0 0}
   /* Dona: el reparto del contratado, justo debajo del título ahora que no hay botones */
+  .dona[hidden]{display:none}    /* display:flex le gana al [hidden] del navegador */
   .dona{margin:9px 0 0;display:flex;align-items:center;gap:13px;pointer-events:auto;
         background:rgba(10,15,22,.72);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.12);
         border-radius:6px;padding:10px 14px 10px 10px;width:max-content;max-width:100%}
@@ -1538,6 +1543,7 @@ function setVista(v){
   const enProyecto = VISTA === 'proyecto';
   document.getElementById('chainInicio').hidden = enProyecto;
   document.getElementById('chainProyecto').hidden = !enProyecto;
+  document.getElementById('dona').hidden = enProyecto;        // la dona es del resumen general
   elStage.classList.toggle('oculta', enProyecto);      // se esconde la maqueta, no el color del escenario
   document.getElementById('panelProyecto').hidden = !enProyecto;
   document.getElementById('cadena').hidden = enProyecto;     // la cadena es de la portada
