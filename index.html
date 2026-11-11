@@ -57,10 +57,17 @@
   .hstack{flex:1 1 auto;min-width:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) 1.12fr .88fr;gap:8px;align-items:start;pointer-events:auto}
   .chain{display:contents}
   .chain[hidden]{display:none}   /* display:contents le gana al [hidden] del navegador */
-  /* Las tarjetas de la portada se estiran para quedar parejas; las tres del proyecto
-     no tienen con quién emparejarse -al lado solo está el menú, que es más alto-, así
-     que miden lo que miden y no dejan hueco debajo de la cifra. */
-  #chainProyecto .st{align-self:start;padding:7px 12px}
+  /* En la portada son seis tarjetas y caben en la retícula del encabezado; en un
+     proyecto son tres, así que arman su propia hilera de tres y se reparten todo el
+     ancho que deja el menú. Con ese espacio la cifra va al doble: es lo que se viene
+     a ver. Y no se estiran de alto: miden lo que miden y no dejan hueco debajo. */
+  #chainProyecto{display:grid;grid-column:1 / 6;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;align-self:start}
+  #chainProyecto[hidden]{display:none}
+  #chainProyecto .st{align-self:start;padding:13px 18px;column-gap:14px}
+  #chainProyecto .st .ico{width:72px;height:52px}
+  #chainProyecto .st .num{font-size:17px;letter-spacing:.04em}
+  #chainProyecto .st .cnt{font-size:44px}
+  #chainProyecto .st .cnt small{font-size:17px}
   .tramo{grid-column:6;min-width:0;display:flex;flex-direction:column;gap:6px}
   .volver{font:11px var(--mono);letter-spacing:.06em;color:#FF9A4D;background:rgba(10,15,22,.72);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.22);border-radius:5px;padding:6px 9px;cursor:pointer;width:100%}
   .volver:hover{background:rgba(255,154,77,.18);border-color:rgba(255,255,255,.5)}
@@ -163,7 +170,13 @@
   @media (max-width:1400px){ .st{padding:8px 10px} .st .ico{width:36px;height:26px} }
   @media (max-width:1180px){ header{flex-wrap:wrap;gap:12px} .brand{flex:1 1 100%} .st .ico{display:none} }
   /* de seis columnas a tres y luego a dos: seis tarjetas no caben en una pantalla angosta */
-  @media (max-width:1040px){ .hstack{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px} .tramo{grid-column:1 / -1} .tmenu{flex-direction:row;flex-wrap:wrap} .tmenu>li{flex:1 1 200px} }
+  @media (max-width:1040px){ .hstack{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px} .tramo{grid-column:1 / -1} .tmenu{flex-direction:row;flex-wrap:wrap} .tmenu>li{flex:1 1 200px}
+    #chainProyecto{grid-column:1 / -1} }
+  /* En pantallas angostas la cifra grande ya no cabe de a tres: se achica a la mitad
+     del salto y, en celular, cada tarjeta se queda con su propio renglón. */
+  @media (max-width:900px){ #chainProyecto .st{padding:9px 12px;column-gap:10px} #chainProyecto .st .ico{width:52px;height:38px}
+    #chainProyecto .st .num{font-size:13px} #chainProyecto .st .cnt{font-size:30px} #chainProyecto .st .cnt small{font-size:13px} }
+  @media (max-width:520px){ #chainProyecto{grid-template-columns:1fr} }
   @media (max-width:900px){ .st{padding:6px 8px} .st .cnt{grid-column:1;font-size:18px} .st .cnts{grid-column:1} .st .cnt.sec{font-size:13px} .note{display:none} }
 
   /* Celular */
