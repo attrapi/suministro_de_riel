@@ -63,11 +63,11 @@
      a ver. Y no se estiran de alto: miden lo que miden y no dejan hueco debajo. */
   #chainProyecto{display:grid;grid-column:1 / 6;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;align-self:start}
   #chainProyecto[hidden]{display:none}
-  #chainProyecto .st{align-self:start;padding:13px 18px;column-gap:14px}
-  #chainProyecto .st .ico{width:72px;height:52px}
-  #chainProyecto .st .num{font-size:17px;letter-spacing:.04em}
-  #chainProyecto .st .cnt{font-size:44px}
-  #chainProyecto .st .cnt small{font-size:17px}
+  #chainProyecto .st{align-self:start;padding:11px 16px;column-gap:13px}
+  #chainProyecto .st .ico{width:62px;height:45px}
+  #chainProyecto .st .num{font-size:15px;letter-spacing:.04em}
+  #chainProyecto .st .cnt{font-size:34px}
+  #chainProyecto .st .cnt small{font-size:15px}
   .tramo{grid-column:6;min-width:0;display:flex;flex-direction:column;gap:6px}
   .volver{font:11px var(--mono);letter-spacing:.06em;color:#FF9A4D;background:rgba(10,15,22,.72);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.22);border-radius:5px;padding:6px 9px;cursor:pointer;width:100%}
   .volver:hover{background:rgba(255,154,77,.18);border-color:rgba(255,255,255,.5)}
@@ -174,8 +174,8 @@
     #chainProyecto{grid-column:1 / -1} }
   /* En pantallas angostas la cifra grande ya no cabe de a tres: se achica a la mitad
      del salto y, en celular, cada tarjeta se queda con su propio renglón. */
-  @media (max-width:900px){ #chainProyecto .st{padding:9px 12px;column-gap:10px} #chainProyecto .st .ico{width:52px;height:38px}
-    #chainProyecto .st .num{font-size:13px} #chainProyecto .st .cnt{font-size:30px} #chainProyecto .st .cnt small{font-size:13px} }
+  @media (max-width:900px){ #chainProyecto .st{padding:9px 12px;column-gap:10px} #chainProyecto .st .ico{width:48px;height:35px}
+    #chainProyecto .st .num{font-size:12px} #chainProyecto .st .cnt{font-size:25px} #chainProyecto .st .cnt small{font-size:12px} }
   @media (max-width:520px){ #chainProyecto{grid-template-columns:1fr} }
   @media (max-width:900px){ .st{padding:6px 8px} .st .cnt{grid-column:1;font-size:18px} .st .cnts{grid-column:1} .st .cnt.sec{font-size:13px} .note{display:none} }
 
