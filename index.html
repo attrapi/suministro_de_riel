@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230B1017'/><path d='M10 4h12v5h-4l-.5 4v6l.5 4h9v5H5v-5h9l.5-4v-6L14 9h-4z' fill='%23FF9A4D'/></svg>">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<script src="html2canvas.min.js"></script><script src="jspdf.umd.min.js"></script><!-- locales, no por CDN: la red de la oficina intercepta cdnjs -->
+<script src="jspdf.umd.min.js"></script><script src="reporte-assets.js"></script><script src="reporte.js"></script><!-- locales, no por CDN: la red de la oficina intercepta cdnjs -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,600;0,700;1,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
   :root{
@@ -45,6 +45,8 @@
   .acciones button[disabled]{opacity:.55;cursor:default}
   /* Los dos van en el naranja del acento; el 3D además en negrita y espaciado */
   .acciones .v3d{font-weight:700;letter-spacing:.1em}
+  .acciones .alt{font-size:11px;padding:8px 10px;opacity:.82}
+  .acciones .alt:hover{opacity:1}
   .acciones button:focus-visible{outline:2px solid #FF9A4D;outline-offset:2px}
   .stage{position:fixed;left:0;right:0;top:0;bottom:0;background:#0F1A2A}
   .stage svg{width:100%;height:100%;display:block}
@@ -361,7 +363,8 @@
 <!-- Acciones: flotan abajo a la derecha, encima de la maqueta -->
 <div class="acciones">
   <button type="button" id="btn3d" class="v3d" title="Abrir la maqueta en 3D (otra vista, aparte de esta)">3D</button>
-  <button type="button" id="btnDescargar" class="dl">Descargar</button>
+  <button type="button" id="btnDescargar" class="dl" title="Bajar el reporte en PDF: las cuatro láminas con los datos de hoy">Reporte</button>
+  <button type="button" id="btnPptx" class="dl alt" title="El mismo reporte como PowerPoint editable">PPTX</button>
 </div>
 <div class="cadena" id="cadena"></div>
 <div class="panel" id="panelProyecto" hidden>
@@ -1599,127 +1602,84 @@ let elegirProyecto = null;              // lo llena el bloque de abajo; lo usa l
   document.addEventListener('keydown',e=>{ if (e.key==='Escape') closeAll(); });
 }
 
-/* ---------- Descargar: un PDF de tres hojas, listo para imprimir ----------
-   La portada va como imagen, porque es la maqueta. Las dos vistas de proyecto
-   se dibujan como texto y tabla del propio PDF: salen nítidas al imprimir,
-   se pueden seleccionar y evitan dos capturas, que son lo lento. */
+/* ---------- Reporte: las cuatro láminas del deck oficial ----------
+   El botón arma el "Reporte Riel" con las cifras de hoy: portada de estado
+   general, contratistas de obra y una lámina de detalle por proyecto. Salen
+   dos formatos de la misma descripción de lámina -que vive en reporte.js-:
+   un PDF en vectores, nítido al imprimir, y un .pptx que se puede editar.   */
 {
-  const btn = document.getElementById('btnDescargar');
-  const A4 = { ancho:297, alto:210 }, M = 12, CABEZA = 14;   // milímetros
-  const TINTA = [26,32,40], SUAVE = [120,124,130], LINEA = [205,209,214];
+  const btnPdf = document.getElementById('btnDescargar');
+  const btnPpt = document.getElementById('btnPptx');
   const esperar = ms => new Promise(r=>setTimeout(r, ms));
-  const listo = () => typeof html2canvas === 'function' && window.jspdf && window.jspdf.jsPDF;
-  const nombreDe = id => (TRAMOS.find(x=>x.id===id)||{}).nombre || '';
+  const ent = v => typeof v === 'number' && isFinite(v) ? v : 0;
 
-  function encabezado(pdf, fase, titulo, n, total, fecha){
-    pdf.setTextColor(...TINTA).setFont('helvetica','bold').setFontSize(13);
-    pdf.text('Adquisición de riel · ' + fase, M, M + 5);
-    pdf.setFont('helvetica','normal').setFontSize(9.5);
-    pdf.text(titulo, M, M + 10.5);
-    pdf.setTextColor(...SUAVE);
-    pdf.text(fecha, A4.ancho - M, M + 5, { align:'right' });
-    pdf.text(n + ' / ' + total, A4.ancho - M, M + 10.5, { align:'right' });
-    pdf.setDrawColor(...LINEA).setLineWidth(0.3);
-    pdf.line(M, M + 13, A4.ancho - M, M + 13);
-  }
-
-  function hojaProyecto(pdf, seg){
-    const d = DATOS_FASE[FASE][seg], filas = (TABLA[FASE] || {})[seg] || [];
-    let y = M + CABEZA + 8;
-    // los tres totales del proyecto, en piezas como la tabla de abajo
-    const enteroPz = v => typeof v === 'number' ? v.toLocaleString('es-MX', { maximumFractionDigits:0 }) : String(v);
-    const kpis = [['Solicitado', d.solicitado], ['Entregado', d.entregadoP], ['Por entregar', d.pendienteP]];
-    kpis.forEach(([rot, val], k)=>{
-      const x = M + k*62;
-      pdf.setFont('helvetica','normal').setFontSize(8).setTextColor(...SUAVE);
-      pdf.text(rot.toUpperCase(), x, y);
-      pdf.setFont('helvetica','bold').setFontSize(16).setTextColor(...TINTA);
-      pdf.text(enteroPz(val) + ' pzas', x, y + 7);
+  /* Lo que la página sabe hoy, puesto como lo espera el reporte. Las cifras
+     del contrato son las mismas en los tres lotes y la tabla por proyecto
+     también, así que da igual en qué lote esté parada la pantalla. */
+  function contexto(){
+    const base  = DATOS_FASE[FASE] || DATOS_FASE.f1 || {};
+    const k     = base[SEG] || base[(TRAMOS[0]||{}).id] || {};
+    const tabla = TABLA[FASE] || TABLA.f1 || {};
+    const proyectos = TRAMOS.map((t, i)=>{
+      const filas = (tabla[t.id] || []).map(f => ({
+        nombre:     f.tramo,
+        solicitado: ent(f.solicitadoPz),
+        // entregado es la suma de los tres lotes, igual que en el panel
+        entregado:  ent(f.entregadoPz) + ent(f.lote2Pz) + ent(f.lote3Pz),
+        pendiente:  ent(f.pendientePz),
+      }));
+      const suma = c => filas.reduce((a,f)=> a + f[c], 0);
+      return {
+        id: t.id, nombre: t.nombre,
+        corto: t.nombre.replace(/\s*[–—-]\s*/, ' - ').replace('Nuevo Laredo', 'Nvo. Laredo'),
+        color: REPORTE.COLOR_PROYECTO[t.id] || REPORTE.CICLO[i % REPORTE.CICLO.length],
+        filas,
+        totalSolicitado: suma('solicitado'),
+        totalEntregado:  suma('entregado'),
+        totalPendiente:  suma('pendiente'),
+      };
     });
-    y += 18;
-    // tabla de centros de acopio, en piezas y con el nombre completo, igual que el panel
-    const cols = [{ t:'Centro de acopio', w:93, der:false }, { t:'Solicitado (pzas)', w:36, der:true },
-                  { t:'Entrega Lote I', w:36, der:true }, { t:'Entrega Lote II', w:36, der:true },
-                  { t:'Entrega Lote III', w:36, der:true }, { t:'Por entregar', w:36, der:true }];
-    const COLS = ['solicitadoPz', 'entregadoPz', 'lote2Pz', 'lote3Pz', 'pendientePz'];
-    const fmtPz = v => typeof v === 'number' ? v.toLocaleString('es-MX', { maximumFractionDigits:0 }) : String(v);
-    const dibujaFila = (celdas, negrita, alto)=>{
-      let x = M;
-      pdf.setFont('helvetica', negrita ? 'bold' : 'normal').setFontSize(negrita ? 8 : 9.5);
-      // el nombre del centro va completo: se parte en renglones y la fila crece lo que haga falta
-      const trozos = celdas.map((txt, k)=> cols[k].der ? [String(txt)] : pdf.splitTextToSize(String(txt), cols[k].w - 3));
-      alto = Math.max(alto, trozos.reduce((m,t)=> Math.max(m, t.length), 1) * 4.2 + 2.2);
-      trozos.forEach((lineas, k)=>{
-        const c = cols[k];
-        pdf.text(lineas, c.der ? x + c.w - 2 : x, y + 4.4, { align: c.der ? 'right' : 'left' });
-        x += c.w;
-      });
-      y += alto;
-      pdf.setDrawColor(...LINEA).setLineWidth(0.2);
-      pdf.line(M, y, A4.ancho - M, y);
+    return {
+      fecha: new Date().toLocaleDateString('es-MX', { day:'2-digit', month:'long', year:'numeric' }),
+      kpis: {
+        contratado:k.contratado, contratadoPz:k.contratadoPz,
+        proceso:k.proceso,       procesoPz:k.procesoPz,
+        entregado:k.entregado,   entregadoPz:k.entregadoPz,
+        pendiente:k.pendiente,   pendientePz:k.pendientePz,
+        monto:k.monto,
+      },
+      proyectos,
     };
-    pdf.setTextColor(...SUAVE); dibujaFila(cols.map(c=>c.t.toUpperCase()), true, 7);
-    if (!filas.length){
-      pdf.setTextColor(...SUAVE); dibujaFila(['Sin datos para este lote','','','','',''], false, 8);
-      return;
-    }
-    for (const f of filas){
-      pdf.setTextColor(...TINTA);
-      const n = f.notas || {}, con = (v,t)=> fmtPz(v) + (t ? ' ' + t : '');
-      dibujaFila([f.tramo].concat(COLS.map(k=> con(f[k], n[k]))), false, 8);
-    }
-    pdf.setTextColor(...TINTA);              // el total cierra la tabla, sumado de estos mismos renglones
-    const sumaPz = k => filas.some(f=> typeof f[k]==='number')
-      ? filas.reduce((a,f)=> a + (typeof f[k]==='number' ? f[k] : 0), 0) : '—';
-    dibujaFila(['Total'].concat(COLS.map(k=> fmtPz(sumaPz(k)))), true, 9);
   }
 
-  btn.onclick = async ()=>{
-    if (!listo()){ btn.textContent = 'No disponible'; setTimeout(()=>btn.textContent='Descargar', 2500); return; }
-    const vistaPrevia = VISTA, segPrevio = SEG;
-    const fase = (FASES.find(f=>f.id===FASE)||{}).nombre || '';
-    btn.disabled = true;
+  async function generar(btn, formato){
+    const rotulo = btn.textContent;
+    if (!window.REPORTE || !window.jspdf || !window.jspdf.jsPDF){
+      btn.textContent = 'No disponible'; setTimeout(()=> btn.textContent = rotulo, 2500); return;
+    }
+    btnPdf.disabled = btnPpt.disabled = true;
     try {
-      btn.textContent = 'Capturando…';
-      setVista('inicio'); await esperar(500);
-      // con la pestaña en segundo plano la captura puede quedarse colgada; se le pone un tope
-      const lienzo = await Promise.race([
-        html2canvas(document.body, { backgroundColor: getComputedStyle(elStage).backgroundColor, scale: 1.5, logging: false,
-          ignoreElements: el => el.classList && el.classList.contains('acciones') }),   // los botones flotantes no van en la portada
-        new Promise((_, no)=>setTimeout(()=>no(new Error('La captura tardó demasiado')), 60000)),
-      ]);
-
-      btn.textContent = 'Armando PDF…';
-      const pdf = new window.jspdf.jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
-      const fecha = new Date().toLocaleDateString('es-MX', { day:'2-digit', month:'long', year:'numeric' });
-
-      encabezado(pdf, fase, 'Resumen general', 1, 3, fecha);
-      const hueco = { ancho: A4.ancho - 2*M, alto: A4.alto - 2*M - CABEZA };
-      const prop = lienzo.width / lienzo.height;
-      let w = hueco.ancho, alt = w / prop;
-      if (alt > hueco.alto){ alt = hueco.alto; w = alt * prop; }
-      pdf.addImage(lienzo, 'PNG', M + (hueco.ancho - w)/2, M + CABEZA + 4, w, alt, undefined, 'FAST');
-
-      TRAMOS.forEach((t, k)=>{
-        pdf.addPage();
-        encabezado(pdf, fase, t.nombre, k + 2, 3, fecha);
-        hojaProyecto(pdf, t.id);
-      });
-
-      // el save() de jsPDF no deja archivo aquí; se baja el blob con un ancla propia
-      const url = URL.createObjectURL(pdf.output('blob')), a = document.createElement('a');
-      a.href = url; a.download = 'adquisicion-de-riel-' + fase.toLowerCase().replace(/\s+/g,'-') + '.pdf';
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(()=>URL.revokeObjectURL(url), 2000);
+      btn.textContent = 'Armando…';
+      const ctx = contexto();
+      // las tarjetas de lote reaprovechan los dibujos isométricos de la portada
+      ctx.iconos = await REPORTE.iconosDeLaPagina();
+      const L = REPORTE.laminas(ctx, REPORTE.assets);
+      const sello = ctx.fecha.replace(/\s+de\s+/g, '-').toLowerCase();
+      if (formato === 'pptx') REPORTE.bajar(await REPORTE.hacerPPTX(L, ctx.fecha), 'reporte-riel-' + sello + '.pptx');
+      else                    REPORTE.bajar(REPORTE.hacerPDF(L), 'reporte-riel-' + sello + '.pdf');
+      btn.textContent = 'Listo'; await esperar(1200);
     } catch(e){
       btn.textContent = 'Falló';                      // que no se quede en silencio
-      console.error('Descarga PDF:', e);
+      console.error('Reporte:', e);
       await esperar(2500);
     } finally {
-      elegirProyecto(segPrevio); setVista(vistaPrevia);   // se deja la pantalla como estaba
-      btn.disabled = false; btn.textContent = 'Descargar';
+      btn.textContent = rotulo;
+      btnPdf.disabled = btnPpt.disabled = false;
     }
-  };
+  }
+
+  btnPdf.onclick = ()=> generar(btnPdf, 'pdf');
+  btnPpt.onclick = ()=> generar(btnPpt, 'pptx');
 }
 
 /* ---------- Iconos de las tarjetas ---------- */
