@@ -1621,13 +1621,19 @@ let elegirProyecto = null;              // lo llena el bloque de abajo; lo usa l
     const k     = base[SEG] || base[(TRAMOS[0]||{}).id] || {};
     const tabla = TABLA[FASE] || TABLA.f1 || {};
     const proyectos = TRAMOS.map((t, i)=>{
-      const filas = (tabla[t.id] || []).map(f => ({
-        nombre:     f.tramo,
-        solicitado: ent(f.solicitadoPz),
-        // entregado es la suma de los tres lotes, igual que en el panel
-        entregado:  ent(f.entregadoPz) + ent(f.lote2Pz) + ent(f.lote3Pz),
-        pendiente:  ent(f.pendientePz),
-      }));
+      const filas = (tabla[t.id] || []).map(f => {
+        // la hoja distingue un cero de una celda vacía, y el reporte también:
+        // el cero es una entrega que no ocurrió, el guion es un dato que no hay
+        const cifra = v => typeof v === 'number' && isFinite(v) ? v : null;
+        const lotes = [cifra(f.entregadoPz), cifra(f.lote2Pz), cifra(f.lote3Pz)];
+        return {
+          nombre:     f.tramo,
+          solicitado: ent(f.solicitadoPz),
+          lotes,                                    // Lote I, II y III por separado
+          entregado:  lotes.reduce((a,v)=> a + (v || 0), 0),   // igual que el TOTAL de la hoja
+          pendiente:  ent(f.pendientePz),
+        };
+      });
       const suma = c => filas.reduce((a,f)=> a + f[c], 0);
       return {
         id: t.id, nombre: t.nombre,

@@ -25,6 +25,18 @@ const C = {
 const COLOR_PROYECTO = { 'sal-nl': C.verde, 'qro-ira': C.vinoQro };
 const CICLO = [C.vinoQro, C.verde, C.guinda, C.vino];
 
+/* ---------- Los tres lotes, en tonos del color del proyecto ----------
+   Cada barra se parte en lo entregado por lote, que es como viene en la hoja:
+   una sola cifra escondía que 7,839 son 1,555 de un lote y 6,284 de otro. */
+function aclarar(hex, t){
+  const c = i => Math.round(parseInt(hex.slice(i, i+2), 16) * (1 - t) + 255 * t);
+  return [c(0), c(2), c(4)].map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+}
+const tonosDe = color => [color, aclarar(color, 0.32), aclarar(color, 0.58)];
+const NOMBRE_LOTE = ['Lote I', 'Lote II', 'Lote III'];
+// sobre el tono más claro el blanco ya no se lee
+const TINTA_LOTE = [C.blanco, C.blanco, C.texto];
+
 const FUENTE = 'Noto Sans', FUENTE_T = 'Noto Sans ExtraBold';
 
 /* ---------- formato de cifras ---------- */
@@ -134,6 +146,21 @@ function texto(x, y, w, h, renglones, o){
   return Object.assign({ t:'texto', x, y, w, h, renglones:r, al:'l', anc:'m', fuente:FUENTE }, o||{});
 }
 const rg = (s, sz, color, b) => ({ s:String(s), sz, color:color||C.texto, b:b!==false });
+
+/* La leyenda de los tonos: sin ella, las barras partidas no dicen de qué lote
+   es cada tramo. Va una vez por lámina. */
+function leyenda(F, x, y, tonos, vertical){
+  const items = NOMBRE_LOTE.map((n, i)=> ({ n, c:tonos[i] })).concat([{ n:'Por entregar', c:C.gris }]);
+  items.forEach((it, i)=>{
+    const xx = vertical ? x : x + i*1.18, yy = vertical ? y + i*0.19 : y;
+    // con filo: el tono más claro y el "por entregar" se pierden sobre el fondo
+    F.push(figura.caja(xx, yy + 0.035, 0.13, 0.13, { fill:it.c, linea:C.linea, lw:0.006 }));
+    F.push(texto(xx + 0.19, yy, vertical ? 1.40 : 0.95, 0.20, [rg(it.n, 7.5, C.tenue, false)], { al:'l' }));
+  });
+}
+/* Lo entregado de un renglón, lote por lote. La hoja distingue un cero de una
+   celda vacía, así que aquí también: el cero suma, el guion no. */
+const lotesDe = f => Array.isArray(f.lotes) ? f.lotes : [f.entregado, null, null];
 
 /* ============================================================
    ARMADO DE LAS CUATRO LÁMINAS
@@ -256,7 +283,10 @@ function lamina2(ctx, A){
     F.push(texto(0.22, yb, 1.95, 0.26, [rg(p.corto, 10.5, C.blanco, false)], { al:'c' }));
     F.push(figura.linea(0.38, yb + 0.33, 1.85, yb + 0.33, C.linea, 0.006));
     F.push(texto(2.30, yb, 3.20, 0.26, [rg('TOTAL Requerido | ' + num(p.totalSolicitado) + ' pz', 9, C.suave, false)], { al:'l' }));
+    // cada banda lleva su leyenda: los tonos salen del color de su proyecto
+    leyenda(F, 5.55, yb + 0.03, tonosDe(p.color), false);
 
+    const tonos = tonosDe(p.color);
     const filas = p.filas, n = filas.length || 1;
     const y0 = yb + 0.42, alto = (yb + bandaH - 0.16) - y0;
     const paso = n > 1 ? Math.min(0.525, (alto - 0.29) / (n - 1)) : 0;
@@ -267,18 +297,28 @@ function lamina2(ctx, A){
         [rg(corto.jefe + (corto.sufijo ? ' / ' + corto.sufijo : ''), 9, C.texto)], { al:'l' }));
       F.push(figura.caja(0.32, y + 0.23, 1.53, 0.055, { fill:p.color }));
 
+      // La barra se reparte entre los tres lotes; lo que sobra del riel es lo
+      // que falta por entregar. A escuadra, como en el deck: apilar píldoras
+      // deja muescas entre tramo y tramo.
       const PX = 2.47, PW = 7.72, PH = 0.20, yp = y + 0.03;
       const q = razon(f.entregado, f.solicitado);
-      const ancho = q == null ? 0 : Math.max(0, Math.min(1, q)) * PW;
-      F.push(figura.caja(PX, yp, PW, PH, { fill:C.gris, r:PH/2 }));
-      if (ancho > 0.02) F.push(figura.caja(PX, yp, Math.max(ancho, PH), PH, { fill:p.color, r:PH/2 }));
-      const etiqueta = num(f.entregado) + ' Pzas | ' + pctTxt(q);
-      if (ancho > 1.45) F.push(texto(PX + 0.10, yp, ancho - 0.30, PH, [rg(etiqueta, 8.5, C.blanco)], { al:'c' }));
-      else              F.push(texto(PX + Math.max(ancho, PH) + 0.12, yp, 2.00, PH, [rg(etiqueta, 8.5, p.color)], { al:'l' }));
-      if (ancho > 0.02) F.push(figura.elip(PX + ancho - 0.14, yp - 0.04, 0.28, 0.28, { fill:C.blanco, linea:p.color, lw:0.012 }));
+      F.push(figura.caja(PX, yp, PW, PH, { fill:C.gris }));
+      let cur = PX;
+      lotesDe(f).forEach((v, li)=>{
+        if (!esNum(v) || v <= 0 || !f.solicitado) return;
+        const w = Math.min(Math.min(1, v / f.solicitado) * PW, PX + PW - cur);
+        if (w <= 0.004) return;
+        F.push(figura.caja(cur, yp, w, PH, { fill:tonos[li] }));
+        if (w > 0.58) F.push(texto(cur, yp, w, PH, [rg(num(v), 7.5, TINTA_LOTE[li])], { al:'c' }));
+        cur += w;
+      });
+      if (cur > PX + 0.004) F.push(figura.elip(cur - 0.14, yp - 0.04, 0.28, 0.28, { fill:C.blanco, linea:p.color, lw:0.012 }));
 
-      F.push(texto(10.44, y - 0.07, 2.70, 0.21, [rg('Requerido | ' + num(f.solicitado) + ' pz', 8, C.suave, false)], { al:'l' }));
-      F.push(texto(10.44, y + 0.12, 2.70, 0.21, [rg('Por entregar | ' + num(f.pendiente) + ' pz', 8, C.tenue)], { al:'l' }));
+      F.push(texto(10.44, y - 0.04, 2.70, 0.34, [
+        rg('Requerido | ' + num(f.solicitado) + ' pz', 7.2, C.suave, false),
+        rg('Entregado | ' + num(f.entregado) + ' pz · ' + pctTxt(q), 7.2, p.color),
+        rg('Por entregar | ' + num(f.pendiente) + ' pz', 7.2, C.tenue, false),
+      ], { al:'l' }));
     });
   });
   return { l1:'SUMINISTRO RIEL', l2:'CONTRATISTAS OBRA', figuras:F };
@@ -299,26 +339,37 @@ function laminaProyecto(ctx, p, A){
   F.push(texto(10.17, 2.54, 3.31, 0.22, [rg('Gráfica Totales (%)', 9, C.tenue, false)], { al:'c' }));
 
   /* Una barra vertical por centro de acopio: crece desde la base. */
-  const IZQ = 0.70, DER = 9.95, BASE = 6.22, TOPE = 1.70, ALTO = BASE - TOPE;
+  const IZQ = 0.70, DER = 9.95, BASE = 6.16, TOPE = 1.70, ALTO = BASE - TOPE;
+  const tonos = tonosDe(p.color);
+  leyenda(F, 10.86, 2.84, tonos, true);
   const filas = p.filas, n = filas.length || 1;
   const col = (DER - IZQ) / n;
   filas.forEach((f, j)=>{
     const cx = IZQ + col*(j + 0.5), BW = 0.20;
     const q = razon(f.entregado, f.solicitado);
-    const h = q == null ? 0 : Math.max(0, Math.min(1, q)) * ALTO;
     const anchoRot = Math.min(2.53, col - 0.06);
-    F.push(figura.caja(cx - BW/2, TOPE, BW, ALTO, { fill:C.gris, r:BW/2 }));
-    if (h > 0.02) F.push(figura.caja(cx - BW/2, BASE - Math.max(h, BW), BW, Math.max(h, BW), { fill:p.color, r:BW/2 }));
-    if (h > 0.02) F.push(figura.elip(cx - 0.14, BASE - h - 0.14, 0.28, 0.28, { fill:C.blanco, linea:p.color, lw:0.012 }));
+    F.push(figura.caja(cx - BW/2, TOPE, BW, ALTO, { fill:C.gris }));
+    // los lotes se apilan desde la base, en el orden en que se entregaron
+    let cur = BASE;
+    lotesDe(f).forEach((v, li)=>{
+      if (!esNum(v) || v <= 0 || !f.solicitado) return;
+      const h = Math.min(Math.min(1, v / f.solicitado) * ALTO, cur - TOPE);
+      if (h <= 0.004) return;
+      F.push(figura.caja(cx - BW/2, cur - h, BW, h, { fill:tonos[li] }));
+      cur -= h;
+    });
+    if (cur < BASE - 0.004) F.push(figura.elip(cx - 0.14, cur - 0.14, 0.28, 0.28, { fill:C.blanco, linea:p.color, lw:0.012 }));
 
     F.push(texto(cx - anchoRot/2, 1.18, anchoRot, 0.24,
       [rg('Requerido | ' + num(f.solicitado) + ' pz', 8, C.suave, false)], { al:'c', envolver:true }));
-    F.push(texto(cx - anchoRot/2, 6.34, anchoRot, 0.24,
-      [rg(num(f.entregado) + ' Pzas | ' + pctTxt(q), 8.5, p.color)], { al:'c', envolver:true }));
-    F.push(texto(cx - anchoRot/2, 6.56, anchoRot, 0.22,
-      [rg('Por entregar | ' + num(f.pendiente) + ' pz', 7.5, C.tenue, false)], { al:'c', envolver:true }));
-    F.push(figura.caja(cx - Math.min(1.53, col - 0.22)/2, 6.86, Math.min(1.53, col - 0.22), 0.055, { fill:p.color }));
-    F.push(texto(cx - anchoRot/2, 6.96, anchoRot, 0.50,
+    const desglose = NOMBRE_LOTE.map((nl, li)=> nl.replace('Lote ','') + ' ' + num(lotesDe(f)[li])).join(' · ');
+    F.push(texto(cx - anchoRot/2, 6.24, anchoRot, 0.56, [
+      rg(num(f.entregado) + ' Pzas | ' + pctTxt(q), 8, p.color),
+      rg(desglose, 6.8, C.tenue, false),
+      rg('Por entregar | ' + num(f.pendiente) + ' pz', 7, C.tenue, false),
+    ], { al:'c', envolver:true, anc:'t' }));
+    F.push(figura.caja(cx - Math.min(1.53, col - 0.22)/2, 6.88, Math.min(1.53, col - 0.22), 0.055, { fill:p.color }));
+    F.push(texto(cx - anchoRot/2, 6.98, anchoRot, 0.50,
       [rg(f.nombre, 6.8, C.texto, false)], { al:'c', envolver:true, anc:'t' }));
   });
   return { l1:'SUMINISTRO RIEL', l2:p.nombre.toUpperCase(), figuras:F };
