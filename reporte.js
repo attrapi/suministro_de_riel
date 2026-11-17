@@ -166,10 +166,13 @@ const lotesDe = f => Array.isArray(f.lotes) ? f.lotes : [f.entregado, null, null
    ARMADO DE LAS CUATRO LÁMINAS
    ============================================================ */
 
-/* El encabezado que llevan todas: barra guinda, título a dos renglones y,
-   en la portada, los dos logotipos con su divisoria. */
-function encabezado(F, l1, l2, conLogos, A){
-  F.push(figura.caja(0, 0.02, 0.15, 1.35, { fill:C.guinda }));
+/* El encabezado que llevan todas: barra de color, título a dos renglones y,
+   en la portada, los dos logotipos con su divisoria. La barra es guinda
+   institucional en las láminas que hablan del contrato entero; en las de un
+   solo proyecto toma el color de ese proyecto, para que no quede una lengüeta
+   guinda encima de una lámina verde. */
+function encabezado(F, l1, l2, conLogos, A, color){
+  F.push(figura.caja(0, 0.02, 0.15, 1.35, { fill:color || C.guinda }));
   F.push(texto(0.28, 0.17, 5.60, 0.86, [
     rg(l1, 20, C.tinta), rg(l2, 24, C.tinta),
   ], { fuente:FUENTE_T, anc:'m' }));
@@ -336,7 +339,7 @@ function lamina2(ctx, A){
 function laminaProyecto(ctx, p, A){
   const F = [];
   if (A && A.BG) F.push(figura.img(A.BG.uri, 0, 0, W, H));
-  encabezado(F, 'SUMINISTRO RIEL', p.nombre.toUpperCase(), false, A);
+  encabezado(F, 'SUMINISTRO RIEL', p.nombre.toUpperCase(), false, A, p.color);
 
   columnaTotal(F, 4.72, 7.45, 'Total Suministrado:', num(p.totalEntregado) + ' Pzas', null);
   columnaTotal(F, 7.45, 10.18, 'Por suministrar:',   num(p.totalPendiente) + ' Pzas', null);
