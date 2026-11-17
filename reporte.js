@@ -207,11 +207,19 @@ function lamina1(ctx, A){
     + nCentros + ' CENTROS DE ACOPIO', 11.33, C.oro)], { al:'l' }));
   F.push(texto(6.40, 1.05, 6.60, 0.27, [rg('CORTE AL ' + ctx.fecha.toUpperCase(), 10, C.oro)], { al:'r' }));
 
-  /* Los tres totales de arriba */
-  const avance = razon(k.entregado, k.contratado);
+  /* ---------- Los tres totales de arriba ----------
+     El avance es lo entregado MÁS lo que está en proceso: es el 54,81% que la
+     propia hoja pone en el renglón "Contratado" de su bloque de piezas, y las
+     mismas 35,089 piezas que la lámina de contratistas llama "suministrado".
+     Contar sólo lo entregado repetía, cifra por cifra, la tarjeta del Lote 1.
+     El Lote 3 no entra: es lo que falta por fabricar, no avance.            */
+  const cero = v => esNum(v) ? v : 0;
+  const avanceTon = cero(k.entregado) + cero(k.proceso);
+  const avancePz  = cero(k.entregadoPz) + cero(k.procesoPz);
+  const avance = razon(avanceTon, k.contratado);
   const tarjetas = [
     { rot:'CONTRATADO', lineas:[ num(k.contratado,1) + ' Ton / ' + num(k.contratadoPz) + ' Pz' ] },
-    { rot:'AVANCE',     lineas:[ num(k.entregado,1) + ' Ton / ' + num(k.entregadoPz) + ' Pz', pctTxt(avance) ] },
+    { rot:'AVANCE',     lineas:[ num(avanceTon,1) + ' Ton / ' + num(avancePz) + ' Pz', pctTxt(avance) ] },
     { rot:'PAGADO',     lineas:[ '$ ' + num(k.monto) + ' MX' ] },
   ];
   tarjetas.forEach((t, i)=>{
