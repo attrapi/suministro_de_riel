@@ -249,8 +249,10 @@ function lamina1(ctx, A){
     // La mitad izquierda es la del dibujo, como en el deck: va el icono
     // isométrico de la propia página y, debajo, la parte que le toca del
     // contrato dibujada como barra -el mismo número que el recuadro de al lado.
+    // el icono va centrado sobre la columna izquierda -el mismo eje que el pie
+    // y la barra de abajo- y deja 0.26" libres antes del recuadro gris
     const q = razon(L.tm, k.contratado);
-    if (L.ico) F.push(figura.img(L.ico, x + 0.08, 3.86, 2.05, 1.37));
+    if (L.ico) F.push(figura.img(L.ico, x + 0.30, 4.05, 1.60, 0.99));
     F.push(texto(x + 0.14, 5.30, 1.94, 0.30, [rg(L.pie, 9, C.tenue, false)], { al:'c', envolver:true }));
     F.push(figura.caja(x + 0.17, 5.90, 1.86, 0.18, { fill:C.gris, r:0.09 }));
     if (q) F.push(figura.caja(x + 0.17, 5.90, Math.max(0.18, 1.86*Math.min(q, 1)), 0.18, { fill:C.guinda, r:0.09 }));
@@ -767,12 +769,13 @@ function bajar(blob, nombre){
 
 /* Pasa un SVG de la página a PNG, para reaprovechar sus propios iconos
    isométricos en las tarjetas de lote. Si falla, la tarjeta va sin dibujo. */
-function svgAPng(svg, ancho, alto){
+function svgAPng(svg, ancho, alto, marco){
   return new Promise(resolve => {
     try {
       if (!svg) return resolve(null);
       const copia = svg.cloneNode(true);
       copia.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+      if (marco) copia.setAttribute('viewBox', marco.join(' '));
       copia.setAttribute('width', ancho); copia.setAttribute('height', alto);
       const s = new XMLSerializer().serializeToString(copia);
       const img = new Image();
@@ -791,12 +794,21 @@ function svgAPng(svg, ancho, alto){
   });
 }
 
+/* El dibujo isométrico de la página no ocupa su viewBox: con el origen en
+   (60, 26) de un marco de 120 x 80, el piso de 6 x 5 cae entre x 60 y 130 y
+   entre y 6 y 49, o sea que vive en la mitad derecha y se sale por el borde,
+   donde el <svg> lo recorta. En la página se nota poco; en el reporte dejaba
+   al símbolo pegado al recuadro gris, porque la orilla del dibujo era la
+   orilla de la imagen. Aquí se le pone un marco a su medida -el mismo para
+   los tres, para que no cambien de tamaño entre tarjetas- y así sale entero
+   y centrado dentro de su PNG. */
+const MARCO_ICONO = [58, 4, 74, 46];          // x, y, ancho, alto en unidades del dibujo
 async function iconosDeLaPagina(){
   const ids = { entregado:'ico3', proceso:'ico2', pendiente:'ico6' };
   const out = {};
   for (const k in ids){
     const cont = document.getElementById(ids[k]);
-    out[k] = await svgAPng(cont && cont.querySelector('svg'), 560, 373);
+    out[k] = await svgAPng(cont && cont.querySelector('svg'), 592, 368, MARCO_ICONO);
   }
   return out;
 }
