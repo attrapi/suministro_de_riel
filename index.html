@@ -1746,9 +1746,17 @@ let elegirProyecto = null;              // lo llena el bloque de abajo; lo usa l
   btnPpt.onclick = ()=> generar(btnPpt, 'pptx');
 }
 
-/* ---------- Iconos de las tarjetas ---------- */
+/* ---------- Iconos de las tarjetas ----------
+   El dibujo no ocupa su marco: con el origen en (60, 26) el piso de 6 x 5 cae
+   entre x 60 y 130, o sea que vive en la mitad derecha de un marco de 120 x 80 y
+   se sale por la orilla. De ahi el hueco a la izquierda del icono en cada KPI.
+   El marco de abajo esta hecho a la medida del dibujo -el mismo para todos, para
+   que no cambien de tamano entre tarjetas-, asi que el icono sale entero,
+   centrado y aprovechando el ancho que ya tenia reservado. Es el mismo marco que
+   el reporte le pone al rasterizarlo (MARCO_ICONO en reporte.js). */
+const MARCO_ICONO = '58 4 74 46';          // x, y, ancho, alto en unidades del dibujo
 function icon(id, build){
-  const s = document.createElementNS(NS,'svg'); s.setAttribute('viewBox','0 0 120 80');
+  const s = document.createElementNS(NS,'svg'); s.setAttribute('viewBox', MARCO_ICONO);
   document.getElementById(id).appendChild(s);
   const m = makeScene(s, 8, 60, 26);
   m.poly([m.P(0,0,0),m.P(6,0,0),m.P(6,5,0),m.P(0,5,0)],'rgba(127,140,160,.22)');
