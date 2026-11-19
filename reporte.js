@@ -48,6 +48,14 @@ const razon = (a, b) => (esNum(a) && esNum(b) && b > 0) ? a / b : null;
 const pctTxt = (p, dec) => p == null ? '—'
   : (p*100).toLocaleString('es-MX', { minimumFractionDigits:dec==null?1:dec, maximumFractionDigits:dec==null?1:dec }) + '%';
 
+/* ---------- Toneladas: los decimales que trae la hoja ----------
+   Las toneladas van con los dos decimales de la celda. A un decimal, las
+   88,559.16 del total contractual se imprimían como 88,559.2: una cifra que no
+   está en ninguna celda y que al sumarse a mano no cuadra con la hoja.
+   Las piezas son el caso contrario y se quedan enteras: su celda arrastra un
+   decimal de la conversión (64,019.29) y una pieza de riel no se parte. */
+const ton = v => num(v, 2);
+
 /* ---------- Rótulo corto de un centro de acopio ----------
    En la hoja el centro viene con su nombre completo ("BASE DE MONTAJE 1
    SALTILLO, COAHUILA (CICSA). TI (Seg. 13 y 14) P.K. 40+000"). En la lámina de
@@ -221,8 +229,8 @@ function lamina1(ctx, A){
   const avancePz  = cero(k.entregadoPz) + cero(k.procesoPz);
   const avance = razon(avanceTon, k.contratado);
   const tarjetas = [
-    { rot:'CONTRATADO', lineas:[ num(k.contratado,1) + ' Ton / ' + num(k.contratadoPz) + ' Pz' ] },
-    { rot:'AVANCE',     lineas:[ num(avanceTon,1) + ' Ton / ' + num(avancePz) + ' Pz', pctTxt(avance) ] },
+    { rot:'CONTRATADO', lineas:[ ton(k.contratado) + ' Ton / ' + num(k.contratadoPz) + ' Pz' ] },
+    { rot:'AVANCE',     lineas:[ ton(avanceTon) + ' Ton / ' + num(avancePz) + ' Pz', pctTxt(avance) ] },
     { rot:'PAGADO',     lineas:[ '$ ' + num(k.monto) + ' MX' ] },
   ];
   tarjetas.forEach((t, i)=>{
@@ -262,7 +270,7 @@ function lamina1(ctx, A){
     F.push(figura.caja(bx, 4.10, 1.73, 1.23, { fill:C.gris, r:0.06 }));
     F.push(texto(bx + 0.08, 4.18, 1.57, 0.21, [rg('CANTIDAD', 8.67, C.rotulo)], { al:'l' }));
     F.push(texto(bx + 0.08, 4.39, 1.57, 0.45, [rg(num(L.pz) + ' pz', 18, C.guinda)], { al:'l' }));
-    F.push(texto(bx + 0.08, 4.87, 1.57, 0.24, [rg(num(L.tm,1) + ' TM', 9.33, C.oroTM)], { al:'l' }));
+    F.push(texto(bx + 0.08, 4.87, 1.57, 0.24, [rg(ton(L.tm) + ' TM', 9.33, C.oroTM)], { al:'l' }));
 
     F.push(figura.caja(bx, 5.49, 1.73, 1.23, { fill:C.gris, r:0.06 }));
     F.push(texto(bx + 0.08, 5.57, 1.57, 0.29, [rg('Porcentaje Equivalente', 8.67, C.tinta)], { al:'l', envolver:true }));
