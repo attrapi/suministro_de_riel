@@ -150,7 +150,7 @@
   .tabla tbody tr:last-child td{border-bottom:0}
   .tabla .vacio{color:rgba(255,255,255,.4)}
   .tabla .nota{font-size:11px;color:rgba(255,255,255,.55)}
-  /* Entregado es un subtotal, no una entrega mas: la divisoria y la negrita lo
+  /* Suministrado es un subtotal, no una entrega mas: la divisoria y la negrita lo
      separan de los tres lotes que suma */
   .tabla th.c-ent, .tabla td.c-ent{border-left:1px solid rgba(255,255,255,.16)}
   .tabla td.c-ent{font-weight:600}
@@ -355,8 +355,8 @@
     </div>
     <div class="chain" id="chainProyecto" hidden>
       <div class="st"><div class="ico" id="ico7"></div><div class="num">Solicitado</div><div class="cnt"><span data-d="solicitado">0</span> <small>pzas</small></div></div>
-      <div class="st"><div class="ico" id="ico8"></div><div class="num">Entregado</div><div class="cnt"><span data-d="entregadoP">0</span> <small>pzas</small></div></div>
-      <div class="st"><div class="ico" id="ico9"></div><div class="num">Por entregar</div><div class="cnt"><span data-d="pendienteP">0</span> <small>pzas</small></div></div>
+      <div class="st"><div class="ico" id="ico8"></div><div class="num">Suministrado</div><div class="cnt"><span data-d="entregadoP">0</span> <small>pzas</small></div></div>
+      <div class="st"><div class="ico" id="ico9"></div><div class="num">Por suministrar</div><div class="cnt"><span data-d="pendienteP">0</span> <small>pzas</small></div></div>
     </div>
     <div class="tramo" id="tramo">
       <button type="button" class="volver" id="btnVolver" hidden>&larr; Volver</button>
@@ -382,8 +382,8 @@
         <th><span class="th-in"><span class="th-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7 3.5v17M17 3.5v17"/><path d="M3.5 7h17M3.5 12h17M3.5 17h17"/></svg></span>Entrega Lote I</span></th>
         <th><span class="th-in"><span class="th-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7 3.5v17M17 3.5v17"/><path d="M3.5 7h17M3.5 12h17M3.5 17h17"/></svg></span>Entrega Lote II</span></th>
         <th><span class="th-in"><span class="th-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7 3.5v17M17 3.5v17"/><path d="M3.5 7h17M3.5 12h17M3.5 17h17"/></svg></span>Entrega Lote III</span></th>
-        <th class="c-ent"><span class="th-in"><span class="th-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.2 20.6h17.6"/><path d="M5.6 17.5h12.8v3.1H5.6zM7.5 14.4h9v3.1h-9zM9.4 11.3h5.2v3.1H9.4z"/><path d="M8.9 7.2l1.9 1.9 3.9-4"/></svg></span>Entregado</span></th>
-        <th><span class="th-in"><span class="th-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 16.8h19.5"/><path d="M15.3 16.8v-5.4h2.9l3 3.1v2.3"/><path d="M2.6 13.4h12.2"/><path d="M3.4 11.2h10.8M3.4 8.8h10.8"/><circle cx="7" cy="18.7" r="1.8"/><circle cx="17.8" cy="18.7" r="1.8"/></svg></span>Por entregar</span></th>
+        <th class="c-ent"><span class="th-in"><span class="th-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.2 20.6h17.6"/><path d="M5.6 17.5h12.8v3.1H5.6zM7.5 14.4h9v3.1h-9zM9.4 11.3h5.2v3.1H9.4z"/><path d="M8.9 7.2l1.9 1.9 3.9-4"/></svg></span>Suministrado</span></th>
+        <th><span class="th-in"><span class="th-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 16.8h19.5"/><path d="M15.3 16.8v-5.4h2.9l3 3.1v2.3"/><path d="M2.6 13.4h12.2"/><path d="M3.4 11.2h10.8M3.4 8.8h10.8"/><circle cx="7" cy="18.7" r="1.8"/><circle cx="17.8" cy="18.7" r="1.8"/></svg></span>Por suministrar</span></th>
       </tr></thead>
       <tbody id="tablaBody"></tbody>
     </table>
@@ -634,7 +634,7 @@ function detallePorCentro(filas, re, sufijo){
         const n = numHoja(reng[k] ? reng[k][c] : null);
         fila[k + sufijo] = n === null ? '—' : n;     // celda vacía: se muestra como raya, no como cero
       }
-      // Por entregar = lo solicitado menos las tres entregas. Si no hay solicitado no
+      // Por suministrar = lo solicitado menos las tres entregas. Si no hay solicitado no
       // hay faltante que calcular; una entrega vacía cuenta como cero, no como nada.
       const sol = fila['solicitado' + sufijo];
       const dado = ['entregado', 'lote2', 'lote3'].reduce((a,k)=>{
@@ -1507,7 +1507,7 @@ function pintarDona(){
      </div>`;
 }
 function pintarTabla(){
-  /* ---------- La columna Entregado ----------
+  /* ---------- La columna Suministrado ----------
      Es la suma de los tres lotes del propio renglon: lo mismo que la lamina de
      contratistas llama "suministrado". No se lee de ninguna celda -en la hoja el
      TOTAL vive en otra columna del bloque de detalle- se suma aqui para que cuadre
@@ -1529,7 +1529,7 @@ function pintarTabla(){
     const c = [cls, typeof v === 'number' ? '' : 'vacio'].filter(Boolean).join(' ');
     return `<td${c ? ` class="${c}"` : ''}>${txt}</td>`;
   };
-  // el orden de la tabla: lo pedido, los tres lotes, lo entregado y lo que falta
+  // el orden de la tabla: lo pedido, los tres lotes, lo suministrado y lo que falta
   const COLS = ['solicitadoPz', 'entregadoPz', 'lote2Pz', 'lote3Pz', 'entregadoTotPz', 'pendientePz'];
   const CLASE_COL = { entregadoTotPz:'c-ent' };
   // el renglón de total suma cada columna de esta misma tabla; si en esa columna no hay
