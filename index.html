@@ -1466,9 +1466,11 @@ function pintarDatos(){
    El contratado es el total, así que va al centro y no como gajo: los gajos son
    sus tres partes, que suman ese total. Son cifras del contrato completo, no del
    lote, de modo que la dona no cambia al moverse entre Lote I, II y III.       */
+/* El orden es el de los KPIs de arriba -En proceso, Entregado, Por fabricar-:
+   la dona y las cifras se leen de corrido y cada color cae donde se espera. */
 const DONA = [
-  { k:'entregado', n:'Entregado',   c:'#FF9A4D' },
   { k:'proceso',   n:'En proceso',  c:'#7FA8CC' },
+  { k:'entregado', n:'Entregado',   c:'#FF9A4D' },
   { k:'pendiente', n:'Por fabricar',c:'rgba(255,255,255,.3)' },
 ];
 function pintarDona(){
