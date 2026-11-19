@@ -40,11 +40,24 @@
   /* Los dos botones flotan abajo a la derecha, sobre la maqueta: guinda institucional
      translúcida para que se vea el mar por detrás y no le quiten sitio al encabezado. */
   .acciones{position:fixed;right:16px;bottom:16px;z-index:5;display:flex;align-items:center;gap:8px;padding-bottom:env(safe-area-inset-bottom,0px)}
-  .acciones button{font:12px var(--mono);color:#FF9A4D;background:rgba(105,28,50,.72);border:1px solid rgba(255,255,255,.2);border-radius:5px;padding:8px 13px;cursor:pointer;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:0 2px 10px rgba(8,16,26,.35)}
-  .acciones button:hover{background:rgba(105,28,50,.9);border-color:rgba(255,255,255,.38)}
+  /* Los tres van en negrita, como estaba el 3D: flotan sobre la maqueta y a 12 px
+     el trazo fino se perdia contra el dibujo. */
+  .acciones button{font:700 12px var(--mono);color:#FF9A4D;background:rgba(105,28,50,.72);border:1px solid rgba(255,255,255,.2);border-radius:5px;padding:8px 13px;cursor:pointer;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:0 2px 10px rgba(8,16,26,.35);
+    transition:background .18s ease,color .18s ease,border-color .18s ease,transform .18s ease}
+  /* Al apuntarlos, lo mismo que en los botones de proyecto: rotulo en blanco y un
+     zoom corto, para que se vea cual se esta por apretar. */
+  .acciones button:hover{background:rgba(105,28,50,.9);border-color:rgba(255,255,255,.38);color:#fff;transform:scale(1.04)}
+  .acciones button:active{transform:scale(1)}
+  /* Mientras arma el reporte el boton queda inerte: ni blanco ni zoom, porque ahi
+     no hay nada que elegir. */
   .acciones button[disabled]{opacity:.55;cursor:default}
-  /* Los dos van en el naranja del acento; el 3D además en negrita y espaciado */
-  .acciones .v3d{font-weight:700;letter-spacing:.1em}
+  .acciones button[disabled]:hover{color:#FF9A4D;transform:none;background:rgba(105,28,50,.72);border-color:rgba(255,255,255,.2)}
+  @media (prefers-reduced-motion:reduce){
+    .acciones button{transition:color .18s ease,background .18s ease}
+    .acciones button:hover,.acciones button:active{transform:none}
+  }
+  /* al 3D le queda el espaciado: son dos caracteres y sin el se ven apretados */
+  .acciones .v3d{letter-spacing:.1em}
   .acciones .alt{font-size:11px;padding:8px 10px;opacity:.82}
   .acciones .alt:hover{opacity:1}
   .acciones button:focus-visible{outline:2px solid #FF9A4D;outline-offset:2px}
@@ -1822,7 +1835,7 @@ window.RIEL3D_API = {
   },
   pausar2D(v){ PAUSA3D = !!v; if (!v){ last = performance.now(); } },
 };
-const VERSION_3D = '2026-11-04c';     // súbele al cambiar vista3d.js
+const VERSION_3D = '2026-11-18a';     // súbele al cambiar vista3d.js
 {
   const btn = document.getElementById('btn3d');
   const script = src => new Promise((ok, falla)=>{
