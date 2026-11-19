@@ -351,8 +351,18 @@ function laminaProyecto(ctx, p, A){
   if (A && A.BG) F.push(figura.img(A.BG.uri, 0, 0, W, H));
   encabezado(F, 'SUMINISTRO RIEL', p.nombre.toUpperCase(), false, A, p.color);
 
-  columnaTotal(F, 4.72, 7.45, 'Total Suministrado:', num(p.totalEntregado) + ' Pzas', null);
-  columnaTotal(F, 7.45, 10.18, 'Por suministrar:',   num(p.totalPendiente) + ' Pzas', null);
+  /* ---------- Dónde arrancan las columnas de totales ----------
+     El nombre del proyecto va a la izquierda, desde x 0.28 y a 24 pt. Medido en
+     Noto Sans ExtraBold, "SALTILLO – NUEVO LAREDO" ocupa 4.54" y termina en 4.82",
+     así que la divisoria fija de la lámina 2 -en 4.72- le caía encima, justo sobre
+     la O de LAREDO. El corte ya no es fijo: arranca donde acabe el título, nunca
+     antes del 4.72 de las otras láminas, y la segunda divisoria parte en dos lo
+     que queda para que las dos columnas midan igual. */
+  const ANCHO_LETRA = 0.205;                 // ancho medio de letra del título, en pulgadas
+  const c1 = Math.max(4.72, 0.28 + p.nombre.length * ANCHO_LETRA + 0.18);   // 0.18" de aire
+  const c2 = (c1 + 10.18) / 2;
+  columnaTotal(F, c1, c2, 'Total Suministrado:', num(p.totalEntregado) + ' Pzas', null);
+  columnaTotal(F, c2, 10.18, 'Por suministrar:',  num(p.totalPendiente) + ' Pzas', null);
   F.push(figura.linea(10.18, 0.30, 10.18, 1.10, C.linea, 0.008));
 
   const uri = dona(p.totalEntregado, p.totalSolicitado, p.color);
