@@ -150,6 +150,10 @@
   .tabla tbody tr:last-child td{border-bottom:0}
   .tabla .vacio{color:rgba(255,255,255,.4)}
   .tabla .nota{font-size:11px;color:rgba(255,255,255,.55)}
+  /* Entregado es un subtotal, no una entrega mas: la divisoria y la negrita lo
+     separan de los tres lotes que suma */
+  .tabla th.c-ent, .tabla td.c-ent{border-left:1px solid rgba(255,255,255,.16)}
+  .tabla td.c-ent{font-weight:600}
   .tabla tr.total td{border-top:1px solid rgba(255,255,255,.28);border-bottom:0;font-weight:600;color:#FF9A4D}
   .tabla tr.total td.c-tramo{color:#EAEFF5;font-weight:600}
   .tabla .tot-ico{display:inline-block;vertical-align:-6px;width:22px;height:22px;margin-right:9px;color:#FF9A4D}
@@ -273,6 +277,7 @@
   :root[data-tema="claro"] .tabla .vacio{color:rgba(22,32,43,.45)}
   :root[data-tema="claro"] .tabla .nota{color:rgba(22,32,43,.55)}
   :root[data-tema="claro"] .panel-u{color:rgba(22,32,43,.5)}
+  :root[data-tema="claro"] .tabla th.c-ent, :root[data-tema="claro"] .tabla td.c-ent{border-left-color:rgba(22,32,43,.14)}
   :root[data-tema="claro"] .tabla tr.total td{border-top-color:rgba(22,32,43,.3);color:var(--accent-light)}
   :root[data-tema="claro"] .tabla tr.total td.c-tramo{color:var(--ink-light)}
   :root[data-tema="claro"] .tabla .tot-ico{color:var(--accent-light)}
@@ -377,6 +382,7 @@
         <th><span class="th-in"><span class="th-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7 3.5v17M17 3.5v17"/><path d="M3.5 7h17M3.5 12h17M3.5 17h17"/></svg></span>Entrega Lote I</span></th>
         <th><span class="th-in"><span class="th-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7 3.5v17M17 3.5v17"/><path d="M3.5 7h17M3.5 12h17M3.5 17h17"/></svg></span>Entrega Lote II</span></th>
         <th><span class="th-in"><span class="th-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7 3.5v17M17 3.5v17"/><path d="M3.5 7h17M3.5 12h17M3.5 17h17"/></svg></span>Entrega Lote III</span></th>
+        <th class="c-ent"><span class="th-in"><span class="th-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.2 20.6h17.6"/><path d="M5.6 17.5h12.8v3.1H5.6zM7.5 14.4h9v3.1h-9zM9.4 11.3h5.2v3.1H9.4z"/><path d="M8.9 7.2l1.9 1.9 3.9-4"/></svg></span>Entregado</span></th>
         <th><span class="th-in"><span class="th-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 16.8h19.5"/><path d="M15.3 16.8v-5.4h2.9l3 3.1v2.3"/><path d="M2.6 13.4h12.2"/><path d="M3.4 11.2h10.8M3.4 8.8h10.8"/><circle cx="7" cy="18.7" r="1.8"/><circle cx="17.8" cy="18.7" r="1.8"/></svg></span>Por entregar</span></th>
       </tr></thead>
       <tbody id="tablaBody"></tbody>
@@ -1501,27 +1507,41 @@ function pintarDona(){
      </div>`;
 }
 function pintarTabla(){
-  const filas = (TABLA[FASE] || {})[SEG] || [];
+  /* ---------- La columna Entregado ----------
+     Es la suma de los tres lotes del propio renglon: lo mismo que la lamina de
+     contratistas llama "suministrado". No se lee de ninguna celda -en la hoja el
+     TOTAL vive en otra columna del bloque de detalle- se suma aqui para que cuadre
+     siempre con los lotes que se estan viendo. Si el centro no tiene una sola
+     entrega con cifra, va raya: un cero diria que se entrego nada, y lo que pasa
+     es que ese lote todavia no tiene dato. */
+  const LOTES_PZ = ['entregadoPz', 'lote2Pz', 'lote3Pz'];
+  const entregadoDe = f => LOTES_PZ.some(k => typeof f[k] === 'number')
+    ? LOTES_PZ.reduce((a,k)=> a + (typeof f[k] === 'number' ? f[k] : 0), 0) : '—';
+  const filas = ((TABLA[FASE] || {})[SEG] || [])
+    .map(f => Object.assign({}, f, { entregadoTotPz: entregadoDe(f) }));
   document.getElementById('panelTitulo').innerHTML = ((TRAMOS.find(t=>t.id===SEG) || {}).nombre || '') + ' <small class="panel-u">PIEZAS</small>';
   // Dentro de los dos proyectos se maneja la pieza y nada más; las toneladas se siguen
   // leyendo y viven en los mismos renglones, pero esta tabla no las muestra. La pieza
   // es entera, así que aquí no se escriben decimales.
   const fmtPz = v => typeof v === 'number' ? v.toLocaleString('es-MX', { maximumFractionDigits:0 }) : String(v);
-  const cel = (v, nota) => {
+  const cel = (v, nota, cls) => {
     const txt = fmtPz(v) + (nota ? ` <span class="nota">${nota}</span>` : '');
-    return typeof v === 'number' ? `<td>${txt}</td>` : `<td class="vacio">${txt}</td>`;
+    const c = [cls, typeof v === 'number' ? '' : 'vacio'].filter(Boolean).join(' ');
+    return `<td${c ? ` class="${c}"` : ''}>${txt}</td>`;
   };
-  const COLS = ['solicitadoPz', 'entregadoPz', 'lote2Pz', 'lote3Pz', 'pendientePz'];
+  // el orden de la tabla: lo pedido, los tres lotes, lo entregado y lo que falta
+  const COLS = ['solicitadoPz', 'entregadoPz', 'lote2Pz', 'lote3Pz', 'entregadoTotPz', 'pendientePz'];
+  const CLASE_COL = { entregadoTotPz:'c-ent' };
   // el renglón de total suma cada columna de esta misma tabla; si en esa columna no hay
   // una sola cifra -el lote que todavía no empieza- va raya, no un cero que no existe
   const suma = k => filas.some(f=> typeof f[k]==='number')
     ? filas.reduce((a,f)=> a + (typeof f[k]==='number' ? f[k] : 0), 0) : '—';
   const totales = `<tr class="total"><td class="c-tramo"><span class="tot-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M4 6.5h16M4 11h16M4 15.5h10" stroke-width="1.6"/><path d="M4 20h16" stroke-width="2.6"/></svg></span>Total</td>` +
-                  COLS.map(k=> cel(suma(k))).join('') + '</tr>';
+                  COLS.map(k=> cel(suma(k), null, CLASE_COL[k])).join('') + '</tr>';
   document.getElementById('tablaBody').innerHTML = filas.length
     ? filas.map(f=>{ const n = f.notas || {};
-        return `<tr><td class="c-tramo">${f.tramo}</td>${COLS.map(k=> cel(f[k], n[k])).join('')}</tr>`; }).join('') + totales
-    : '<tr><td class="c-tramo vacio" colspan="6">Sin datos para este lote</td></tr>';
+        return `<tr><td class="c-tramo">${f.tramo}</td>${COLS.map(k=> cel(f[k], n[k], CLASE_COL[k])).join('')}</tr>`; }).join('') + totales
+    : '<tr><td class="c-tramo vacio" colspan="7">Sin datos para este lote</td></tr>';
 }
 // Ya no hay selector: la maqueta muestra los tres lotes a la vez. setFase sigue
 // existiendo porque la vista 3D la llama cuando ahí se elige una entrega.
