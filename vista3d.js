@@ -272,7 +272,12 @@ const CSS = `
   color:var(--r3-ink3);margin:0 0 3px}
 #riel3d .r3-ph h2{margin:0;font-family:var(--r3-d);font-weight:800;font-size:16px;letter-spacing:-.01em}
 #riel3d .r3-tot{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:10px 14px}
-#riel3d .r3-mini{background:var(--r3-solid);border:1.5px solid var(--r3-guinda);border-radius:10px;padding:8px 10px;min-width:0}
+/* "Por suministrar" no cabe en un renglón de la columna, y al partirse en dos
+   empujaba su cifra más abajo que las otras dos. Con la caja en columna y el
+   reparto a los extremos, los rótulos crecen hacia arriba y las tres cifras
+   siguen alineadas entre sí. */
+#riel3d .r3-mini{background:var(--r3-solid);border:1.5px solid var(--r3-guinda);border-radius:10px;padding:8px 10px;min-width:0;
+  display:flex;flex-direction:column;justify-content:space-between;gap:3px}
 #riel3d .r3-mini label{display:block;font-size:9.5px;color:var(--r3-ink3);font-weight:700;text-transform:uppercase;letter-spacing:.05em}
 #riel3d .r3-mini b{display:block;font-family:var(--r3-m);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #riel3d .r3-rows{flex:1;overflow:auto;padding:4px 10px 12px;scrollbar-width:thin}
@@ -2374,9 +2379,11 @@ function pintarKpis(){
 }
 /* Dona: el contratado es el total, así que va al centro y no como gajo; los gajos
    son sus tres partes, que suman ese total. Es cifra del contrato, no del lote. */
+/* El orden es el de las tarjetas de arriba -En proceso, Entregado, Por fabricar-,
+   el mismo que la dona de la plana: leyenda y KPIs se cotejan sin cruzarse. */
 const DONA = [
-  {k:'entregado', n:'Entregado',    c:'#1f9a63'},
   {k:'proceso',   n:'En proceso',   c:'#f2c230'},
+  {k:'entregado', n:'Entregado',    c:'#1f9a63'},
   {k:'pendiente', n:'Por fabricar', c:'#c9d2e0'},
 ];
 function pintarDona(){
@@ -2417,33 +2424,47 @@ function pintarPanel(){
   const filas = tabla(FASE, SEG);
   const nt = (TRAMOS.find(t=>t.id===SEG) || {}).nombre || '';
   // La tabla del proyecto no cambia con el lote, asi que ya no lo nombra
-  $('#r3PanelFase').textContent = 'Proyecto · ' + UNIDAD;
+  // esta tabla es de piezas, no de toneladas: lo dice el rótulo y lo dicen las cifras
+  $('#r3PanelFase').textContent = 'Proyecto · pzas';
   $('#r3PanelNom').textContent = nt;
   $('#r3Tot').innerHTML =
-    '<div class="r3-mini"><label>Solicitado</label><b>' + fmt(d.solicitado) + '</b></div>' +
-    '<div class="r3-mini"><label>Entregado</label><b>' + fmt(d.entregadoP) + '</b></div>' +
-    '<div class="r3-mini"><label>Pendiente</label><b>' + fmt(d.pendienteP) + '</b></div>';
+    '<div class="r3-mini"><label>Solicitado</label><b>' + fmtD('solicitado', d.solicitado) + '</b></div>' +
+    '<div class="r3-mini"><label>Suministrado</label><b>' + fmtD('entregadoP', d.entregadoP) + '</b></div>' +
+    '<div class="r3-mini"><label>Por suministrar</label><b>' + fmtD('pendienteP', d.pendienteP) + '</b></div>';
   if (!filas.length){
     $('#r3Rows').innerHTML = '<p class="r3-vacio">Sin datos para este lote.</p>';
     return;
   }
   const nota = n => n ? ' <span class="r3-pill">' + n + '</span>' : '';
+  /* ---------- Un renglón por centro de acopio ----------
+     Esta lista es la misma que pinta la tabla de la plana, y ahí cada cifra viene
+     con el sufijo Pz: la pieza es la unidad del detalle por centro. Pidiendo
+     f.solicitado -sin sufijo- el panel escribía "undefined" en los tres huecos.
+     Suministrado es la suma de los tres lotes del renglón, igual que la columna
+     nueva de la plana; si el centro no tiene una sola entrega con cifra va raya,
+     porque un cero diría que no se suministró y lo que pasa es que no hay dato.
+     Las piezas se escriben enteras: una pieza de riel no se parte. */
+  const LOTES_PZ = ['entregadoPz', 'lote2Pz', 'lote3Pz'];
+  const cif = v => typeof v === 'number' && isFinite(v)
+    ? v.toLocaleString('es-MX', { maximumFractionDigits:0 }) : '—';
+  const sumaLotes = f => LOTES_PZ.some(k => typeof f[k] === 'number')
+    ? LOTES_PZ.reduce((a,k)=> a + (typeof f[k] === 'number' ? f[k] : 0), 0) : null;
   $('#r3Rows').innerHTML = filas.map(f=>{
     const n = f.notas || {};
-    const ent = typeof f.entregado === 'number' ? f.entregado : 0;
-    const sol = typeof f.solicitado === 'number' ? f.solicitado : 0;
+    const ent = sumaLotes(f) || 0;
+    const sol = typeof f.solicitadoPz === 'number' ? f.solicitadoPz : 0;
     const pct = sol ? Math.min(100, ent/sol*100) : 0;
     return '<div class="r3-row"><span class="ic">' + ICO.tramo + '</span>' +
-      '<span class="t"><b>' + f.tramo + '</b><small>Solicitado ' + fmt(f.solicitado) + ' ' + UNIDAD + nota(n.solicitado) + '</small>' +
+      '<span class="t"><b>' + f.tramo + '</b><small>Solicitado ' + cif(f.solicitadoPz) + ' pz' + nota(n.solicitadoPz) + '</small>' +
       medidor(pct, 'ok') + '</span>' +
-      '<span class="r"><span class="r3-mono">' + fmt(f.entregado) + '</span>' +
-      '<span class="r3-pill ' + (typeof f.pendiente === 'number' && f.pendiente > 0 ? 'mal' : 'ok') + '">' +
-      fmt(f.pendiente) + ' pend.</span></span></div>';
+      '<span class="r"><span class="r3-mono">' + cif(sumaLotes(f)) + '</span>' +
+      '<span class="r3-pill ' + (typeof f.pendientePz === 'number' && f.pendientePz > 0 ? 'mal' : 'ok') + '">' +
+      cif(f.pendientePz) + ' pend.</span></span></div>';
   }).join('') +
   '<div class="r3-row total"><span class="ic">' + ICO.suma + '</span>' +
-  '<span class="t"><b>Total</b><small>' + filas.length + ' tramos</small></span>' +
-  '<span class="r"><span class="r3-mono">' + fmt(d.entregadoP) + '</span>' +
-  '<span class="r3-pill mal">' + fmt(d.pendienteP) + ' pend.</span></span></div>';
+  '<span class="t"><b>Total</b><small>' + filas.length + ' centros</small></span>' +
+  '<span class="r"><span class="r3-mono">' + fmtD('entregadoP', d.entregadoP) + '</span>' +
+  '<span class="r3-pill mal">' + fmtD('pendienteP', d.pendienteP) + ' pend.</span></span></div>';
 }
 function pintarCadena(){
   const d = datos(FASE, SEG);
