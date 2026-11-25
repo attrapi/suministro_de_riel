@@ -219,27 +219,25 @@ const CSS = `
 #riel3d .r3-code{font-family:var(--r3-m);font-size:10px;letter-spacing:.06em;color:var(--r3-ink3);
   border:1px solid var(--r3-line);border-radius:7px;padding:4px 7px;white-space:nowrap}
 #riel3d .r3-sp{flex:1 1 auto;min-width:8px}
-/* El proyecto va junto al código de contrato, no al otro extremo de la barra:
-   son el mismo dato —qué se está mirando— y leerlos juntos ahorra el viaje. */
-#riel3d .r3-sitewrap{position:relative;margin-left:10px}
-#riel3d .r3-site{position:relative;display:flex;align-items:center;gap:8px;padding:4px 10px 4px 4px;
-  border:1.5px solid var(--r3-guinda);border-radius:10px;background:var(--r3-solid);white-space:nowrap;text-align:left}
-#riel3d .r3-site .cod{background:var(--r3-cobalto);color:#fff;font-family:var(--r3-m);font-size:10px;
+/* Lo que se está mirando va junto al código de contrato, no al otro extremo de la
+   barra: es el mismo dato y leerlos juntos ahorra el viaje. Y van los tres a la
+   vista -General y los dos proyectos-, no dentro de un menú: son tres, caben de
+   corrido, y así se ve de un golpe cuál está en pantalla y se cambia con un clic,
+   como el menú de proyectos de la vista plana. */
+#riel3d .r3-sites{display:flex;align-items:center;gap:3px;margin-left:10px;flex-wrap:wrap;
+  background:var(--r3-mute);border-radius:12px;padding:3px}
+#riel3d .r3-opt{display:flex;align-items:center;gap:7px;padding:4px 10px 4px 4px;border-radius:9px;
+  white-space:nowrap;text-align:left;color:var(--r3-ink2);font-size:12px;font-weight:600}
+#riel3d .r3-opt .cod{background:var(--r3-ink3);color:#fff;font-family:var(--r3-m);font-size:9.5px;
   font-weight:700;border-radius:6px;padding:4px 6px}
-#riel3d .r3-site b{display:block;font-size:12px;font-weight:700}
-#riel3d .r3-site small{display:block;color:var(--r3-ink3);font-size:10.5px}
-#riel3d .r3-site .chev{width:12px;height:12px;color:var(--r3-ink3)}
-#riel3d .r3-pop{position:absolute;top:calc(100% + 6px);left:0;min-width:230px;background:var(--r3-solid);
-  border:1px solid var(--r3-line);border-radius:12px;box-shadow:0 12px 32px rgba(20,34,60,.18);
-  padding:6px;display:none;z-index:5}
-#riel3d .r3-pop.abierto{display:block}
-#riel3d .r3-pop button{display:block;width:100%;text-align:left;padding:8px 10px;border-radius:8px;font-size:12.5px}
-#riel3d .r3-pop button:hover{background:var(--r3-mute)}
-#riel3d .r3-pop button[aria-current="true"]{color:var(--r3-cobalto);font-weight:700;background:var(--r3-cobalto-s)}
-#riel3d .r3-pop button small{display:block;font-size:10px;font-weight:600;color:var(--r3-ink3)}
-#riel3d .r3-pop button[aria-current="true"] small{color:var(--r3-cobalto)}
-#riel3d .r3-pop .sep{font-family:var(--r3-m);font-size:9px;letter-spacing:.12em;text-transform:uppercase;
-  color:var(--r3-ink3);padding:9px 10px 4px;border-top:1px solid var(--r3-line);margin-top:4px}
+#riel3d .r3-opt small{display:block;font-size:10px;font-weight:600;color:var(--r3-ink3)}
+#riel3d .r3-opt:hover{background:rgba(255,255,255,.72);color:var(--r3-ink)}
+/* El filo del elegido va por dentro, en la sombra: un borde de verdad lo haría
+   1.5 px más ancho que los otros dos y la fila bailaría a cada clic. */
+#riel3d .r3-opt[aria-current="true"]{background:var(--r3-solid);color:var(--r3-ink);font-weight:700;
+  box-shadow:inset 0 0 0 1.5px var(--r3-guinda),0 1px 2px rgba(20,30,60,.12)}
+#riel3d .r3-opt[aria-current="true"] .cod{background:var(--r3-cobalto)}
+#riel3d .r3-opt[aria-current="true"] small{color:var(--r3-ink2)}
 #riel3d .r3-seg{display:inline-flex;background:var(--r3-mute);border-radius:10px;padding:3px;gap:2px}
 #riel3d .r3-seg button{font-size:11px;font-weight:700;padding:5px 10px;border-radius:7px;color:var(--r3-ink3);white-space:nowrap}
 #riel3d .r3-seg button.on{background:#fff;color:var(--r3-ink);box-shadow:0 1px 2px rgba(20,30,60,.12)}
@@ -396,12 +394,16 @@ const CSS = `
 @media (max-width:980px){
   #riel3d .r3-dona{padding:9px 12px 9px 9px}
   #riel3d .r3-dona svg{width:76px;height:76px}
-  #riel3d .r3-code,#riel3d .r3-site small{display:none}
+  #riel3d .r3-code,#riel3d .r3-opt small{display:none}
   #riel3d table.r3-t th.c-centro{min-width:150px}
 }
 @media (max-width:760px){
   #riel3d .r3-bar{left:10px;right:10px;padding:7px 8px}
   #riel3d .r3-brand{font-size:15px}
+  /* En la barra angosta los tres botones se quedan con su clave y su nombre
+     corto: el largo parte la fila en tres renglones. */
+  #riel3d .r3-sites{margin-left:0;order:3;width:100%}
+  #riel3d .r3-opt{font-size:11.5px;padding:4px 8px 4px 4px}
   #riel3d .r3-kpis{top:auto;bottom:196px;left:10px;right:10px;overflow-x:auto;flex-wrap:nowrap;
     scrollbar-width:none;padding-bottom:2px}
   #riel3d .r3-kpi{min-width:148px;flex:none}
@@ -455,14 +457,7 @@ raiz.innerHTML = `
   <div class="r3-bar r3-glass">
     <span class="r3-brand">${ICO.riel} Adquisición de riel <i>3D</i></span>
     <span class="r3-code">ATTRAPI · ARTF / 076-A-P / 2025</span>
-    <div class="r3-sitewrap">
-      <button class="r3-site" id="r3Site" aria-haspopup="true" aria-expanded="false">
-        <span class="cod" id="r3SiteCod">P1</span>
-        <span><b id="r3SiteNom">—</b><small id="r3SiteSub">Proyecto en pantalla</small></span>
-        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-      </button>
-      <div class="r3-pop" id="r3Pop" role="menu"></div>
-    </div>
+    <div class="r3-sites" id="r3Sites" role="group" aria-label="Qué se mira"></div>
     <span class="r3-sp"></span>
     <button class="r3-close" id="r3Close" title="Volver a la maqueta plana (Esc)">&larr; Volver al 2D</button>
   </div>
@@ -2588,9 +2583,7 @@ function aplicarVista(){
   const g = enGeneral();
   raiz.dataset.vista = g ? 'general' : 'proyecto';
   $('#r3Chain').hidden = !g;
-  $('#r3SiteCod').textContent = g ? 'GRL' : 'P' + (TRAMOS.findIndex(t=>t.id===SEG) + 1);
-  $('#r3SiteNom').textContent = g ? 'General' : ((TRAMOS.find(t=>t.id===SEG) || {}).nombre || '—');
-  $('#r3SiteSub').textContent = g ? 'Sin proyecto en pantalla' : 'Proyecto en pantalla';
+  marcarProyecto();
 }
 function pintarTodo(){
   aplicarVista();
@@ -2599,26 +2592,24 @@ function pintarTodo(){
 
 /* ---------------------------------------------------------------- controles ---- */
 function armarControles(){
-  const pop = $('#r3Pop'), site = $('#r3Site');
-  /* General encabeza el menú porque es la vista de llegada; los proyectos van
-     debajo, bajo su propio rótulo. */
-  pop.innerHTML =
-    '<button type="button" role="menuitem" data-tramo="' + GRAL + '">General' +
-    '<small>La cadena completa, sin proyecto</small></button>' +
-    '<div class="sep">Proyectos</div>' +
-    TRAMOS.map(t=>'<button type="button" role="menuitem" data-tramo="' + t.id + '">' + t.nombre + '</button>').join('');
-  pop.querySelectorAll('[data-tramo]').forEach(b=>{
+  /* General primero, que es la vista de llegada, y los dos proyectos a su
+     derecha. Cada botón lleva su clave -GRL, P1, P2- y su nombre; el elegido se
+     marca con aria-current, que es de donde la hoja de estilo saca el filo. */
+  const opcion = (id, cod, nom, sub)=>
+    '<button type="button" class="r3-opt" data-tramo="' + id + '">' +
+    '<span class="cod">' + cod + '</span><span>' + nom +
+    (sub ? '<small>' + sub + '</small>' : '') + '</span></button>';
+  $('#r3Sites').innerHTML =
+    opcion(GRAL, 'GRL', 'General', 'La cadena completa') +
+    TRAMOS.map((t,i)=> opcion(t.id, 'P' + (i+1), t.nombre, 'Proyecto')).join('');
+  $('#r3Sites').querySelectorAll('[data-tramo]').forEach(b=>{
     b.onclick = ()=>{
       SEG = b.dataset.tramo;
       // General no es un proyecto de la hoja: a la plana no se le pide que se mueva.
       if (!enGeneral() && API.setProyecto) API.setProyecto(SEG);
-      marcarProyecto(); cerrarPop(); pintarTodo();
+      pintarTodo();
     };
   });
-  site.onclick = (ev)=>{ ev.stopPropagation(); pop.classList.toggle('abierto');
-    site.setAttribute('aria-expanded', pop.classList.contains('abierto')); };
-  raiz.addEventListener('click', e=>{ if (!site.contains(e.target)) cerrarPop(); });
-  marcarProyecto();
 
   const vel = $('#r3Vel');
   vel.querySelectorAll('[data-v]').forEach(b=>{
@@ -2642,12 +2633,9 @@ function armarControles(){
   };
   $('#r3Close').onclick = cerrar;
 }
-function cerrarPop(){
-  $('#r3Pop').classList.remove('abierto');
-  $('#r3Site').setAttribute('aria-expanded', 'false');
-}
 function marcarProyecto(){
-  $('#r3Pop').querySelectorAll('[data-tramo]').forEach(b=>b.setAttribute('aria-current', b.dataset.tramo === SEG));
+  $('#r3Sites').querySelectorAll('[data-tramo]')
+    .forEach(b=> b.setAttribute('aria-current', b.dataset.tramo === SEG));
 }
 const clamp = (v,a,b)=> v < a ? a : v > b ? b : v;
 let pistaIda = false;
@@ -2782,7 +2770,7 @@ function abrir(){
     // El 3D se queda con el proyecto que tenía, General incluido: el de la plana
     // no lo arrastra, porque ahí siempre hay uno elegido y aquí puede no haberlo.
     FASE = API.fase || FASE;
-    marcarProyecto(); pintarTodo();
+    pintarTodo();
     medir();
   }
   if (API.pausar2D) API.pausar2D(true);               // la maqueta plana no anima a ciegas
@@ -2793,7 +2781,6 @@ function abrir(){
 function cerrar(){
   corriendo = false;
   raiz.hidden = true;
-  cerrarPop();
   if (API.pausar2D) API.pausar2D(false);
   const b = document.getElementById('btn3d');
   if (b) b.focus();
