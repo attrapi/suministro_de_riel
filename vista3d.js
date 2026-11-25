@@ -2402,6 +2402,9 @@ function pintarKpis(){
     {k:'pendienteP', n:'Por suministrar',  u:'pzas',  ic:ICO.faltante, cl:'mal',   pct:num(d.pendienteP)/solicitado*100, m:'mal'},
   ];
   const notas = d.notas || {};
+  /* Al final de la fila iba una tarjeta de "Proyectos · 2". En la vista plana
+     sigue, que ahi es cifra de portada; en esta no, porque los proyectos estan en
+     la barra de arriba, cada uno con su boton, y contarlos aparte no agregaba nada. */
   $('#r3Kpis').innerHTML = tarjetas.map(c=>{
     const v = d[c.k];
     return '<div class="r3-kpi r3-glass ' + c.cl + '">' +
@@ -2412,12 +2415,7 @@ function pintarKpis(){
       (c.pz && !SIN_CIFRA(d[c.pz]) ? '<span class="v2">' + fmtD(c.pz, d[c.pz]) + ' <small>pzas</small></span>' : '') +
       (c.pct == null ? '' : medidor(c.pct, c.m)) +
       '</span></div>';
-  }).join('') + (enGeneral()
-    // Cuántos proyectos hay es cifra de la portada; dentro de uno no dice nada.
-    ? '<div class="r3-kpi r3-glass"><span class="ic">' + ICO.tramo + '</span>' +
-      '<span class="t"><label>Proyectos</label><span class="v">' + TRAMOS.length +
-      ' <small>proyectos</small></span></span></div>'
-    : '');
+  }).join('');
 }
 /* Dona: el contratado es el total, así que va al centro y no como gajo; los gajos
    son sus tres partes, que suman ese total. Es cifra del contrato, no del lote. */
