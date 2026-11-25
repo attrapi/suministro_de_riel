@@ -257,6 +257,10 @@ const CSS = `
 /* tarjetas de cifras */
 #riel3d .r3-kpis{position:absolute;top:var(--r3-top);left:16px;right:16px;display:flex;gap:12px;
   flex-wrap:wrap;pointer-events:none}
+/* En General la fila de tarjetas termina donde empieza la columna de la dona: las
+   dos arrancan al mismo alto, con su borde de arriba parejo, y si no caben las
+   tarjetas pasan al siguiente renglon en lugar de meterse debajo del cuadro. */
+#riel3d[data-vista="general"] .r3-kpis{right:368px}
 #riel3d .r3-kpi{pointer-events:auto;display:flex;align-items:center;gap:10px;padding:10px 14px 10px 10px;min-width:166px}
 #riel3d .r3-kpi .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;
   background:var(--r3-cobalto-s);color:var(--r3-cobalto);flex:none}
@@ -285,10 +289,10 @@ const CSS = `
    con la leyenda al costado; aquí cabe grande y cada gajo dice su tonelaje junto
    a su porcentaje. Es cifra del contrato entero, así que sólo sale en General:
    dentro de un proyecto el sitio es de su tabla. */
-#riel3d .r3-dona{position:absolute;top:calc(var(--r3-top) + 92px);right:16px;width:336px;
+#riel3d .r3-dona{position:absolute;top:var(--r3-top);right:16px;width:336px;
   display:flex;flex-direction:column;gap:10px;padding:12px 14px 14px;
   /* en una pantalla baja el cuadro no se pasa del borde: cede y se recorre */
-  max-height:calc(100vh - var(--r3-top) - 108px);overflow:auto;scrollbar-width:thin}
+  max-height:calc(100vh - var(--r3-top) - 16px);overflow:auto;scrollbar-width:thin}
 #riel3d .r3-dona .cab{font-family:var(--r3-m);font-size:9.5px;letter-spacing:.12em;
   text-transform:uppercase;color:var(--r3-ink3)}
 #riel3d .r3-dona svg{width:152px;height:152px;align-self:center;flex:none;overflow:visible}
@@ -410,6 +414,7 @@ const CSS = `
 @media (max-width:1180px){
   #riel3d .r3-kpi{min-width:150px}
   #riel3d .r3-dona{width:300px}
+  #riel3d[data-vista="general"] .r3-kpis,
   #riel3d[data-vista="general"] .r3-abajo{right:332px}
   /* El código de contrato se va antes que los botones: sin él la barra aguanta
      un renglón más de pantalla sin partirse. */
@@ -418,6 +423,7 @@ const CSS = `
 @media (max-width:980px){
   #riel3d .r3-dona{width:258px;padding:10px 12px 12px}
   #riel3d .r3-dona svg{width:124px;height:124px}
+  #riel3d[data-vista="general"] .r3-kpis,
   #riel3d[data-vista="general"] .r3-abajo{right:290px}
   #riel3d .r3-code{display:none}
   #riel3d table.r3-t th.c-centro{min-width:150px}
@@ -428,8 +434,8 @@ const CSS = `
   /* En la barra angosta los tres botones se van a su propio renglon. */
   #riel3d .r3-sites{margin-left:0;order:3;width:100%}
   #riel3d .r3-opt{font-size:11.5px;padding:4px 8px 4px 4px}
-  #riel3d .r3-kpis{top:auto;bottom:196px;left:10px;right:10px;overflow-x:auto;flex-wrap:nowrap;
-    scrollbar-width:none;padding-bottom:2px}
+  #riel3d .r3-kpis,#riel3d[data-vista="general"] .r3-kpis{top:auto;bottom:196px;left:10px;right:10px;
+    overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;padding-bottom:2px}
   #riel3d .r3-kpi{min-width:148px;flex:none}
   #riel3d .r3-abajo{left:10px;right:10px}
   #riel3d .r3-chain{grid-template-columns:repeat(5,minmax(104px,1fr));overflow-x:auto}
