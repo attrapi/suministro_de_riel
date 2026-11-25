@@ -52,8 +52,9 @@
   .acciones button[disabled]:hover{color:#FF9A4D;transform:none;background:rgba(105,28,50,.72);border-color:rgba(255,255,255,.2)}
   /* al 3D le queda el espaciado: son dos caracteres y sin el se ven apretados */
   .acciones .v3d{letter-spacing:.1em}
-  .acciones .alt{font-size:11px;padding:8px 10px;opacity:.82}
-  .acciones .alt:hover{opacity:1}
+  /* El PPTX iba mas chico y al 82% de opacidad, por ser la segunda manera de bajar
+     el mismo reporte. Flotando sobre la maqueta eso se leia como un boton apagado:
+     los tres van igual, en negrita y sin transparencia. */
   .acciones button:focus-visible{outline:2px solid #FF9A4D;outline-offset:2px}
   .stage{position:fixed;left:0;right:0;top:0;bottom:0;background:#0F1A2A}
   .stage svg{width:100%;height:100%;display:block}
@@ -403,7 +404,7 @@
      pegado a la esquina: es el que se aprieta a cada rato y el pulgar lo alcanza
      primero; los dos del reporte quedan antes, PPTX y luego PDF. -->
 <div class="acciones">
-  <button type="button" id="btnPptx" class="dl alt" title="El mismo reporte como PowerPoint editable">PPTX</button>
+  <button type="button" id="btnPptx" class="dl" title="El mismo reporte como PowerPoint editable">PPTX</button>
   <button type="button" id="btnDescargar" class="dl" title="Bajar el reporte en PDF: las cuatro láminas con los datos de hoy">Reporte</button>
   <button type="button" id="btn3d" class="v3d" title="Abrir la maqueta en 3D (otra vista, aparte de esta)">3D</button>
 </div>
