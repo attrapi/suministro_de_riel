@@ -42,8 +42,24 @@ function cajaLote(k, L){
 const tabla = (f,t) => (API.tabla ? API.tabla(f,t) : []);
 const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+/* ---------- General: la vista de llegada ----------
+   El 3D abre sin proyecto, igual que la portada de la plana: se ve la cadena
+   completa, el reparto del contrato y nada más. La tabla de un proyecto no
+   aparece hasta elegirlo en el selector de arriba.
+   General no es un proyecto de la hoja, así que no tiene renglones propios: las
+   cifras del contrato -lo contratado, los tres lotes, el monto, lo que hay en
+   cada estación- vienen idénticas en todos los proyectos porque la hoja las da
+   una sola vez, y de ahí que se le pidan al primero. Las del proyecto -solicitado,
+   suministrado, por suministrar- sólo salen cuando hay uno elegido. */
+const GRAL = '__gral';
 let FASE = API.fase || FASES[0].id;
-let SEG  = API.proyecto || TRAMOS[0].id;
+let SEG  = GRAL;
+const enGeneral = () => SEG === GRAL;
+const segCifras = () => enGeneral() ? (TRAMOS[0] || {}).id : SEG;
+const D = () => datos(FASE, segCifras()) || {};
+// Para el title de un nombre de centro, que trae paréntesis, comas y comillas.
+const esc = t => String(t == null ? '' : t)
+  .replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 
 /* ---------------------------------------------------------------- paleta ---- */
 const C = {
@@ -172,6 +188,10 @@ const CSS = `
   overscroll-behavior:none;
 }
 #riel3d[hidden]{display:none!important}
+/* El atributo hidden lo apaga una regla del navegador, y aqui casi todo trae su
+   propio display en esta hoja: sin esta linea, esconder la dona o la cadena desde
+   el guion no apagaba nada, porque la regla de autor le gana a la del navegador. */
+#riel3d [hidden]{display:none!important}
 #riel3d *{box-sizing:border-box}
 #riel3d button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;padding:0}
 #riel3d button:focus-visible{outline:2px solid var(--r3-cobalto);outline-offset:2px}
@@ -216,6 +236,10 @@ const CSS = `
 #riel3d .r3-pop button{display:block;width:100%;text-align:left;padding:8px 10px;border-radius:8px;font-size:12.5px}
 #riel3d .r3-pop button:hover{background:var(--r3-mute)}
 #riel3d .r3-pop button[aria-current="true"]{color:var(--r3-cobalto);font-weight:700;background:var(--r3-cobalto-s)}
+#riel3d .r3-pop button small{display:block;font-size:10px;font-weight:600;color:var(--r3-ink3)}
+#riel3d .r3-pop button[aria-current="true"] small{color:var(--r3-cobalto)}
+#riel3d .r3-pop .sep{font-family:var(--r3-m);font-size:9px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--r3-ink3);padding:9px 10px 4px;border-top:1px solid var(--r3-line);margin-top:4px}
 #riel3d .r3-seg{display:inline-flex;background:var(--r3-mute);border-radius:10px;padding:3px;gap:2px}
 #riel3d .r3-seg button{font-size:11px;font-weight:700;padding:5px 10px;border-radius:7px;color:var(--r3-ink3);white-space:nowrap}
 #riel3d .r3-seg button.on{background:#fff;color:var(--r3-ink);box-shadow:0 1px 2px rgba(20,30,60,.12)}
@@ -264,47 +288,48 @@ const CSS = `
 #riel3d .r3-dona .l i{width:9px;height:9px;border-radius:3px}
 #riel3d .r3-dona .l b{font-family:var(--r3-m);font-weight:700;color:var(--r3-ink);font-variant-numeric:tabular-nums}
 
-/* panel derecho: la tabla del proyecto */
-#riel3d .r3-panel{position:absolute;top:172px;right:16px;bottom:124px;width:336px;display:flex;
-  flex-direction:column;overflow:hidden}
-#riel3d .r3-ph{padding:12px 14px 10px;border-bottom:1px solid var(--r3-line)}
-#riel3d .r3-ph .eyebrow{font-family:var(--r3-m);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
-  color:var(--r3-ink3);margin:0 0 3px}
-#riel3d .r3-ph h2{margin:0;font-family:var(--r3-d);font-weight:800;font-size:16px;letter-spacing:-.01em}
-#riel3d .r3-tot{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:10px 14px}
-/* "Por suministrar" no cabe en un renglón de la columna, y al partirse en dos
-   empujaba su cifra más abajo que las otras dos. Con la caja en columna y el
-   reparto a los extremos, los rótulos crecen hacia arriba y las tres cifras
-   siguen alineadas entre sí. */
-#riel3d .r3-mini{background:var(--r3-solid);border:1.5px solid var(--r3-guinda);border-radius:10px;padding:8px 10px;min-width:0;
-  display:flex;flex-direction:column;justify-content:space-between;gap:3px}
-#riel3d .r3-mini label{display:block;font-size:9.5px;color:var(--r3-ink3);font-weight:700;text-transform:uppercase;letter-spacing:.05em}
-#riel3d .r3-mini b{display:block;font-family:var(--r3-m);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#riel3d .r3-rows{flex:1;overflow:auto;padding:4px 10px 12px;scrollbar-width:thin}
-#riel3d .r3-row{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;
-  padding:9px 4px;border-bottom:1px solid var(--r3-line)}
-#riel3d .r3-row:last-child{border-bottom:0}
-#riel3d .r3-row .ic{width:26px;height:26px;border-radius:8px;background:var(--r3-mute);color:var(--r3-ink2);
-  display:grid;place-items:center;flex:none}
-#riel3d .r3-row .ic svg{width:14px;height:14px}
-#riel3d .r3-row .t{min-width:0}
-#riel3d .r3-row .t b{display:block;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#riel3d .r3-row .t small{display:block;color:var(--r3-ink3);font-size:10.5px}
-#riel3d .r3-row .r{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:3px}
-#riel3d .r3-row .r .r3-mono{font-weight:700;font-size:12.5px}
-#riel3d .r3-row.total{border-top:1px solid var(--r3-line);margin-top:4px;padding-top:12px;border-bottom:0}
-#riel3d .r3-row.total .t b{font-family:var(--r3-d);font-weight:800}
-#riel3d .r3-row.total .ic{background:var(--r3-cobalto-s);color:var(--r3-cobalto)}
-#riel3d .r3-pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:2px 8px;
-  font-size:10px;font-weight:700;background:var(--r3-mute);color:var(--r3-ink2);white-space:nowrap}
-#riel3d .r3-pill.ok{background:var(--r3-ok-s);color:var(--r3-ok)}
-#riel3d .r3-pill.mal{background:var(--r3-mal-s);color:var(--r3-mal)}
+/* La tabla del proyecto, abajo y no al costado. Son siete columnas -el centro de
+   acopio, lo solicitado, los tres lotes, lo suministrado y lo que falta-: en una
+   tarjeta de 336 px no caben sin partir cada cifra en dos renglones, y a lo ancho
+   del escenario sí. Es la misma tabla de la vista plana, con el filo guinda, la
+   monoespaciada y el verde/rojo de esta vista. */
+#riel3d .r3-tabla{align-self:stretch;min-width:0;padding:10px 12px;display:flex;
+  flex-direction:column;gap:8px;overflow:hidden}
+#riel3d .r3-tabla .cab{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+#riel3d .r3-tabla .cab p{margin:0;font-family:var(--r3-m);font-size:9.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--r3-ink3)}
+#riel3d .r3-tabla .cab h2{margin:0;font-family:var(--r3-d);font-weight:800;font-size:16px;letter-spacing:-.01em}
+#riel3d .r3-tw{overflow:auto;max-height:min(40vh,340px);scrollbar-width:thin;
+  border:1px solid var(--r3-line);border-radius:10px;background:var(--r3-solid)}
+#riel3d table.r3-t{width:100%;border-collapse:collapse}
+#riel3d table.r3-t th{position:sticky;top:0;z-index:1;background:var(--r3-mute);padding:7px 10px;
+  text-align:right;white-space:nowrap;border-bottom:1px solid var(--r3-line);
+  font-family:var(--r3-m);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--r3-ink2)}
+#riel3d table.r3-t th .in{display:inline-flex;align-items:center;justify-content:flex-end;gap:6px}
+#riel3d table.r3-t th svg{width:14px;height:14px;flex:none;color:var(--r3-guinda)}
+#riel3d table.r3-t th.c-centro{text-align:left;min-width:210px}
+#riel3d table.r3-t th.c-centro .in{justify-content:flex-start}
+#riel3d table.r3-t td{padding:7px 10px;text-align:right;white-space:nowrap;
+  border-bottom:1px solid var(--r3-line);font-family:var(--r3-m);font-size:12px;
+  font-variant-numeric:tabular-nums;color:var(--r3-ink)}
+#riel3d table.r3-t td.c-centro{text-align:left;font-family:var(--r3-b);font-size:12px;font-weight:600;
+  max-width:420px;overflow:hidden;text-overflow:ellipsis}
+#riel3d table.r3-t th.c-div,#riel3d table.r3-t td.c-div{border-left:1px solid var(--r3-line)}
+#riel3d table.r3-t td.c-sum{font-weight:700;color:var(--r3-ok)}
+#riel3d table.r3-t td.c-falta{color:var(--r3-mal)}
+#riel3d table.r3-t td.vacio{color:var(--r3-ink3)}
+#riel3d table.r3-t .nota{font-family:var(--r3-b);font-size:9.5px;font-weight:600;color:var(--r3-ink3)}
+#riel3d table.r3-t tbody tr:last-child td{border-bottom:0}
+#riel3d table.r3-t tr.total td{position:sticky;bottom:0;background:var(--r3-cobalto-s);
+  border-top:1px solid var(--r3-line);font-weight:700}
+#riel3d table.r3-t tr.total td.c-centro{font-family:var(--r3-d);font-weight:800}
 #riel3d .r3-vacio{font-size:11.5px;color:var(--r3-ink3);padding:14px 4px;line-height:1.5}
 
 /* abajo: los mandos y, debajo, la cadena. Antes los mandos vivían en la barra
    de arriba, lejos de lo que mueven; aquí quedan a la mano, junto a la cadena, y
    la barra de arriba se queda sólo con la identidad y la salida. */
-#riel3d .r3-abajo{position:absolute;left:16px;right:368px;bottom:16px;z-index:15;
+#riel3d .r3-abajo{position:absolute;left:16px;right:16px;bottom:16px;z-index:15;
   display:flex;flex-direction:column;align-items:flex-start;gap:8px}
 #riel3d .r3-mandos{display:flex;align-items:center;gap:8px;padding:6px 8px;flex-wrap:wrap}
 #riel3d .r3-chain{align-self:stretch;display:grid;
@@ -361,18 +386,18 @@ const CSS = `
   color:var(--r3-ink2);background:var(--r3-glass);border:1.5px solid var(--r3-guinda);border-radius:999px;
   padding:5px 12px;white-space:nowrap;transition:opacity .6s;box-shadow:var(--r3-sh)}
 #riel3d .r3-hint.ido{opacity:0}
+/* Con la tabla abierta, el bloque de abajo sube: la pista -que de todos modos se
+   va sola- cederia el sitio a empujones, asi que en vista de proyecto no sale. */
+#riel3d[data-vista="proyecto"] .r3-hint{display:none}
 
 @media (max-width:1180px){
-  #riel3d .r3-panel{width:300px}
-  #riel3d .r3-abajo{right:332px}
   #riel3d .r3-kpi{min-width:150px}
 }
 @media (max-width:980px){
-  #riel3d .r3-panel{display:none}
   #riel3d .r3-dona{padding:9px 12px 9px 9px}
   #riel3d .r3-dona svg{width:76px;height:76px}
-  #riel3d .r3-abajo{right:16px}
   #riel3d .r3-code,#riel3d .r3-site small{display:none}
+  #riel3d table.r3-t th.c-centro{min-width:150px}
 }
 @media (max-width:760px){
   #riel3d .r3-bar{left:10px;right:10px;padding:7px 8px}
@@ -384,6 +409,12 @@ const CSS = `
   #riel3d .r3-chain{grid-template-columns:repeat(5,minmax(104px,1fr));overflow-x:auto}
   #riel3d .r3-paso{flex-direction:column;align-items:flex-start;gap:4px;padding:7px 8px}
   #riel3d .r3-hint,#riel3d .r3-tools,#riel3d .r3-dona{display:none}
+  /* En vista de proyecto la tabla ocupa el bajo de la pantalla: las tarjetas
+     vuelven arriba, que es de donde las sacaba el carrusel del pie. */
+  #riel3d[data-vista="proyecto"] .r3-kpis{top:76px;bottom:auto}
+  #riel3d .r3-tw{max-height:32vh}
+  #riel3d table.r3-t td,#riel3d table.r3-t th{padding:6px 7px}
+  #riel3d table.r3-t td{font-size:11px}
 }
 `;
 
@@ -400,6 +431,12 @@ const ICO = {
   falta:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 4.5l8.5 15H3.5z" stroke-linejoin="round"/><path d="M12 10v4"/><path d="M12 16.8v.1"/></svg>',
   dinero:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.6"/><path d="M6 12h.1M17.9 12h.1"/></svg>',
   tramo:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 17.5h16"/><path d="M4 6.5h16"/><path d="M8 6.5v11M16 6.5v11"/></svg>',
+  // Los tres de la tabla del proyecto son los mismos de la vista plana: el
+  // montacargas de lo solicitado, la pila con su marca de lo suministrado y el
+  // camión de lo que falta por suministrar.
+  pedido:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M7.6 6.2h4.6l1.6 2.2H20.5v7.4"/><path d="M3.5 19.8V9.1h4.6l1.6 2.2h6.4v8.5z"/></svg>',
+  surtido: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.2 20.6h17.6"/><path d="M5.6 17.5h12.8v3.1H5.6zM7.5 14.4h9v3.1h-9zM9.4 11.3h5.2v3.1H9.4z"/><path d="M8.9 7.2l1.9 1.9 3.9-4"/></svg>',
+  faltante:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 16.8h19.5"/><path d="M15.3 16.8v-5.4h2.9l3 3.1v2.3"/><path d="M2.6 13.4h12.2"/><path d="M3.4 11.2h10.8M3.4 8.8h10.8"/><circle cx="7" cy="18.7" r="1.8"/><circle cx="17.8" cy="18.7" r="1.8"/></svg>',
   suma:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M5 6.5h14M5 11h14M5 15.5h9"/><path d="M5 20h14" stroke-width="2.6"/></svg>',
   izq:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l-6 6 6 6"/><path d="M3 12h12a6 6 0 0 1 6 6"/></svg>',
   der:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l6 6-6 6"/><path d="M21 12H9a6 6 0 0 0-6 6"/></svg>',
@@ -421,7 +458,7 @@ raiz.innerHTML = `
     <div class="r3-sitewrap">
       <button class="r3-site" id="r3Site" aria-haspopup="true" aria-expanded="false">
         <span class="cod" id="r3SiteCod">P1</span>
-        <span><b id="r3SiteNom">—</b><small>Proyecto en pantalla</small></span>
+        <span><b id="r3SiteNom">—</b><small id="r3SiteSub">Proyecto en pantalla</small></span>
         <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
       </button>
       <div class="r3-pop" id="r3Pop" role="menu"></div>
@@ -433,15 +470,6 @@ raiz.innerHTML = `
   <div class="r3-kpis" id="r3Kpis"></div>
 
   <div class="r3-dona r3-glass" id="r3Dona"></div>
-
-  <aside class="r3-panel r3-glass" id="r3Panel">
-    <div class="r3-ph">
-      <p class="eyebrow" id="r3PanelFase">Lote</p>
-      <h2 id="r3PanelNom">—</h2>
-    </div>
-    <div class="r3-tot" id="r3Tot"></div>
-    <div class="r3-rows" id="r3Rows"></div>
-  </aside>
 
   <div class="r3-abajo" id="r3Abajo">
     <div class="r3-mandos r3-glass">
@@ -460,6 +488,7 @@ raiz.innerHTML = `
       </div>
     </div>
     <div class="r3-chain r3-glass" id="r3Chain"></div>
+    <div class="r3-tabla r3-glass" id="r3Tabla" hidden></div>
   </div>
   <div class="r3-hint" id="r3Hint">Arrastra para mover · scroll o pinza para acercar</div>
   <div class="r3-labs" id="r3Labs"></div>
@@ -2252,7 +2281,7 @@ const FORMA = {   // cuántas filas y cuántos haces por fila caben en cada pati
 const TOPE = 42000;                                 // tonelaje con el que un patio se llena
 
 function pintarPatios(){
-  const d = datos(FASE, SEG);
+  const d = D();
   Object.keys(FORMA).forEach(k=>{
     const g = pilas[k];
     if (!g) return;
@@ -2351,15 +2380,25 @@ function medidor(pct, clase){
   return '<span class="r3-medidor ' + (clase||'') + '"><i style="width:' + Math.max(0, Math.min(100, pct)) + '%"></i></span>';
 }
 function pintarKpis(){
-  const d = datos(FASE, SEG);
+  const d = D();
   const num = v => typeof v === 'number' ? v : 0;
   const contratado = num(d.contratado) || 1;
-  const tarjetas = [
+  const solicitado = num(d.solicitado) || 1;
+  /* Dos juegos de tarjetas, los mismos dos de la vista plana. En General van las
+     del contrato, en toneladas y piezas; al elegir un proyecto van las suyas, que
+     se cuentan en piezas: lo que pidieron sus centros, lo que ya se les surtió y
+     lo que les falta. El porcentaje de la barra se mide contra el total de cada
+     juego: lo contratado en uno, lo solicitado en el otro. */
+  const tarjetas = enGeneral() ? [
     {k:'contratado', n:'Contratado',       u:UNIDAD,  ic:ICO.riel,     cl:'',      pct:100, pz:'contratadoPz'},
     {k:'entregado',  n:'Entregado',        u:UNIDAD,  ic:ICO.check,    cl:'ok',    pct:num(d.entregado)/contratado*100, m:'ok',  pz:'entregadoPz'},
     {k:'proceso',    n:'En proceso',       u:UNIDAD,  ic:ICO.reloj,    cl:'oro',   pct:num(d.proceso)/contratado*100,   m:'oro', pz:'procesoPz'},
     {k:'pendiente',  n:'Por fabricar',     u:UNIDAD,  ic:ICO.falta,    cl:'mal',   pct:num(d.pendiente)/contratado*100, m:'mal', pz:'pendientePz'},
     {k:'monto',      n:'Monto pagado',     u:'M',     ic:ICO.dinero,   cl:'flama', pct:null},
+  ] : [
+    {k:'solicitado', n:'Solicitado',       u:'pzas',  ic:ICO.pedido,   cl:'',      pct:100},
+    {k:'entregadoP', n:'Suministrado',     u:'pzas',  ic:ICO.surtido,  cl:'ok',    pct:num(d.entregadoP)/solicitado*100, m:'ok'},
+    {k:'pendienteP', n:'Por suministrar',  u:'pzas',  ic:ICO.faltante, cl:'mal',   pct:num(d.pendienteP)/solicitado*100, m:'mal'},
   ];
   const notas = d.notas || {};
   $('#r3Kpis').innerHTML = tarjetas.map(c=>{
@@ -2372,15 +2411,17 @@ function pintarKpis(){
       (c.pz && !SIN_CIFRA(d[c.pz]) ? '<span class="v2">' + fmtD(c.pz, d[c.pz]) + ' <small>pzas</small></span>' : '') +
       (c.pct == null ? '' : medidor(c.pct, c.m)) +
       '</span></div>';
-  }).join('') +
-  '<div class="r3-kpi r3-glass"><span class="ic">' + ICO.tramo + '</span>' +
-  '<span class="t"><label>Proyectos</label><span class="v">' + TRAMOS.length +
-  ' <small>proyectos</small></span></span></div>';
+  }).join('') + (enGeneral()
+    // Cuántos proyectos hay es cifra de la portada; dentro de uno no dice nada.
+    ? '<div class="r3-kpi r3-glass"><span class="ic">' + ICO.tramo + '</span>' +
+      '<span class="t"><label>Proyectos</label><span class="v">' + TRAMOS.length +
+      ' <small>proyectos</small></span></span></div>'
+    : '');
 }
 /* Dona: el contratado es el total, así que va al centro y no como gajo; los gajos
    son sus tres partes, que suman ese total. Es cifra del contrato, no del lote. */
-/* El orden es el de las tarjetas de arriba -En proceso, Entregado, Por fabricar-,
-   el mismo que la dona de la plana: leyenda y KPIs se cotejan sin cruzarse. */
+/* Los gajos van de lo que ya se cerró a lo que falta -En proceso, Entregado, Por
+   fabricar-, el mismo orden que la dona de la plana, para cotejar una con otra. */
 const DONA = [
   {k:'proceso',   n:'En proceso',   c:'#f2c230'},
   {k:'entregado', n:'Entregado',    c:'#1f9a63'},
@@ -2388,10 +2429,12 @@ const DONA = [
 ];
 function pintarDona(){
   const el = $('#r3Dona');
-  const d = datos(FASE, SEG);
+  const d = D();
   const num = v => typeof v === 'number' ? v : 0;
   const total = num(d.contratado);
-  if (!total){ el.hidden = true; return; }
+  // La dona reparte lo contratado, que es cifra del contrato entero: dentro de un
+  // proyecto no viene al caso, igual que en la plana, donde también se guarda.
+  if (!enGeneral() || !total){ el.hidden = true; return; }
   el.hidden = false;
   // Los atributos van en el propio SVG, igual que en la vista plana, para que el
   // dibujo no dependa de reglas de hoja de estilo que no viajan con el elemento.
@@ -2419,58 +2462,73 @@ function pintarDona(){
     DONA.map(p=>'<div class="l"><i style="background:' + p.c + '"></i>' + p.n + '<b>' + p.pct.toFixed(1) + ' %</b></div>').join('') +
     '</div>';
 }
-function pintarPanel(){
-  const d = datos(FASE, SEG);
+/* ---------- La tabla del proyecto, abajo ----------
+   Renglón por renglón es la tabla de la vista plana, y repite sus dos reglas.
+   La columna Suministrado no se lee de ninguna celda: se suma de los tres lotes
+   del propio renglón, para que cuadre siempre con los lotes que se están viendo.
+   Y si un centro no tiene una sola entrega con cifra va raya, no cero: el cero
+   diría que no se le entregó nada, y lo que pasa es que ese lote todavía no tiene
+   dato. Todo es en piezas, que es la unidad del detalle por centro, y la pieza es
+   entera: una pieza de riel no se parte. */
+const LOTES_PZ = ['entregadoPz', 'lote2Pz', 'lote3Pz'];
+// El orden de la tabla: lo pedido, los tres lotes, lo suministrado y lo que falta.
+const COLS_T = [
+  {k:'solicitadoPz'},
+  {k:'entregadoPz',    cl:'c-div'},
+  {k:'lote2Pz'},
+  {k:'lote3Pz'},
+  {k:'entregadoTotPz', cl:'c-div c-sum'},
+  {k:'pendientePz',    falta:true},
+];
+function pintarTablaProyecto(){
+  const el = $('#r3Tabla');
+  if (enGeneral()){ el.hidden = true; el.innerHTML = ''; return; }
+  el.hidden = false;
+  const nom = (TRAMOS.find(t=>t.id===SEG) || {}).nombre || '';
+  const cab = '<div class="cab"><p>Proyecto · piezas</p><h2>' + nom + '</h2></div>';
   const filas = tabla(FASE, SEG);
-  const nt = (TRAMOS.find(t=>t.id===SEG) || {}).nombre || '';
-  // La tabla del proyecto no cambia con el lote, asi que ya no lo nombra
-  // esta tabla es de piezas, no de toneladas: lo dice el rótulo y lo dicen las cifras
-  $('#r3PanelFase').textContent = 'Proyecto · pzas';
-  $('#r3PanelNom').textContent = nt;
-  $('#r3Tot').innerHTML =
-    '<div class="r3-mini"><label>Solicitado</label><b>' + fmtD('solicitado', d.solicitado) + '</b></div>' +
-    '<div class="r3-mini"><label>Suministrado</label><b>' + fmtD('entregadoP', d.entregadoP) + '</b></div>' +
-    '<div class="r3-mini"><label>Por suministrar</label><b>' + fmtD('pendienteP', d.pendienteP) + '</b></div>';
   if (!filas.length){
-    $('#r3Rows').innerHTML = '<p class="r3-vacio">Sin datos para este lote.</p>';
+    el.innerHTML = cab + '<p class="r3-vacio">Este proyecto todavía no trae centros de acopio.</p>';
     return;
   }
-  const nota = n => n ? ' <span class="r3-pill">' + n + '</span>' : '';
-  /* ---------- Un renglón por centro de acopio ----------
-     Esta lista es la misma que pinta la tabla de la plana, y ahí cada cifra viene
-     con el sufijo Pz: la pieza es la unidad del detalle por centro. Pidiendo
-     f.solicitado -sin sufijo- el panel escribía "undefined" en los tres huecos.
-     Suministrado es la suma de los tres lotes del renglón, igual que la columna
-     nueva de la plana; si el centro no tiene una sola entrega con cifra va raya,
-     porque un cero diría que no se suministró y lo que pasa es que no hay dato.
-     Las piezas se escriben enteras: una pieza de riel no se parte. */
-  const LOTES_PZ = ['entregadoPz', 'lote2Pz', 'lote3Pz'];
   const cif = v => typeof v === 'number' && isFinite(v)
-    ? v.toLocaleString('es-MX', { maximumFractionDigits:0 }) : '—';
+    ? v.toLocaleString('es-MX', {maximumFractionDigits:0}) : '—';
   const sumaLotes = f => LOTES_PZ.some(k => typeof f[k] === 'number')
-    ? LOTES_PZ.reduce((a,k)=> a + (typeof f[k] === 'number' ? f[k] : 0), 0) : null;
-  $('#r3Rows').innerHTML = filas.map(f=>{
-    const n = f.notas || {};
-    const ent = sumaLotes(f) || 0;
-    const sol = typeof f.solicitadoPz === 'number' ? f.solicitadoPz : 0;
-    const pct = sol ? Math.min(100, ent/sol*100) : 0;
-    return '<div class="r3-row"><span class="ic">' + ICO.tramo + '</span>' +
-      '<span class="t"><b>' + f.tramo + '</b><small>Solicitado ' + cif(f.solicitadoPz) + ' pz' + nota(n.solicitadoPz) + '</small>' +
-      medidor(pct, 'ok') + '</span>' +
-      '<span class="r"><span class="r3-mono">' + cif(sumaLotes(f)) + '</span>' +
-      '<span class="r3-pill ' + (typeof f.pendientePz === 'number' && f.pendientePz > 0 ? 'mal' : 'ok') + '">' +
-      cif(f.pendientePz) + ' pend.</span></span></div>';
-  }).join('') +
-  '<div class="r3-row total"><span class="ic">' + ICO.suma + '</span>' +
-  '<span class="t"><b>Total</b><small>' + filas.length + ' centros</small></span>' +
-  '<span class="r"><span class="r3-mono">' + fmtD('entregadoP', d.entregadoP) + '</span>' +
-  '<span class="r3-pill mal">' + fmtD('pendienteP', d.pendienteP) + ' pend.</span></span></div>';
+    ? LOTES_PZ.reduce((a,k)=> a + (typeof f[k] === 'number' ? f[k] : 0), 0) : '—';
+  const F = filas.map(f=> Object.assign({}, f, {entregadoTotPz: sumaLotes(f)}));
+  // El renglón de total suma cada columna de esta misma tabla; si en esa columna
+  // no hay una sola cifra -el lote que no ha empezado- va raya y no un cero.
+  const suma = k => F.some(f=> typeof f[k] === 'number')
+    ? F.reduce((a,f)=> a + (typeof f[k] === 'number' ? f[k] : 0), 0) : '—';
+  const td = (c, v, nota)=>{
+    const cls = [c.cl, typeof v === 'number' ? '' : 'vacio',
+      c.falta && typeof v === 'number' && v > 0 ? 'c-falta' : ''].filter(Boolean).join(' ');
+    return '<td' + (cls ? ' class="' + cls + '"' : '') + '>' + cif(v) +
+      (nota ? ' <span class="nota">' + nota + '</span>' : '') + '</td>';
+  };
+  const th = (txt, ico, cl)=> '<th' + (cl ? ' class="' + cl + '"' : '') +
+    '><span class="in">' + ico + txt + '</span></th>';
+  el.innerHTML = cab + '<div class="r3-tw"><table class="r3-t"><thead><tr>' +
+    th('Centro de acopio', ICO.tramo, 'c-centro') +
+    th('Solicitado', ICO.pedido) +
+    // Un lote por columna, con el nombre que les da la hoja: Lote I, II y III.
+    FASES.map((f,i)=> th('Entrega ' + f.nombre, ICO.riel, i === 0 ? 'c-div' : '')).join('') +
+    th('Suministrado', ICO.surtido, 'c-div') +
+    th('Por suministrar', ICO.faltante) +
+    '</tr></thead><tbody>' +
+    F.map(f=>{
+      const n = f.notas || {};
+      return '<tr><td class="c-centro" title="' + esc(f.tramo) + '">' + f.tramo + '</td>' +
+        COLS_T.map(c=> td(c, f[c.k], n[c.k])).join('') + '</tr>';
+    }).join('') +
+    '<tr class="total"><td class="c-centro">Total · ' + F.length + ' centros</td>' +
+    COLS_T.map(c=> td(c, suma(c.k))).join('') + '</tr></tbody></table></div>';
 }
 function pintarCadena(){
-  const d = datos(FASE, SEG);
+  const d = D();
   const iconos = [ICO.fabrica, ICO.puerto, ICO.barco, ICO.descarga, ICO.acopio];
   $('#r3Chain').innerHTML = EST.map((e,i)=>{
-    const L = lotesDe(e.k, SEG);
+    const L = lotesDe(e.k, segCifras());
     return '<button type="button" class="r3-paso' + (L.length ? '' : ' apagado') + '" data-est="' + i + '">' +
       '<span class="ic">' + iconos[i] + '</span>' +
       '<span class="t"><label>' + e.n + (e.s ? '<small class="sub">' + e.s + '</small>' : '') + '</label>' +
@@ -2496,7 +2554,7 @@ function armarLabs(){
 }
 function pintarLabs(){
   labs.forEach(L=>{
-    const lotes = lotesDe(L.e.k, SEG);
+    const lotes = lotesDe(L.e.k, segCifras());
     L.el.querySelector('[data-v]').innerHTML =
       lotes.length ? lotes.map(x=> cajaLote(L.e.k, x)).join('') : '<b class="r3-nada">—</b>';
     L.el.classList.toggle('apagado', !lotes.length);
@@ -2507,7 +2565,7 @@ function moverLabs(){
   const w = innerWidth, h = innerHeight;
   // El rótulo se esconde si cae fuera o si lo taparía una tarjeta del HUD: ahí no se leería
   const estorbos = [];
-  ['#r3Panel', '#r3Dona', '#r3Kpis', '#r3Abajo'].forEach(sel=>{
+  ['#r3Dona', '#r3Kpis', '#r3Abajo'].forEach(sel=>{
     const e = $(sel);
     if (e && e.offsetParent && !e.hidden) estorbos.push(e.getBoundingClientRect());
   });
@@ -2524,20 +2582,36 @@ function moverLabs(){
     L.el.style.visibility = (tapado || x < 0 || x > w || y < 60 || y > h - 50) ? 'hidden' : 'visible';
   });
 }
+/* Qué se ve en cada vista, calcado de la plana: la cadena y la dona son del
+   resumen general, la tabla es del proyecto, y los dos no salen a la vez. */
+function aplicarVista(){
+  const g = enGeneral();
+  raiz.dataset.vista = g ? 'general' : 'proyecto';
+  $('#r3Chain').hidden = !g;
+  $('#r3SiteCod').textContent = g ? 'GRL' : 'P' + (TRAMOS.findIndex(t=>t.id===SEG) + 1);
+  $('#r3SiteNom').textContent = g ? 'General' : ((TRAMOS.find(t=>t.id===SEG) || {}).nombre || '—');
+  $('#r3SiteSub').textContent = g ? 'Sin proyecto en pantalla' : 'Proyecto en pantalla';
+}
 function pintarTodo(){
-  pintarKpis(); pintarDona(); pintarPanel(); pintarCadena(); pintarLabs(); pintarPatios();
-  $('#r3SiteNom').textContent = (TRAMOS.find(t=>t.id===SEG) || {}).nombre || '—';
-  $('#r3SiteCod').textContent = 'P' + (TRAMOS.findIndex(t=>t.id===SEG) + 1);
+  aplicarVista();
+  pintarKpis(); pintarDona(); pintarTablaProyecto(); pintarCadena(); pintarLabs(); pintarPatios();
 }
 
 /* ---------------------------------------------------------------- controles ---- */
 function armarControles(){
   const pop = $('#r3Pop'), site = $('#r3Site');
-  pop.innerHTML = TRAMOS.map(t=>'<button type="button" role="menuitem" data-tramo="' + t.id + '">' + t.nombre + '</button>').join('');
+  /* General encabeza el menú porque es la vista de llegada; los proyectos van
+     debajo, bajo su propio rótulo. */
+  pop.innerHTML =
+    '<button type="button" role="menuitem" data-tramo="' + GRAL + '">General' +
+    '<small>La cadena completa, sin proyecto</small></button>' +
+    '<div class="sep">Proyectos</div>' +
+    TRAMOS.map(t=>'<button type="button" role="menuitem" data-tramo="' + t.id + '">' + t.nombre + '</button>').join('');
   pop.querySelectorAll('[data-tramo]').forEach(b=>{
     b.onclick = ()=>{
       SEG = b.dataset.tramo;
-      if (API.setProyecto) API.setProyecto(SEG);
+      // General no es un proyecto de la hoja: a la plana no se le pide que se mueva.
+      if (!enGeneral() && API.setProyecto) API.setProyecto(SEG);
       marcarProyecto(); cerrarPop(); pintarTodo();
     };
   });
@@ -2705,7 +2779,9 @@ function abrir(){
       return;
     }
   } else {
-    FASE = API.fase || FASE; SEG = API.proyecto || SEG;
+    // El 3D se queda con el proyecto que tenía, General incluido: el de la plana
+    // no lo arrastra, porque ahí siempre hay uno elegido y aquí puede no haberlo.
+    FASE = API.fase || FASE;
     marcarProyecto(); pintarTodo();
     medir();
   }
