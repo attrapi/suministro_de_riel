@@ -183,6 +183,11 @@ const CSS = `
   --r3-b:'Figtree','IBM Plex Sans',system-ui,'Segoe UI',sans-serif;
   --r3-m:'JetBrains Mono','IBM Plex Mono',ui-monospace,Consolas,monospace;
   --r3-r:14px; --r3-sh:0 1px 2px rgba(20,34,60,.06),0 8px 24px rgba(20,34,60,.08);
+  /* De aquí cuelgan las tarjetas y la dona. El alto de la barra de arriba no es
+     fijo -con los tres botones del proyecto se parte en dos renglones-, así que
+     el guión lo mide de la barra misma y lo escribe aquí; 76 es el caso de un
+     solo renglón, y sirve de respaldo hasta la primera medición. */
+  --r3-top:76px;
   position:fixed;inset:0;z-index:60;background:var(--r3-ground);color:var(--r3-ink);
   font-family:var(--r3-b);font-size:13px;-webkit-font-smoothing:antialiased;color-scheme:light;
   overscroll-behavior:none;
@@ -210,7 +215,7 @@ const CSS = `
 
 /* barra superior */
 #riel3d .r3-bar{position:absolute;top:12px;left:16px;right:16px;z-index:20;display:flex;align-items:center;
-  gap:8px;padding:8px 10px;min-height:52px;flex-wrap:wrap}
+  gap:10px 8px;padding:8px 10px;min-height:52px;flex-wrap:wrap}
 #riel3d .r3-brand{display:flex;align-items:center;gap:8px;font-family:var(--r3-d);font-weight:800;
   font-size:17px;letter-spacing:-.01em;white-space:nowrap}
 #riel3d .r3-brand svg{width:22px;height:22px;color:var(--r3-cobalto)}
@@ -230,14 +235,12 @@ const CSS = `
   white-space:nowrap;text-align:left;color:var(--r3-ink2);font-size:12px;font-weight:600}
 #riel3d .r3-opt .cod{background:var(--r3-ink3);color:#fff;font-family:var(--r3-m);font-size:9.5px;
   font-weight:700;border-radius:6px;padding:4px 6px}
-#riel3d .r3-opt small{display:block;font-size:10px;font-weight:600;color:var(--r3-ink3)}
 #riel3d .r3-opt:hover{background:rgba(255,255,255,.72);color:var(--r3-ink)}
 /* El filo del elegido va por dentro, en la sombra: un borde de verdad lo haría
    1.5 px más ancho que los otros dos y la fila bailaría a cada clic. */
 #riel3d .r3-opt[aria-current="true"]{background:var(--r3-solid);color:var(--r3-ink);font-weight:700;
   box-shadow:inset 0 0 0 1.5px var(--r3-guinda),0 1px 2px rgba(20,30,60,.12)}
 #riel3d .r3-opt[aria-current="true"] .cod{background:var(--r3-cobalto)}
-#riel3d .r3-opt[aria-current="true"] small{color:var(--r3-ink2)}
 #riel3d .r3-seg{display:inline-flex;background:var(--r3-mute);border-radius:10px;padding:3px;gap:2px}
 #riel3d .r3-seg button{font-size:11px;font-weight:700;padding:5px 10px;border-radius:7px;color:var(--r3-ink3);white-space:nowrap}
 #riel3d .r3-seg button.on{background:#fff;color:var(--r3-ink);box-shadow:0 1px 2px rgba(20,30,60,.12)}
@@ -252,7 +255,8 @@ const CSS = `
 #riel3d .r3-close:hover{background:#2c3a52}
 
 /* tarjetas de cifras */
-#riel3d .r3-kpis{position:absolute;top:76px;left:16px;right:16px;display:flex;gap:10px;flex-wrap:wrap;pointer-events:none}
+#riel3d .r3-kpis{position:absolute;top:var(--r3-top);left:16px;right:16px;display:flex;gap:12px;
+  flex-wrap:wrap;pointer-events:none}
 #riel3d .r3-kpi{pointer-events:auto;display:flex;align-items:center;gap:10px;padding:10px 14px 10px 10px;min-width:166px}
 #riel3d .r3-kpi .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;
   background:var(--r3-cobalto-s);color:var(--r3-cobalto);flex:none}
@@ -277,7 +281,7 @@ const CSS = `
 #riel3d .r3-medidor.mal i{background:var(--r3-mal)}
 
 /* dona: el reparto del contratado, entre las tarjetas y la cadena */
-#riel3d .r3-dona{position:absolute;top:166px;left:16px;display:flex;align-items:center;gap:11px;
+#riel3d .r3-dona{position:absolute;top:calc(var(--r3-top) + 92px);left:16px;display:flex;align-items:center;gap:11px;
   padding:10px 14px 10px 10px;width:max-content}
 #riel3d .r3-dona svg{width:78px;height:78px;flex:none;overflow:visible}
 #riel3d .r3-dona .leyenda{display:flex;flex-direction:column;gap:4px}
@@ -390,18 +394,20 @@ const CSS = `
 
 @media (max-width:1180px){
   #riel3d .r3-kpi{min-width:150px}
+  /* El código de contrato se va antes que los botones: sin él la barra aguanta
+     un renglón más de pantalla sin partirse. */
+  #riel3d .r3-code{display:none}
 }
 @media (max-width:980px){
   #riel3d .r3-dona{padding:9px 12px 9px 9px}
   #riel3d .r3-dona svg{width:76px;height:76px}
-  #riel3d .r3-code,#riel3d .r3-opt small{display:none}
+  #riel3d .r3-code{display:none}
   #riel3d table.r3-t th.c-centro{min-width:150px}
 }
 @media (max-width:760px){
   #riel3d .r3-bar{left:10px;right:10px;padding:7px 8px}
   #riel3d .r3-brand{font-size:15px}
-  /* En la barra angosta los tres botones se quedan con su clave y su nombre
-     corto: el largo parte la fila en tres renglones. */
+  /* En la barra angosta los tres botones se van a su propio renglon. */
   #riel3d .r3-sites{margin-left:0;order:3;width:100%}
   #riel3d .r3-opt{font-size:11.5px;padding:4px 8px 4px 4px}
   #riel3d .r3-kpis{top:auto;bottom:196px;left:10px;right:10px;overflow-x:auto;flex-wrap:nowrap;
@@ -413,7 +419,7 @@ const CSS = `
   #riel3d .r3-hint,#riel3d .r3-tools,#riel3d .r3-dona{display:none}
   /* En vista de proyecto la tabla ocupa el bajo de la pantalla: las tarjetas
      vuelven arriba, que es de donde las sacaba el carrusel del pie. */
-  #riel3d[data-vista="proyecto"] .r3-kpis{top:76px;bottom:auto}
+  #riel3d[data-vista="proyecto"] .r3-kpis{top:var(--r3-top);bottom:auto}
   #riel3d .r3-tw{max-height:32vh}
   #riel3d table.r3-t td,#riel3d table.r3-t th{padding:6px 7px}
   #riel3d table.r3-t td{font-size:11px}
@@ -2595,13 +2601,14 @@ function armarControles(){
   /* General primero, que es la vista de llegada, y los dos proyectos a su
      derecha. Cada botón lleva su clave -GRL, P1, P2- y su nombre; el elegido se
      marca con aria-current, que es de donde la hoja de estilo saca el filo. */
-  const opcion = (id, cod, nom, sub)=>
-    '<button type="button" class="r3-opt" data-tramo="' + id + '">' +
-    '<span class="cod">' + cod + '</span><span>' + nom +
-    (sub ? '<small>' + sub + '</small>' : '') + '</span></button>';
+  // De un solo renglon, con la aclaracion en el title: con un subtitulo debajo
+  // del nombre la barra crecia siete pixeles y se comia el hueco de las tarjetas.
+  const opcion = (id, cod, nom, ayuda)=>
+    '<button type="button" class="r3-opt" data-tramo="' + id + '" title="' + esc(ayuda) + '">' +
+    '<span class="cod">' + cod + '</span><span>' + nom + '</span></button>';
   $('#r3Sites').innerHTML =
-    opcion(GRAL, 'GRL', 'General', 'La cadena completa') +
-    TRAMOS.map((t,i)=> opcion(t.id, 'P' + (i+1), t.nombre, 'Proyecto')).join('');
+    opcion(GRAL, 'GRL', 'General', 'La cadena completa, sin proyecto') +
+    TRAMOS.map((t,i)=> opcion(t.id, 'P' + (i+1), t.nombre, 'Proyecto · ' + t.nombre)).join('');
   $('#r3Sites').querySelectorAll('[data-tramo]').forEach(b=>{
     b.onclick = ()=>{
       SEG = b.dataset.tramo;
@@ -2727,13 +2734,30 @@ function iniciar(){
   armarControles();
   armarRaton();
   pintarTodo();
+  medirBarra();
+  if (window.ResizeObserver) new ResizeObserver(medirBarra).observe($('.r3-bar'));
   encuadrar(EST[0].enc, false);
   addEventListener('resize', alRedimensionar);
   $('#r3Load').remove();
   listo = true;
 }
+/* ---------- El techo del HUD ----------
+   La barra de arriba crece: con los tres botones del proyecto y una pantalla
+   angosta se parte en dos renglones, y antes las tarjetas -clavadas a 76 px- se
+   le echaban encima. Aquí se mide la barra de verdad y de ahí cuelgan tarjetas y
+   dona, con su hueco. Se vuelve a medir sola: también cambia de alto cuando por
+   fin cargan las tipografías, mucho después de la primera pintada. */
+const HUECO_BARRA = 14;
+function medirBarra(){
+  const bar = $('.r3-bar');
+  // Con el 3D cerrado la barra no mide nada, y de ahi saldria un techo de 14 px:
+  // mientras este guardada no se toca, y al abrir se mide de nuevo.
+  if (!bar || raiz.hidden || !bar.offsetHeight) return;
+  raiz.style.setProperty('--r3-top',
+    Math.round(bar.getBoundingClientRect().bottom + HUECO_BARRA) + 'px');
+}
 // Al cambiar de tamaño se respeta el encuadre del usuario: solo se corrige la relación de aspecto.
-function alRedimensionar(){ if (!raiz.hidden) medir(); }
+function alRedimensionar(){ if (!raiz.hidden){ medirBarra(); medir(); } }
 
 let t0 = performance.now(), reloj = 0, _lejos = false;
 function ciclo(now){
@@ -2771,7 +2795,7 @@ function abrir(){
     // no lo arrastra, porque ahí siempre hay uno elegido y aquí puede no haberlo.
     FASE = API.fase || FASE;
     pintarTodo();
-    medir();
+    medirBarra(); medir();
   }
   if (API.pausar2D) API.pausar2D(true);               // la maqueta plana no anima a ciegas
   corriendo = true; t0 = performance.now();
