@@ -2356,8 +2356,8 @@ function pintarKpis(){
   const contratado = num(d.contratado) || 1;
   const tarjetas = [
     {k:'contratado', n:'Contratado',       u:UNIDAD,  ic:ICO.riel,     cl:'',      pct:100, pz:'contratadoPz'},
-    {k:'proceso',    n:'En proceso',       u:UNIDAD,  ic:ICO.reloj,    cl:'oro',   pct:num(d.proceso)/contratado*100,   m:'oro', pz:'procesoPz'},
     {k:'entregado',  n:'Entregado',        u:UNIDAD,  ic:ICO.check,    cl:'ok',    pct:num(d.entregado)/contratado*100, m:'ok',  pz:'entregadoPz'},
+    {k:'proceso',    n:'En proceso',       u:UNIDAD,  ic:ICO.reloj,    cl:'oro',   pct:num(d.proceso)/contratado*100,   m:'oro', pz:'procesoPz'},
     {k:'pendiente',  n:'Por fabricar',     u:UNIDAD,  ic:ICO.falta,    cl:'mal',   pct:num(d.pendiente)/contratado*100, m:'mal', pz:'pendientePz'},
     {k:'monto',      n:'Monto pagado',     u:'M',     ic:ICO.dinero,   cl:'flama', pct:null},
   ];

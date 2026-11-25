@@ -372,13 +372,13 @@
         <div class="cnt"><span data-d="contratado">0</span> <small>tm</small></div>
         <div class="cnt sec"><span data-d="contratadoPz">0</span> <small>pzas</small></div>
       </div></div>
-      <div class="st"><div class="ico" id="ico2"></div><div class="num">En proceso</div><div class="cnts">
-        <div class="cnt"><span data-d="proceso">0</span> <small>tm</small></div>
-        <div class="cnt sec"><span data-d="procesoPz">0</span> <small>pzas</small></div>
-      </div></div>
       <div class="st"><div class="ico" id="ico3"></div><div class="num">Entregado</div><div class="cnts">
         <div class="cnt"><span data-d="entregado">0</span> <small>tm</small></div>
         <div class="cnt sec"><span data-d="entregadoPz">0</span> <small>pzas</small></div>
+      </div></div>
+      <div class="st"><div class="ico" id="ico2"></div><div class="num">En proceso</div><div class="cnts">
+        <div class="cnt"><span data-d="proceso">0</span> <small>tm</small></div>
+        <div class="cnt sec"><span data-d="procesoPz">0</span> <small>pzas</small></div>
       </div></div>
       <div class="st"><div class="ico" id="ico6"></div><div class="num">Por fabricar</div><div class="cnts">
         <div class="cnt"><span data-d="pendiente">0</span> <small>tm</small></div>
@@ -1502,8 +1502,8 @@ function pintarDatos(){
    El contratado es el total, así que va al centro y no como gajo: los gajos son
    sus tres partes, que suman ese total. Son cifras del contrato completo, no del
    lote, de modo que la dona no cambia al moverse entre Lote I, II y III.       */
-/* El orden es el de los KPIs de arriba -En proceso, Entregado, Por fabricar-:
-   la dona y las cifras se leen de corrido y cada color cae donde se espera. */
+/* Los gajos van de lo que ya se cerró a lo que falta -En proceso, Entregado,
+   Por fabricar-, para que cada color caiga donde se espera. */
 const DONA = [
   { k:'proceso',   n:'En proceso',  c:'#7FA8CC' },
   { k:'entregado', n:'Entregado',   c:'#FF9A4D' },
