@@ -280,15 +280,30 @@ const CSS = `
 #riel3d .r3-medidor.oro i{background:var(--r3-oro)}
 #riel3d .r3-medidor.mal i{background:var(--r3-mal)}
 
-/* dona: el reparto del contratado, entre las tarjetas y la cadena */
-#riel3d .r3-dona{position:absolute;top:calc(var(--r3-top) + 92px);left:16px;display:flex;align-items:center;gap:11px;
-  padding:10px 14px 10px 10px;width:max-content}
-#riel3d .r3-dona svg{width:78px;height:78px;flex:none;overflow:visible}
-#riel3d .r3-dona .leyenda{display:flex;flex-direction:column;gap:4px}
-#riel3d .r3-dona .l{display:grid;grid-template-columns:8px 1fr auto;align-items:center;gap:8px;
-  font-size:10.5px;font-weight:600;color:var(--r3-ink2);white-space:nowrap}
-#riel3d .r3-dona .l i{width:9px;height:9px;border-radius:3px}
+/* La dona, a la derecha y abierta, en el sitio y con el ancho del cuadro que
+   antes abría el proyecto. Iba apretada bajo la tarjeta de Contratado, a 78 px y
+   con la leyenda al costado; aquí cabe grande y cada gajo dice su tonelaje junto
+   a su porcentaje. Es cifra del contrato entero, así que sólo sale en General:
+   dentro de un proyecto el sitio es de su tabla. */
+#riel3d .r3-dona{position:absolute;top:calc(var(--r3-top) + 92px);right:16px;width:336px;
+  display:flex;flex-direction:column;gap:10px;padding:12px 14px 14px;
+  /* en una pantalla baja el cuadro no se pasa del borde: cede y se recorre */
+  max-height:calc(100vh - var(--r3-top) - 108px);overflow:auto;scrollbar-width:thin}
+#riel3d .r3-dona .cab{font-family:var(--r3-m);font-size:9.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--r3-ink3)}
+#riel3d .r3-dona svg{width:152px;height:152px;align-self:center;flex:none;overflow:visible}
+#riel3d .r3-dona .leyenda{display:flex;flex-direction:column}
+#riel3d .r3-dona .l{display:grid;grid-template-columns:10px 1fr auto;align-items:center;gap:10px;
+  padding:7px 0;border-bottom:1px solid var(--r3-line);
+  font-size:11.5px;font-weight:600;color:var(--r3-ink2);white-space:nowrap}
+#riel3d .r3-dona .l:last-child{border-bottom:0}
+#riel3d .r3-dona .l i{width:10px;height:10px;border-radius:3px}
+#riel3d .r3-dona .l .n small{display:block;font-family:var(--r3-m);font-size:9.5px;
+  font-weight:600;color:var(--r3-ink3)}
 #riel3d .r3-dona .l b{font-family:var(--r3-m);font-weight:700;color:var(--r3-ink);font-variant-numeric:tabular-nums}
+/* En General el bloque de abajo le deja su columna, igual que se la dejaba al
+   cuadro del proyecto; en vista de proyecto la tabla se queda con todo el ancho. */
+#riel3d[data-vista="general"] .r3-abajo{right:368px}
 
 /* La tabla del proyecto, abajo y no al costado. Son siete columnas -el centro de
    acopio, lo solicitado, los tres lotes, lo suministrado y lo que falta-: en una
@@ -394,13 +409,16 @@ const CSS = `
 
 @media (max-width:1180px){
   #riel3d .r3-kpi{min-width:150px}
+  #riel3d .r3-dona{width:300px}
+  #riel3d[data-vista="general"] .r3-abajo{right:332px}
   /* El código de contrato se va antes que los botones: sin él la barra aguanta
      un renglón más de pantalla sin partirse. */
   #riel3d .r3-code{display:none}
 }
 @media (max-width:980px){
-  #riel3d .r3-dona{padding:9px 12px 9px 9px}
-  #riel3d .r3-dona svg{width:76px;height:76px}
+  #riel3d .r3-dona{width:258px;padding:10px 12px 12px}
+  #riel3d .r3-dona svg{width:124px;height:124px}
+  #riel3d[data-vista="general"] .r3-abajo{right:290px}
   #riel3d .r3-code{display:none}
   #riel3d table.r3-t th.c-centro{min-width:150px}
 }
@@ -2449,6 +2467,7 @@ function pintarDona(){
     return a;
   }).join('');
   el.innerHTML =
+    '<p class="cab">Reparto de lo contratado</p>' +
     '<svg viewBox="0 0 100 100" role="img" aria-label="Reparto de lo contratado">' +
     aro('#eef1f6', 100, 0) + aros +
     '<text x="50" y="50" text-anchor="middle" fill="#1b2638" font-weight="800" font-size="19"' +
@@ -2456,9 +2475,15 @@ function pintarDona(){
     (total/1000).toLocaleString('es-MX',{maximumFractionDigits:1}) + '</text>' +
     '<text x="50" y="62" text-anchor="middle" fill="#8796ab" font-size="7.5" letter-spacing="0.9"' +
     ' font-family="JetBrains Mono, IBM Plex Mono, monospace">MIL ' + UNIDAD.toUpperCase() + '</text></svg>' +
+    // Con el ancho del cuadro cabe el tonelaje de cada gajo, no sólo su tajada:
+    // la leyenda deja de ser un índice de colores y se lee como un desglose.
     '<div class="leyenda">' +
-    '<div class="l"><i style="background:transparent;box-shadow:inset 0 0 0 1px var(--r3-ink3)"></i>Contratado<b>100 %</b></div>' +
-    DONA.map(p=>'<div class="l"><i style="background:' + p.c + '"></i>' + p.n + '<b>' + p.pct.toFixed(1) + ' %</b></div>').join('') +
+    '<div class="l"><i style="background:transparent;box-shadow:inset 0 0 0 1px var(--r3-ink3)"></i>' +
+    '<span class="n">Contratado<small>' + fmtD('contratado', d.contratado) + ' ' + UNIDAD + '</small></span>' +
+    '<b>100 %</b></div>' +
+    DONA.map(p=>'<div class="l"><i style="background:' + p.c + '"></i>' +
+      '<span class="n">' + p.n + '<small>' + fmtD(p.k, d[p.k]) + ' ' + UNIDAD + '</small></span>' +
+      '<b>' + p.pct.toFixed(1) + ' %</b></div>').join('') +
     '</div>';
 }
 /* ---------- La tabla del proyecto, abajo ----------
