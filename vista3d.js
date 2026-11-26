@@ -253,6 +253,18 @@ const CSS = `
 #riel3d .r3-close{display:flex;align-items:center;gap:6px;background:var(--r3-ink);color:#fff;
   border-radius:10px;padding:7px 12px;font-weight:700;font-size:12px;white-space:nowrap}
 #riel3d .r3-close:hover{background:#2c3a52}
+/* Neuro Riel, el único enlace que sale de esta página, va al extremo derecho de
+   la barra, pasando el Volver. Mide lo mismo que ese botón -un renglón, sin
+   subtítulo- para que la barra no crezca y las tarjetas no pierdan su hueco. */
+#riel3d .r3-neuro{display:flex;align-items:center;gap:7px;padding:6.5px 11px;border-radius:10px;
+  background:var(--r3-solid);border:1.5px solid var(--r3-guinda);text-decoration:none;
+  color:var(--r3-ink);font-size:12px;font-weight:700;white-space:nowrap;flex:none}
+#riel3d .r3-neuro .ic,#riel3d .r3-neuro .ic svg{width:15px;height:15px;display:block;flex:none}
+#riel3d .r3-neuro .ic{color:var(--r3-guinda)}
+#riel3d .r3-neuro .fuera,#riel3d .r3-neuro .fuera svg{width:11px;height:11px;display:block;flex:none}
+#riel3d .r3-neuro .fuera{color:var(--r3-ink3)}
+#riel3d .r3-neuro:hover{background:var(--r3-cobalto-s);border-color:var(--r3-cobalto)}
+#riel3d .r3-neuro:hover .ic,#riel3d .r3-neuro:hover .fuera{color:var(--r3-cobalto)}
 
 /* tarjetas de cifras */
 #riel3d .r3-kpis{position:absolute;top:var(--r3-top);left:16px;right:16px;display:flex;gap:12px;
@@ -291,10 +303,8 @@ const CSS = `
    dentro de un proyecto el sitio es de su tabla. */
 #riel3d .r3-dona{position:absolute;top:var(--r3-top);right:16px;width:336px;
   display:flex;flex-direction:column;gap:10px;padding:12px 14px 14px;
-  /* En una pantalla baja el cuadro cede y se recorre por dentro. El tope deja
-     libre el renglon de abajo -los mandos, los hitos y el enlace-, que ahora pasa
-     por debajo de esta columna. */
-  max-height:calc(100vh - var(--r3-top) - 172px);overflow:auto;scrollbar-width:thin}
+  /* en una pantalla baja el cuadro no se pasa del borde: cede y se recorre */
+  max-height:calc(100vh - var(--r3-top) - 16px);overflow:auto;scrollbar-width:thin}
 #riel3d .r3-dona .cab{font-family:var(--r3-m);font-size:9.5px;letter-spacing:.12em;
   text-transform:uppercase;color:var(--r3-ink3)}
 #riel3d .r3-dona svg{width:152px;height:152px;align-self:center;flex:none;overflow:visible}
@@ -314,7 +324,7 @@ const CSS = `
    tarjeta de 336 px no caben sin partir cada cifra en dos renglones, y a lo ancho
    del escenario sí. Es la misma tabla de la vista plana, con el filo guinda, la
    monoespaciada y el verde/rojo de esta vista. */
-#riel3d .r3-tabla{flex:1 1 auto;min-width:0;padding:10px 12px;display:flex;
+#riel3d .r3-tabla{align-self:stretch;min-width:0;padding:10px 12px;display:flex;
   flex-direction:column;gap:8px;overflow:hidden}
 #riel3d .r3-tabla .cab{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
 #riel3d .r3-tabla .cab p{margin:0;font-family:var(--r3-m);font-size:9.5px;letter-spacing:.12em;
@@ -352,25 +362,12 @@ const CSS = `
    la barra de arriba se queda sólo con la identidad y la salida. */
 #riel3d .r3-abajo{position:absolute;left:16px;right:16px;bottom:16px;z-index:15;
   display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+/* En General el pie le deja su columna a la gráfica, igual que se la dejaba al
+   cuadro del proyecto; en vista de proyecto la tabla se queda con todo el ancho. */
+#riel3d[data-vista="general"] .r3-abajo{right:368px}
 #riel3d .r3-mandos{display:flex;align-items:center;gap:8px;padding:6px 8px;flex-wrap:wrap}
-/* El renglon de abajo: los hitos a la izquierda, creciendo con el hueco que haya,
-   y el enlace pegado a la derecha. Van alineados por el pie, para que el enlace
-   sea una pastilla de su alto y no una columna tan alta como la tabla. */
-#riel3d .r3-fila{align-self:stretch;display:flex;align-items:flex-end;gap:8px;min-width:0}
-#riel3d .r3-chain{flex:1 1 auto;min-width:0;display:grid;
+#riel3d .r3-chain{align-self:stretch;display:grid;
   grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;padding:6px;overflow:hidden}
-#riel3d .r3-neuro{flex:none;display:flex;align-items:center;gap:9px;padding:8px 12px;
-  text-decoration:none;color:var(--r3-ink);white-space:nowrap}
-#riel3d .r3-neuro .ic{width:30px;height:30px;border-radius:9px;background:var(--r3-cobalto-s);
-  color:var(--r3-cobalto);display:grid;place-items:center;flex:none}
-#riel3d .r3-neuro .ic svg{width:17px;height:17px}
-#riel3d .r3-neuro .t{font-family:var(--r3-d);font-weight:800;font-size:14px;letter-spacing:-.01em}
-#riel3d .r3-neuro .t small{display:block;font-family:var(--r3-b);font-size:9.5px;font-weight:600;
-  letter-spacing:0;color:var(--r3-ink3)}
-#riel3d .r3-neuro .fuera{width:13px;height:13px;color:var(--r3-ink3);flex:none}
-#riel3d .r3-neuro:hover{background:var(--r3-solid)}
-#riel3d .r3-neuro:hover .fuera{color:var(--r3-cobalto)}
-#riel3d .r3-neuro:focus-visible{outline:2px solid var(--r3-cobalto);outline-offset:2px}
 #riel3d .r3-paso{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:10px;text-align:left}
 #riel3d .r3-paso:hover{background:var(--r3-mute)}
 #riel3d .r3-paso[aria-current="true"]{background:var(--r3-cobalto-s)}
@@ -430,7 +427,8 @@ const CSS = `
 @media (max-width:1180px){
   #riel3d .r3-kpi{min-width:150px}
   #riel3d .r3-dona{width:300px}
-  #riel3d[data-vista="general"] .r3-kpis{right:332px}
+  #riel3d[data-vista="general"] .r3-kpis,
+  #riel3d[data-vista="general"] .r3-abajo{right:332px}
   /* El código de contrato se va antes que los botones: sin él la barra aguanta
      un renglón más de pantalla sin partirse. */
   #riel3d .r3-code{display:none}
@@ -438,8 +436,8 @@ const CSS = `
 @media (max-width:980px){
   #riel3d .r3-dona{width:258px;padding:10px 12px 12px}
   #riel3d .r3-dona svg{width:124px;height:124px}
-  #riel3d[data-vista="general"] .r3-kpis{right:290px}
-  #riel3d .r3-neuro .t small{display:none}
+  #riel3d[data-vista="general"] .r3-kpis,
+  #riel3d[data-vista="general"] .r3-abajo{right:290px}
   #riel3d table.r3-t th.c-centro{min-width:150px}
 }
 @media (max-width:760px){
@@ -451,14 +449,12 @@ const CSS = `
   #riel3d .r3-kpis,#riel3d[data-vista="general"] .r3-kpis{top:auto;bottom:196px;left:10px;right:10px;
     overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;padding-bottom:2px}
   #riel3d .r3-kpi{min-width:148px;flex:none}
-  #riel3d .r3-abajo{left:10px;right:10px}
+  /* La dona no sale en movil, asi que el pie ya no le guarda columna: hay que
+     decirlo con el mismo peso de selector, o el right de General le gana. */
+  #riel3d .r3-abajo,#riel3d[data-vista="general"] .r3-abajo{left:10px;right:10px}
   #riel3d .r3-chain{grid-template-columns:repeat(5,minmax(104px,1fr));overflow-x:auto}
   #riel3d .r3-paso{flex-direction:column;align-items:flex-start;gap:4px;padding:7px 8px}
   #riel3d .r3-hint,#riel3d .r3-tools,#riel3d .r3-dona{display:none}
-  /* En movil el renglon se parte: los hitos arriba y el enlace debajo, de orilla
-     a orilla, que es donde el pulgar lo alcanza. */
-  #riel3d .r3-fila{flex-wrap:wrap}
-  #riel3d .r3-neuro{flex:1 1 100%;justify-content:center}
   /* En vista de proyecto la tabla ocupa el bajo de la pantalla: las tarjetas
      vuelven arriba, que es de donde las sacaba el carrusel del pie. */
   #riel3d[data-vista="proyecto"] .r3-kpis{top:var(--r3-top);bottom:auto}
@@ -511,6 +507,11 @@ raiz.innerHTML = `
     <div class="r3-sites" id="r3Sites" role="group" aria-label="Qué se mira"></div>
     <span class="r3-sp"></span>
     <button class="r3-close" id="r3Close" title="Volver a la maqueta plana (Esc)">&larr; Volver al 2D</button>
+    <a class="r3-neuro" id="r3Neuro" href="https://contrato-riel-076-a-p-2025.com/"
+       target="_blank" rel="noopener noreferrer"
+       title="Abrir Neuro Riel en otra pestaña (contrato-riel-076-a-p-2025.com)">
+      <span class="ic">${ICO.nodos}</span>Neuro Riel<span class="fuera">${ICO.fuera}</span>
+    </a>
   </div>
 
   <div class="r3-kpis" id="r3Kpis"></div>
@@ -533,19 +534,8 @@ raiz.innerHTML = `
         <button class="r3-ibtn" id="r3Fit" title="Encuadrar la cadena completa" aria-label="Encuadrar">${ICO.marco}</button>
       </div>
     </div>
-    <!-- El renglon de abajo: los hitos -o la tabla del proyecto- y, a su derecha,
-         el enlace a Neuro Riel, que cae bajo la columna de la grafica. -->
-    <div class="r3-fila">
-      <div class="r3-chain r3-glass" id="r3Chain"></div>
-      <div class="r3-tabla r3-glass" id="r3Tabla" hidden></div>
-      <a class="r3-neuro r3-glass" id="r3Neuro" href="https://contrato-riel-076-a-p-2025.com/"
-         target="_blank" rel="noopener noreferrer"
-         title="Abrir Neuro Riel en otra pestaña (contrato-riel-076-a-p-2025.com)">
-        <span class="ic">${ICO.nodos}</span>
-        <span class="t">Neuro Riel<small>Contrato 076-A-P</small></span>
-        <span class="fuera">${ICO.fuera}</span>
-      </a>
-    </div>
+    <div class="r3-chain r3-glass" id="r3Chain"></div>
+    <div class="r3-tabla r3-glass" id="r3Tabla" hidden></div>
   </div>
   <div class="r3-hint" id="r3Hint">Arrastra para mover · scroll o pinza para acercar</div>
   <div class="r3-labs" id="r3Labs"></div>
